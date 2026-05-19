@@ -38,10 +38,9 @@
         thead { position: sticky; top: 0; background: #16213e; z-index: 2; }
         th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
         th { color: var(--primary); }
-        /* Thumbnail Button */
-        .thumb-btn { background: none; border: 2px solid transparent; padding: 0; cursor: pointer; border-radius: 6px; overflow: hidden; width: 50px; height: 36px; display: block; }
+        .thumb-btn { background: none; border: 2px solid transparent; padding: 2px; cursor: pointer; border-radius: 6px; overflow: hidden; width: 52px; height: 38px; display: block; }
         .thumb-btn:active { transform: scale(0.95); border-color: var(--primary); }
-        .thumb-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .thumb-btn img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
         .toast-container { position: fixed; top: 12px; right: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; max-width: 90vw; pointer-events: none; }
         .toast { padding: 12px 16px; border-radius: 8px; color: #fff; font-size: 0.9rem; animation: slideIn 0.3s ease, fadeOut 0.4s ease 3s forwards; box-shadow: 0 4px 12px rgba(0,0,0,0.4); pointer-events: auto; }
         .toast.success { background: var(--success); } .toast.error { background: var(--error); } .toast.warning { background: #d35400; }
@@ -50,12 +49,10 @@
         .loader { display: none; text-align: center; padding: 6px; font-size: 0.85rem; color: var(--muted); }
         .loader.active { display: block; }
         .empty-state { text-align: center; padding: 24px; color: var(--muted); font-style: italic; }
-        /* MODAL */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
         .modal.active { display: flex; }
         .modal-content { background: var(--card); border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; position: relative; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .modal-close { position: absolute; top: 12px; right: 16px; font-size: 1.6rem; color: var(--muted); cursor: pointer; line-height: 1; background: transparent; border: none; }
-        .modal-close:active { color: var(--error); }
         #modalImage { width: 100%; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--border); background: #000; }
         #modalCodeInput { width: 100%; padding: 14px; background: #0f0f1a; border: 2px solid var(--border); border-radius: 8px; color: var(--text); outline: none; font-family: monospace; font-size: 1.3rem; letter-spacing: 2px; text-align: center; text-transform: uppercase; }
         #modalCodeInput:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,210,255,0.2); }
@@ -74,10 +71,10 @@
             <div class="scan-overlay" id="scanOverlay"></div>
             <div id="cameraPlaceholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#111; color:#666; font-size:0.9rem;">Premi "Avvia Camera"</div>
         </div>
-        <button class="btn btn-primary" id="btnStart" onclick="startCamera()">🎬 Avvia Camera</button>
+        <button class="btn btn-primary" id="btnStart">🎬 Avvia Camera</button>
         <div class="btn-row">
-            <button class="btn btn-warning" id="btnFlash" onclick="toggleFlash()" disabled>🔦 Flash</button>
-            <button class="btn btn-success" id="btnToggleScan" onclick="toggleScan()" disabled>▶️ Scansione</button>
+            <button class="btn btn-warning" id="btnFlash" disabled>🔦 Flash</button>
+            <button class="btn btn-success" id="btnToggleScan" disabled>▶️ Scansione</button>
         </div>
         <div class="loader" id="loader">⏳ Analisi frame...</div>
         <div class="status-bar">
@@ -95,24 +92,23 @@
             </table>
         </div>
         <div class="btn-row">
-            <button class="btn btn-primary" id="btnExportAlbum" onclick="downloadAlbum()" disabled>📦 Album ZIP</button>
-            <button class="btn btn-warning" id="btnExportCSV" onclick="downloadCSV()" disabled>📄 CSV</button>
+            <button class="btn btn-primary" id="btnExportAlbum" disabled>📦 Album ZIP</button>
+            <button class="btn btn-warning" id="btnExportCSV" disabled>📄 CSV</button>
         </div>
-        <button class="btn btn-danger" id="btnClear" onclick="clearTable()" disabled>🗑️ Svuota</button>
+        <button class="btn btn-danger" id="btnClear" disabled>🗑️ Svuota</button>
         <p id="countTxt" style="text-align:center; margin-top:8px; font-size:0.8rem; color:#888;">0 codici</p>
     </div>
 
-    <!-- MODALE EDIT/VERIFICA -->
     <div id="editModal" class="modal">
         <div class="modal-content">
-            <button class="modal-close" onclick="closeEditModal()">✕</button>
+            <button class="modal-close">✕</button>
             <h3 style="margin-bottom:12px; color:var(--primary); text-align:center;">🔍 Verifica & Modifica</h3>
             <img id="modalImage" src="" alt="Anteprima">
             <input type="text" id="modalCodeInput" placeholder="BDBCF00000" maxlength="10" autocomplete="off" inputmode="text">
             <p id="modalHint">Formato: BDBCF + 5 hex [0-9A-F] (vietata la O)</p>
             <div class="btn-row">
-                <button class="btn btn-success" onclick="saveCode()">💾 Salva</button>
-                <button class="btn btn-danger" onclick="closeEditModal()">❌ Annulla</button>
+                <button class="btn btn-success" id="btnSaveModal">💾 Salva</button>
+                <button class="btn btn-danger" id="btnCancelModal">❌ Annulla</button>
             </div>
         </div>
     </div>
@@ -124,7 +120,7 @@
         const ctx = processCanvas.getContext('2d', { willReadFrequently: true });
         
         let tableData = [];
-        let idCounter = 1; // Contatore strettamente sequenziale
+        let idCounter = 1;
         let stream = null, videoTrack = null;
         let worker = null;
         let isScanning = false, isProcessing = false, flashOn = false;
@@ -138,7 +134,7 @@
         const VALID_CODE_REGEX = /^BDBCF[0-9A-F]{5}$/i;
 
         // ======================== CAMERA ========================
-        async function startCamera() {
+        document.getElementById('btnStart').addEventListener('click', async () => {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -158,9 +154,9 @@
             } catch (err) {
                 showToast('❌ Errore camera: ' + err.message, 'error');
             }
-        }
+        });
 
-        async function toggleFlash() {
+        document.getElementById('btnFlash').addEventListener('click', async () => {
             if (!videoTrack) return;
             try {
                 const caps = videoTrack.getCapabilities();
@@ -173,9 +169,9 @@
                 btn.classList.toggle('btn-success', flashOn);
                 showToast(flashOn ? '🔦 Flash acceso' : '🔦 Flash spento', flashOn ? 'success' : 'warning');
             } catch (e) {
-                showToast('⚠️ Flash non supportato da questo dispositivo', 'warning');
+                showToast('⚠️ Flash non supportato', 'warning');
             }
-        }
+        });
 
         // ======================== AUDIO & VIBRAZIONE ========================
         function initAudio() {
@@ -185,6 +181,7 @@
 
         function playBeepAndVibrate() {
             initAudio();
+            if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sine';
@@ -197,8 +194,8 @@
             if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
         }
 
-        // ======================== SCANSIONE CONTINUA ========================
-        function toggleScan() {
+        // ======================== SCANSIONE ========================
+        document.getElementById('btnToggleScan').addEventListener('click', () => {
             isScanning = !isScanning;
             const btn = document.getElementById('btnToggleScan');
             const overlay = document.getElementById('scanOverlay');
@@ -216,10 +213,14 @@
                     status.textContent = '🔍 Scansione attiva';
                     runScanLoop();
                 }).catch(err => {
-                    showToast('Errore caricamento OCR: ' + err.message, 'error');
-                    toggleScan();
+                    showToast('Errore OCR: ' + err.message, 'error');
+                    toggleScanLogic();
                 });
             } else {
+                toggleScanLogic();
+            }
+
+            function toggleScanLogic() {
                 btn.textContent = '▶️ Scansione';
                 btn.classList.replace('btn-warning', 'btn-success');
                 overlay.classList.remove('active', 'found');
@@ -228,7 +229,7 @@
                 isProcessing = false;
                 if (scanLoopId) clearTimeout(scanLoopId);
             }
-        }
+        });
 
         async function loadWorker() {
             if (!worker) {
@@ -243,7 +244,6 @@
             if (!isScanning || isProcessing) return;
             isProcessing = true;
             document.getElementById('loader').textContent = '⏳ Analisi frame...';
-
             try {
                 const frameData = captureFrame();
                 if (frameData && worker) {
@@ -267,7 +267,7 @@
             return processCanvas.toDataURL('image/jpeg', 0.75);
         }
 
-        // =================✅ OCR & VALIDAZIONE ========================
+        // ======================== OCR ========================
         function extractAndAddCodes(rawText) {
             const clean = rawText.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
             const regex = /BDBCF[0-9A-F]{5}/g;
@@ -288,7 +288,7 @@
             const freshDupes = dupes.filter(c => !duplicateAlerts.has(c) || now - duplicateAlerts.get(c) > 5000);
             if (freshDupes.length > 0) {
                 freshDupes.forEach(c => duplicateAlerts.set(c, now));
-                showToast(`⚠️ Duplicati ignorati: ${freshDupes.join(', ')}`, 'error');
+                showToast(`⚠️ Duplicati: ${freshDupes.join(', ')}`, 'error');
             }
 
             if (newCodes.length > 0) {
@@ -297,7 +297,6 @@
                 setTimeout(() => overlay.classList.remove('found'), 500);
                 playBeepAndVibrate();
 
-                // ✅ ID SEQUENZIALI CORRETTI: +1 esatto per ogni nuovo codice
                 newCodes.forEach(code => {
                     tableData.push({ id: idCounter++, code, timestamp: new Date(), thumb: processCanvas.toDataURL('image/jpeg', 0.6) });
                 });
@@ -308,7 +307,12 @@
             }
         }
 
-        // ======================== 🖼️ MODAL & EDIT ========================
+        // ======================== MODAL ========================
+        document.querySelector('.modal-close').addEventListener('click', closeEditModal);
+        document.getElementById('btnCancelModal').addEventListener('click', closeEditModal);
+        document.getElementById('btnSaveModal').addEventListener('click', saveCode);
+        document.getElementById('editModal').addEventListener('click', (e) => { if(e.target === e.currentTarget) closeEditModal(); });
+
         function openEditModal(index) {
             currentEditIndex = parseInt(index);
             const item = tableData[currentEditIndex];
@@ -316,8 +320,7 @@
             const input = document.getElementById('modalCodeInput');
             input.value = item.code;
             document.getElementById('editModal').classList.add('active');
-            // Forza focus e apre tastiera su mobile
-            setTimeout(() => { input.focus(); input.select(); }, 150);
+            setTimeout(() => { input.focus(); input.select(); }, 100);
         }
 
         function closeEditModal() {
@@ -330,12 +333,11 @@
             const newCode = input.value.trim().toUpperCase();
 
             if (!/^[A-Z0-9]+$/.test(newCode)) { showToast('Caratteri non validi', 'error'); return; }
-            if (!VALID_CODE_REGEX.test(newCode)) { showToast('Formato non valido: BDBCF + 5 hex', 'error'); return; }
+            if (!VALID_CODE_REGEX.test(newCode)) { showToast('Formato non valido', 'error'); return; }
             if (newCode.includes('O')) { showToast('La lettera O non è consentita', 'error'); return; }
 
-            // Controlla duplicati escludendo la riga corrente
             const isDuplicate = tableData.some((r, idx) => idx !== currentEditIndex && r.code === newCode);
-            if (isDuplicate) { showToast('⚠️ Codice già presente in tabella', 'warning'); return; }
+            if (isDuplicate) { showToast('⚠️ Codice già presente', 'warning'); return; }
 
             tableData[currentEditIndex].code = newCode;
             renderTable();
@@ -343,13 +345,11 @@
             showToast('✅ Codice aggiornato', 'success');
         }
 
-        // ======================== 📊 RENDER TABELLA ========================
+        // ======================== TABELLA ========================
         function renderTable() {
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = tableData.length ? '' : '<tr><td colspan="4" class="empty-state">Nessun codice</td></tr>';
-            
-            // Mostra gli ultimi inseriti in cima
-            const reversedIndices = [...Array(tableData.length).keys()].reverse();
-            reversedIndices.forEach(i => {
-                const row = tableData[i];
-                const tr = docume
+            tbody.innerHTML = '';
+            if (tableData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Nessun codice acquisito</td></tr>';
+                document.getElementById('countTxt').textContent = '0 codici';
+                ['btnExportAlbum', 'btnExportCSV', 'btnClear'].forEach(id
