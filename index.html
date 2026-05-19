@@ -18,7 +18,7 @@
         .subtitle { text-align: center; color: var(--muted); font-size: 0.85rem; margin-bottom: 16px; }
         .card { background: var(--card); border-radius: 14px; padding: 14px; border: 1px solid var(--border); margin-bottom: 16px; }
         .media-box { position: relative; width: 100%; aspect-ratio: 4/3; background: #000; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
-        .media-box video, .media-box canvas { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .media-box video, .media-box canvas { width: 100%; height: 100%; object-fit: cover; display: block; background: #111; }
         .media-box canvas { display: none; }
         .scan-overlay { position: absolute; inset: 12px; border: 2px dashed var(--primary); border-radius: 10px; pointer-events: none; display: none; }
         .scan-overlay.active { display: block; animation: pulse-border 2s infinite; }
@@ -47,20 +47,26 @@
         .loader { display: none; text-align: center; padding: 6px; font-size: 0.85rem; color: var(--muted); }
         .loader.active { display: block; }
         .empty-state { text-align: center; padding: 24px; color: var(--muted); font-style: italic; }
+        .error-banner { background: var(--error); color: #fff; padding: 12px; border-radius: 8px; margin: 8px 0; font-size: 0.9rem; display: none; }
+        .error-banner.show { display: block; }
+        .debug-info { font-size: 0.75rem; color: #666; margin-top: 8px; text-align: center; }
     </style>
 </head>
 <body>
-    <h1>📷 Scanner BDBCF Continuo</h1>
+    <h1>📷 Scanner BDBCF</h1>
     <p class="subtitle">Formato: BDBCF + 5 caratteri hex [0-9A-F]</p>
     
     <div id="toast-container" class="toast-container"></div>
+    <div id="errorBanner" class="error-banner"></div>
 
     <div class="card">
         <div class="media-box">
             <video id="video" autoplay playsinline muted></video>
             <canvas id="processCanvas"></canvas>
             <div class="scan-overlay" id="scanOverlay"></div>
-            <div id="cameraPlaceholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#111; color:#666; font-size:0.9rem;">Premi "Avvia Camera"</div>
+            <div id="cameraPlaceholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#111; color:#666; font-size:0.9rem; text-align:center; padding:10px;">
+                Premi "Avvia Camera"<br><span style="font-size:0.8rem;color:#888;">(HTTPS richiesto)</span>
+            </div>
         </div>
         <button class="btn btn-primary" id="btnStart" onclick="startCamera()">🎬 Avvia Camera</button>
         <div class="btn-row">
@@ -72,6 +78,7 @@
             <span id="statusText">Pronto</span>
             <span id="foundCount">0 validi</span>
         </div>
+        <div class="debug-info" id="debugInfo"></div>
     </div>
 
     <div class="card">
@@ -91,6 +98,23 @@
     </div>
 
     <script>
+        // ======================== DEBUG & LOGGING ========================
+        const DEBUG = true;
+        function log(msg, type='info') {
+            if (!DEBUG) return;
+            console.log(`[BDBCF] ${type.toUpperCase()}:`, msg);
+            if (type === 'error') showErrorBanner(msg);
+        }
+        function showErrorBanner(msg) {
+            const banner = document.getElementById('errorBanner');
+            banner.textContent = '❌ ' + msg;
+            banner.classList.add('show');
+            setTimeout(() => banner.classList.remove('show'), 8000);
+        }
+        function updateDebugInfo(msg) {
+            if (DEBUG) document.getElementById('debugInfo').textContent = msg;
+        }
+
         // ======================== STATO ========================
         const video = document.getElementById('video');
         const processCanvas = document.getElementById('processCanvas');
@@ -107,265 +131,64 @@
         
         const SCAN_INTERVAL = 1500;
         const MAX_DIM = 640;
-        // ✅ Pattern corretto: BDBCF + 5 caratteri hex (0-9, A-F), esclusa 'O'
         const VALID_CODE_REGEX = /^BDBCF[0-9A-F]{5}$/i;
 
-        // ======================== CAMERA & FLASH ========================
+        // ======================== CAMERA ROBUSTA ========================
         async function startCamera() {
-            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-                showToast('⚠️ Richiede HTTPS per la fotocamera', 'warning'); return;
-            }
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-                });
-                video.srcObject = stream;
-                videoTrack = stream.getVideoTracks()[0];
-                
-                video.onloadedmetadata = () => {
-                    document.getElementById('cameraPlaceholder').style.display = 'none';
-                    document.getElementById('btnToggleScan').disabled = false;
-                    document.getElementById('btnFlash').disabled = false;
-                    document.getElementById('btnStart').textContent = '🔄 Camera Attiva';
-                    document.getElementById('btnStart').disabled = true;
-                    showToast('🟢 Camera pronta', 'success');
-                };
-            } catch (err) {
-                showToast('❌ Errore camera: ' + err.message, 'error');
-            }
-        }
-
-        async function toggleFlash() {
-            if (!videoTrack) return;
-            try {
-                const caps = videoTrack.getCapabilities();
-                if (!caps.torch) throw new Error('Non supportato');
-                flashOn = !flashOn;
-                await videoTrack.applyConstraints({ advanced: [{ torch: flashOn }] });
-                const btn = document.getElementById('btnFlash');
-                btn.textContent = flashOn ? '🔦 Flash ON' : '🔦 Flash';
-                btn.classList.toggle('btn-warning', !flashOn);
-                btn.classList.toggle('btn-success', flashOn);
-                showToast(flashOn ? '🔦 Flash acceso' : '🔦 Flash spento', flashOn ? 'success' : 'warning');
-            } catch (e) {
-                showToast('⚠️ Flash non supportato da questo dispositivo', 'warning');
-            }
-        }
-
-        // ======================== AUDIO & VIBRAZIONE ========================
-        function initAudio() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-        }
-
-        function playBeepAndVibrate() {
-            initAudio();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.2);
-            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
-            osc.connect(gain).connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.25);
-            if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
-        }
-
-        // ======================== SCANSIONE CONTINUA ========================
-        function toggleScan() {
-            isScanning = !isScanning;
-            const btn = document.getElementById('btnToggleScan');
-            const overlay = document.getElementById('scanOverlay');
-            const loader = document.getElementById('loader');
-            const status = document.getElementById('statusText');
-
-            if (isScanning) {
-                initAudio();
-                btn.textContent = '⏸️ Ferma';
-                btn.classList.replace('btn-success', 'btn-warning');
-                overlay.classList.add('active');
-                loader.classList.add('active');
-                status.textContent = '⏳ Caricamento OCR...';
-                loadWorker().then(() => {
-                    status.textContent = '🔍 Scansione attiva';
-                    runScanLoop();
-                }).catch(err => {
-                    showToast('Errore caricamento OCR: ' + err.message, 'error');
-                    toggleScan();
-                });
-            } else {
-                btn.textContent = '▶️ Scansione';
-                btn.classList.replace('btn-warning', 'btn-success');
-                overlay.classList.remove('active', 'found');
-                loader.classList.remove('active');
-                status.textContent = 'Pronto';
-                isProcessing = false;
-                if (scanLoopId) clearTimeout(scanLoopId);
-            }
-        }
-
-        async function loadWorker() {
-            if (!worker) {
-                worker = await Tesseract.createWorker('ita+eng', 1, {
-                    logger: m => {
-                        if (m.status) document.getElementById('statusText').textContent = m.status;
-                    }
-                });
-            }
-            return worker;
-        }
-
-        async function runScanLoop() {
-            if (!isScanning || isProcessing) return;
-            isProcessing = true;
-            document.getElementById('loader').textContent = '⏳ Analisi frame...';
-
-            try {
-                const frameData = captureFrame();
-                if (frameData && worker) {
-                    const { data: { text } } = await worker.recognize(frameData);
-                    extractAndAddCodes(text);
-                }
-            } catch (err) { console.warn('OCR fallito:', err); } 
-            finally {
-                isProcessing = false;
-                document.getElementById('loader').textContent = '⏳ In attesa...';
-                if (isScanning) scanLoopId = setTimeout(runScanLoop, SCAN_INTERVAL);
-            }
-        }
-
-        function captureFrame() {
-            if (video.readyState < 2) return null;
-            let w = video.videoWidth, h = video.videoHeight;
-            if (w > MAX_DIM || h > MAX_DIM) { const r = Math.min(MAX_DIM/w, MAX_DIM/h); w *= r; h *= r; }
-            processCanvas.width = Math.round(w); processCanvas.height = Math.round(h);
-            ctx.drawImage(video, 0, 0, Math.round(w), Math.round(h));
-            return processCanvas.toDataURL('image/jpeg', 0.75);
-        }
-
-        // ======================== ✅ ESTRAZIONE CON PATTERN CORRETTO ========================
-        function extractAndAddCodes(rawText) {
-            // Pulizia: rimuovi caratteri speciali, normalizza spazi
-            const clean = rawText.replace(/[^A-Za-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
-            const tokens = clean.split(/\s+/);
+            const btn = document.getElementById('btnStart');
+            const placeholder = document.getElementById('cameraPlaceholder');
             
-            const validMatches = [];
-            const seenInFrame = new Set();
+            // Check HTTPS
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                const msg = '⚠️ La fotocamera richiede HTTPS. Se sei su GitHub Pages, usa il link https://...';
+                log(msg, 'error');
+                showToast(msg, 'warning');
+                return;
+            }
 
-            for (const token of tokens) {
-                // Rimuovi eventuali caratteri residui non alfanumerici
-                let t = token.replace(/[^A-Z0-9]/g, '');
-                if (t.length < 10) continue;
-                if (!t.startsWith('BDBCF')) continue;
+            // Check permissions API
+            if (navigator.permissions) {
+                try {
+                    const status = await navigator.permissions.query({ name: 'camera' });
+                    log('Permesso camera: ' + status.state);
+                    if (status.state === 'denied') {
+                        showToast('Permesso fotocamera bloccato. Controlla le impostazioni del browser.', 'error');
+                        return;
+                    }
+                } catch(e) { log('Permissions API non supportata', 'info'); }
+            }
 
-                // Estrai esattamente i primi 10 caratteri
-                let candidate = t.substring(0, 10);
+            btn.disabled = true;
+            btn.textContent = '⏳ Richiesta...';
+            placeholder.textContent = 'Richiesta accesso fotocamera...';
 
-                // ✅ Validazione con pattern corretto + esclusione esplicita di 'O'
-                if (VALID_CODE_REGEX.test(candidate) && !candidate.includes('O')) {
-                    if (!seenInFrame.has(candidate)) {
-                        validMatches.push(candidate);
-                        seenInFrame.add(candidate);
+            // Prova vincoli in ordine di preferenza
+            const constraintsList = [
+                { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } },
+                { video: { facingMode: 'environment' } },
+                { video: { width: { ideal: 1280 }, height: { ideal: 720 } } },
+                { video: true } // Fallback minimale
+            ];
+
+            for (const [i, constraints] of constraintsList.entries()) {
+                try {
+                    log(`Tentativo ${i+1} con vincoli:`, JSON.stringify(constraints));
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    log('✅ Camera avviata con successo');
+                    break;
+                } catch (err) {
+                    log(`Tentativo ${i+1} fallito: ${err.name} - ${err.message}`, 'error');
+                    if (i === constraintsList.length - 1) {
+                        // Tutti i tentativi falliti
+                        const errorMsg = `Impossibile avviare la fotocamera: ${err.name}\n\nPossibili cause:\n• Permesso negato\n• HTTPS non attivo\n• Dispositivo non supportato`;
+                        log(errorMsg, 'error');
+                        showToast('❌ Errore camera: ' + err.message, 'error');
+                        placeholder.textContent = 'Errore camera\n' + err.name;
+                        btn.disabled = false;
+                        btn.textContent = '🔄 Riprova';
+                        return;
                     }
                 }
             }
 
-            if (validMatches.length === 0) return;
-
-            const newCodes = [];
-            const dupes = [];
-            const now = Date.now();
-
-            validMatches.forEach(code => {
-                if (tableData.some(r => r.code === code)) {
-                    dupes.push(code);
-                } else {
-                    newCodes.push(code);
-                }
-            });
-
-            // Alert duplicati con debounce 5s
-            const freshDupes = dupes.filter(c => !duplicateAlerts.has(c) || now - duplicateAlerts.get(c) > 5000);
-            if (freshDupes.length > 0) {
-                freshDupes.forEach(c => duplicateAlerts.set(c, now));
-                showToast(`⚠️ Duplicati ignorati: ${freshDupes.join(', ')}`, 'error');
-            }
-
-            if (newCodes.length > 0) {
-                // Feedback visivo + audio
-                const overlay = document.getElementById('scanOverlay');
-                overlay.classList.add('found');
-                setTimeout(() => overlay.classList.remove('found'), 500);
-                playBeepAndVibrate();
-
-                // Aggiorna tabella
-                const startId = idCounter;
-                newCodes.forEach(code => {
-                    tableData.push({ 
-                        id: startId + tableData.length, 
-                        code, 
-                        timestamp: new Date(), 
-                        thumb: processCanvas.toDataURL('image/jpeg', 0.6) 
-                    });
-                });
-                idCounter += newCodes.length;
-                renderTable();
-                showToast(`✅ Trovati ${newCodes.length} codice${newCodes.length>1?'i':''}`, 'success');
-                document.getElementById('foundCount').textContent = `${newCodes.length} validi`;
-            }
-        }
-
-        // ======================== UI & EXPORT ========================
-        function renderTable() {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = tableData.length ? '' : '<tr><td colspan="4" class="empty-state">Nessun codice</td></tr>';
-            [...tableData].reverse().forEach(row => {
-                const tr = document.createElement('tr');
-                const time = row.timestamp.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' });
-                tr.innerHTML = `<td>${row.id}</td><td style="font-weight:600;color:var(--primary);">${row.code}</td><td>${time}</td><td><img src="${row.thumb}" class="thumb"></td>`;
-                tbody.appendChild(tr);
-            });
-            document.getElementById('countTxt').textContent = `${tableData.length} codici`;
-            ['btnExportAlbum', 'btnExportCSV', 'btnClear'].forEach(id => {
-                document.getElementById(id).disabled = tableData.length === 0;
-            });
-        }
-
-        async function downloadAlbum() {
-            if (tableData.length === 0) return;
-            showToast('📦 Generazione album...', 'warning');
-            const zip = new JSZip();
-            const imgFolder = zip.folder("immagini");
-            let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Album BDBCF</title><style>body{font-family:system-ui;background:#0f0f1a;color:#eee;padding:20px;margin:0;}h1{text-align:center;color:#00d2ff;} .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px;} .card{background:#1a1a2e;padding:10px;border-radius:8px;text-align:center;border:1px solid #2a2a4a;} img{width:100%;border-radius:4px;margin-bottom:5px;} .code{font-weight:bold;color:#00b894;font-size:1.1rem;letter-spacing:1px;}</style></head><body><h1>📷 Album Scansioni</h1><div class="grid">`;
-
-            for (const row of tableData) {
-                const base64 = row.thumb.split(',')[1];
-                const fileName = `${row.code}.jpg`;
-                imgFolder.file(fileName, base64, {base64: true});
-                html += `<div class="card"><img src="immagini/${fileName}"><div class="code">${row.code}</div></div>`;
-            }
-            html += `</div></body></html>`;
-            zip.file("album.html", html);
-
-            const blob = await zip.generateAsync({type: "blob"});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `BDB_Album_${Date.now()}.zip`;
-            a.click(); URL.revokeObjectURL(url);
-            showToast('📦 Album ZIP scaricato', 'success');
-        }
-
-        function downloadCSV() {
-            if (!tableData.length) return;
-            let csv = 'ID,Codice BDBCF,Timestamp\n';
-            tableData.forEach(r => csv += `${r.id},"${r.code}","${r.timestamp.toLocaleString('it-IT')}"\n`);
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `BDB_Dati_${Date.now()}.csv`;
-            a.click(); URL.revokeObjectURL(url);
-            showToast('📄 CSV esportato', 'success');
-        }
-
-        functi
+            //
