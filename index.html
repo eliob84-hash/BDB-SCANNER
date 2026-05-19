@@ -36,10 +36,12 @@
         .table-wrap { max-height: 45vh; overflow-y: auto; border-radius: 10px; border: 1px solid var(--border); }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         thead { position: sticky; top: 0; background: #16213e; z-index: 2; }
-        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
         th { color: var(--primary); }
-        .thumb { width: 40px; height: 30px; object-fit: cover; border-radius: 6px; cursor: pointer; transition: transform 0.2s; border: 2px solid transparent; }
-        .thumb:active { transform: scale(0.95); border-color: var(--primary); }
+        /* Thumbnail Button */
+        .thumb-btn { background: none; border: 2px solid transparent; padding: 0; cursor: pointer; border-radius: 6px; overflow: hidden; width: 50px; height: 36px; display: block; }
+        .thumb-btn:active { transform: scale(0.95); border-color: var(--primary); }
+        .thumb-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .toast-container { position: fixed; top: 12px; right: 12px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; max-width: 90vw; pointer-events: none; }
         .toast { padding: 12px 16px; border-radius: 8px; color: #fff; font-size: 0.9rem; animation: slideIn 0.3s ease, fadeOut 0.4s ease 3s forwards; box-shadow: 0 4px 12px rgba(0,0,0,0.4); pointer-events: auto; }
         .toast.success { background: var(--success); } .toast.error { background: var(--error); } .toast.warning { background: #d35400; }
@@ -52,11 +54,11 @@
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
         .modal.active { display: flex; }
         .modal-content { background: var(--card); border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; position: relative; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .modal-close { position: absolute; top: 12px; right: 16px; font-size: 1.6rem; color: var(--muted); cursor: pointer; line-height: 1; }
+        .modal-close { position: absolute; top: 12px; right: 16px; font-size: 1.6rem; color: var(--muted); cursor: pointer; line-height: 1; background: transparent; border: none; }
         .modal-close:active { color: var(--error); }
         #modalImage { width: 100%; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--border); background: #000; }
-        #modalCodeInput { width: 100%; padding: 14px; background: #0f0f1a; border: 2px solid var(--border); border-radius: 8px; color: var(--text); outline: none; font-family: monospace; font-size: 1.2rem; letter-spacing: 2px; text-align: center; text-transform: uppercase; }
-        #modalCodeInput:focus { border-color: var(--primary); }
+        #modalCodeInput { width: 100%; padding: 14px; background: #0f0f1a; border: 2px solid var(--border); border-radius: 8px; color: var(--text); outline: none; font-family: monospace; font-size: 1.3rem; letter-spacing: 2px; text-align: center; text-transform: uppercase; }
+        #modalCodeInput:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,210,255,0.2); }
         #modalHint { font-size: 0.8rem; color: var(--muted); margin: 8px 0 12px; text-align: center; }
     </style>
 </head>
@@ -88,7 +90,7 @@
         <h3 style="margin-bottom:10px; color:var(--primary);">📊 Tabella Codici</h3>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>#</th><th>Codice</th><th>Ora</th><th>🖼️ Thumb</th></tr></thead>
+                <thead><tr><th>#</th><th>Codice</th><th>Ora</th><th style="width:60px;">🖼️</th></tr></thead>
                 <tbody id="tableBody"><tr><td colspan="4" class="empty-state">Nessun codice acquisito</td></tr></tbody>
             </table>
         </div>
@@ -101,15 +103,15 @@
     </div>
 
     <!-- MODALE EDIT/VERIFICA -->
-    <div id="editModal" class="modal" onclick="if(event.target===this) closeEditModal()">
+    <div id="editModal" class="modal">
         <div class="modal-content">
-            <span class="modal-close" onclick="closeEditModal()">✕</span>
-            <h3 style="margin-bottom:12px; color:var(--primary);">🔍 Verifica & Modifica</h3>
-            <img id="modalImage" src="" alt="Anteprima ingrandita">
-            <input type="text" id="modalCodeInput" placeholder="Inserisci codice..." maxlength="10" autocomplete="off" inputmode="text">
-            <p id="modalHint">Formato valido: BDBCF + 5 hex [0-9A-F] (no lettera O)</p>
+            <button class="modal-close" onclick="closeEditModal()">✕</button>
+            <h3 style="margin-bottom:12px; color:var(--primary); text-align:center;">🔍 Verifica & Modifica</h3>
+            <img id="modalImage" src="" alt="Anteprima">
+            <input type="text" id="modalCodeInput" placeholder="BDBCF00000" maxlength="10" autocomplete="off" inputmode="text">
+            <p id="modalHint">Formato: BDBCF + 5 hex [0-9A-F] (vietata la O)</p>
             <div class="btn-row">
-                <button class="btn btn-success" onclick="saveCode()">💾 Salva Modifica</button>
+                <button class="btn btn-success" onclick="saveCode()">💾 Salva</button>
                 <button class="btn btn-danger" onclick="closeEditModal()">❌ Annulla</button>
             </div>
         </div>
@@ -122,7 +124,7 @@
         const ctx = processCanvas.getContext('2d', { willReadFrequently: true });
         
         let tableData = [];
-        let idCounter = 1; // Contatore sequenziale
+        let idCounter = 1; // Contatore strettamente sequenziale
         let stream = null, videoTrack = null;
         let worker = null;
         let isScanning = false, isProcessing = false, flashOn = false;
@@ -144,6 +146,7 @@
                 });
                 video.srcObject = stream;
                 videoTrack = stream.getVideoTracks()[0];
+                
                 video.onloadedmetadata = () => {
                     document.getElementById('cameraPlaceholder').style.display = 'none';
                     document.getElementById('btnToggleScan').disabled = false;
@@ -240,6 +243,7 @@
             if (!isScanning || isProcessing) return;
             isProcessing = true;
             document.getElementById('loader').textContent = '⏳ Analisi frame...';
+
             try {
                 const frameData = captureFrame();
                 if (frameData && worker) {
@@ -293,13 +297,13 @@
                 setTimeout(() => overlay.classList.remove('found'), 500);
                 playBeepAndVibrate();
 
-                // ✅ CORRETTO: Assegna ID sequenziale incrementando il contatore
+                // ✅ ID SEQUENZIALI CORRETTI: +1 esatto per ogni nuovo codice
                 newCodes.forEach(code => {
                     tableData.push({ id: idCounter++, code, timestamp: new Date(), thumb: processCanvas.toDataURL('image/jpeg', 0.6) });
                 });
 
                 renderTable();
-                showToast(`✅ Trovati ${newCodes.length} codice${newCodes.length>1?'i':''}`, 'success');
+                showToast(`✅ +${newCodes.length} codice${newCodes.length>1?'i':''}`, 'success');
                 document.getElementById('foundCount').textContent = `${newCodes.length} validi`;
             }
         }
@@ -309,8 +313,11 @@
             currentEditIndex = parseInt(index);
             const item = tableData[currentEditIndex];
             document.getElementById('modalImage').src = item.thumb;
-            document.getElementById('modalCodeInput').value = item.code;
+            const input = document.getElementById('modalCodeInput');
+            input.value = item.code;
             document.getElementById('editModal').classList.add('active');
+            // Forza focus e apre tastiera su mobile
+            setTimeout(() => { input.focus(); input.select(); }, 150);
         }
 
         function closeEditModal() {
@@ -323,16 +330,17 @@
             const newCode = input.value.trim().toUpperCase();
 
             if (!/^[A-Z0-9]+$/.test(newCode)) { showToast('Caratteri non validi', 'error'); return; }
-            if (!VALID_CODE_REGEX.test(newCode)) { showToast('Formato non valido: BDBCF + 5 hex [0-9A-F]', 'error'); return; }
+            if (!VALID_CODE_REGEX.test(newCode)) { showToast('Formato non valido: BDBCF + 5 hex', 'error'); return; }
             if (newCode.includes('O')) { showToast('La lettera O non è consentita', 'error'); return; }
 
+            // Controlla duplicati escludendo la riga corrente
             const isDuplicate = tableData.some((r, idx) => idx !== currentEditIndex && r.code === newCode);
             if (isDuplicate) { showToast('⚠️ Codice già presente in tabella', 'warning'); return; }
 
             tableData[currentEditIndex].code = newCode;
             renderTable();
             closeEditModal();
-            showToast('✅ Codice aggiornato con successo', 'success');
+            showToast('✅ Codice aggiornato', 'success');
         }
 
         // ======================== 📊 RENDER TABELLA ========================
@@ -340,12 +348,8 @@
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = tableData.length ? '' : '<tr><td colspan="4" class="empty-state">Nessun codice</td></tr>';
             
-            // Indici invertiti per mostrare gli ultimi inseriti in cima
+            // Mostra gli ultimi inseriti in cima
             const reversedIndices = [...Array(tableData.length).keys()].reverse();
             reversedIndices.forEach(i => {
                 const row = tableData[i];
-                const tr = document.createElement('tr');
-                const time = row.timestamp.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' });
-                // Mostra l'ID assegnato (sequenziale)
-                tr.innerHTML = `<td>${row.id}</td><td style="font-weight:600;color:var(--primary);">${row.code}</td><td>${time}</td><td><img src="${row.thumb}" class="thumb" data-idx="${i}"></td>`;
-          
+                const tr = docume
