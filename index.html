@@ -71,10 +71,10 @@
             <div class="scan-overlay" id="scanOverlay"></div>
             <div id="cameraPlaceholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#111; color:#666; font-size:0.9rem;">Premi "Avvia Camera"</div>
         </div>
-        <button class="btn btn-primary" id="btnStart">🎬 Avvia Camera</button>
+        <button class="btn btn-primary" id="btnStart" onclick="startCamera()">🎬 Avvia Camera</button>
         <div class="btn-row">
-            <button class="btn btn-warning" id="btnFlash" disabled>🔦 Flash</button>
-            <button class="btn btn-success" id="btnToggleScan" disabled>▶️ Scansione</button>
+            <button class="btn btn-warning" id="btnFlash" onclick="toggleFlash()" disabled>🔦 Flash</button>
+            <button class="btn btn-success" id="btnToggleScan" onclick="toggleScan()" disabled>▶️ Scansione</button>
         </div>
         <div class="loader" id="loader">⏳ Analisi frame...</div>
         <div class="status-bar">
@@ -92,23 +92,23 @@
             </table>
         </div>
         <div class="btn-row">
-            <button class="btn btn-primary" id="btnExportAlbum" disabled>📦 Album ZIP</button>
-            <button class="btn btn-warning" id="btnExportCSV" disabled>📄 CSV</button>
+            <button class="btn btn-primary" id="btnExportAlbum" onclick="downloadAlbum()" disabled>📦 Album ZIP</button>
+            <button class="btn btn-warning" id="btnExportCSV" onclick="downloadCSV()" disabled>📄 CSV</button>
         </div>
-        <button class="btn btn-danger" id="btnClear" disabled>🗑️ Svuota</button>
+        <button class="btn btn-danger" id="btnClear" onclick="clearTable()" disabled>🗑️ Svuota</button>
         <p id="countTxt" style="text-align:center; margin-top:8px; font-size:0.8rem; color:#888;">0 codici</p>
     </div>
 
-    <div id="editModal" class="modal">
+    <div id="editModal" class="modal" onclick="if(event.target===this) closeEditModal()">
         <div class="modal-content">
-            <button class="modal-close">✕</button>
+            <button class="modal-close" onclick="closeEditModal()">✕</button>
             <h3 style="margin-bottom:12px; color:var(--primary); text-align:center;">🔍 Verifica & Modifica</h3>
             <img id="modalImage" src="" alt="Anteprima">
             <input type="text" id="modalCodeInput" placeholder="BDBCF00000" maxlength="10" autocomplete="off" inputmode="text">
             <p id="modalHint">Formato: BDBCF + 5 hex [0-9A-F] (vietata la O)</p>
             <div class="btn-row">
-                <button class="btn btn-success" id="btnSaveModal">💾 Salva</button>
-                <button class="btn btn-danger" id="btnCancelModal">❌ Annulla</button>
+                <button class="btn btn-success" onclick="saveCode()">💾 Salva</button>
+                <button class="btn btn-danger" onclick="closeEditModal()">❌ Annulla</button>
             </div>
         </div>
     </div>
@@ -129,20 +129,20 @@
         let audioCtx = null;
         let currentEditIndex = -1;
         
-        const SCAN_INTERVAL = 1500;
-        const MAX_DIM = 640;
+        // ⚡ OTTIMIZZAZIONI VELOCITÀ
+        const MAX_DIM = 512; // Ridotto da 640 a 512 per OCR più veloce
+        const SCAN_INTERVAL = 1000; // 1 secondo tra i frame
         const VALID_CODE_REGEX = /^BDBCF[0-9A-F]{5}$/i;
 
-        // ======================== CAMERA ========================
-        document.getElementById('btnStart').addEventListener('click', async () => {
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-                    audio: false
-                });
-                video.srcObject = stream;
+        // ======================== CAMERA (Logica stabile ripristinata) ========================
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: false
+            }).then(s => {
+                stream = s;
                 videoTrack = stream.getVideoTracks()[0];
-                
+                video.srcObject = stream;
                 video.onloadedmetadata = () => {
                     document.getElementById('cameraPlaceholder').style.display = 'none';
                     document.getElementById('btnToggleScan').disabled = false;
@@ -151,18 +151,16 @@
                     document.getElementById('btnStart').disabled = true;
                     showToast('🟢 Camera pronta', 'success');
                 };
-            } catch (err) {
-                showToast('❌ Errore camera: ' + err.message, 'error');
-            }
-        });
+            }).catch(err => showToast('❌ Errore camera: ' + err.message, 'error'));
+        }
 
-        document.getElementById('btnFlash').addEventListener('click', async () => {
+        function toggleFlash() {
             if (!videoTrack) return;
             try {
                 const caps = videoTrack.getCapabilities();
                 if (!caps.torch) throw new Error('Non supportato');
                 flashOn = !flashOn;
-                await videoTrack.applyConstraints({ advanced: [{ torch: flashOn }] });
+                videoTrack.applyConstraints({ advanced: [{ torch: flashOn }] });
                 const btn = document.getElementById('btnFlash');
                 btn.textContent = flashOn ? '🔦 Flash ON' : '🔦 Flash';
                 btn.classList.toggle('btn-warning', !flashOn);
@@ -171,7 +169,7 @@
             } catch (e) {
                 showToast('⚠️ Flash non supportato', 'warning');
             }
-        });
+        }
 
         // ======================== AUDIO & VIBRAZIONE ========================
         function initAudio() {
@@ -194,8 +192,8 @@
             if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
         }
 
-        // ======================== SCANSIONE ========================
-        document.getElementById('btnToggleScan').addEventListener('click', () => {
+        // ======================== SCANSIONE CONTINUA ========================
+        function toggleScan() {
             isScanning = !isScanning;
             const btn = document.getElementById('btnToggleScan');
             const overlay = document.getElementById('scanOverlay');
@@ -214,13 +212,9 @@
                     runScanLoop();
                 }).catch(err => {
                     showToast('Errore OCR: ' + err.message, 'error');
-                    toggleScanLogic();
+                    toggleScan();
                 });
             } else {
-                toggleScanLogic();
-            }
-
-            function toggleScanLogic() {
                 btn.textContent = '▶️ Scansione';
                 btn.classList.replace('btn-warning', 'btn-success');
                 overlay.classList.remove('active', 'found');
@@ -229,7 +223,7 @@
                 isProcessing = false;
                 if (scanLoopId) clearTimeout(scanLoopId);
             }
-        });
+        }
 
         async function loadWorker() {
             if (!worker) {
@@ -264,14 +258,13 @@
             if (w > MAX_DIM || h > MAX_DIM) { const r = Math.min(MAX_DIM/w, MAX_DIM/h); w *= r; h *= r; }
             processCanvas.width = Math.round(w); processCanvas.height = Math.round(h);
             ctx.drawImage(video, 0, 0, Math.round(w), Math.round(h));
-            return processCanvas.toDataURL('image/jpeg', 0.75);
+            return processCanvas.toDataURL('image/jpeg', 0.5); // Qualità ridotta per velocità
         }
 
-        // ======================== OCR ========================
+        // ======================== OCR & VALIDAZIONE ========================
         function extractAndAddCodes(rawText) {
             const clean = rawText.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-            const regex = /BDBCF[0-9A-F]{5}/g;
-            const matches = clean.match(regex) || [];
+            const matches = clean.match(/BDBCF[0-9A-F]{5}/g) || [];
             const validMatches = [...new Set(matches)].filter(c => !c.includes('O'));
 
             if (validMatches.length === 0) return;
@@ -307,12 +300,7 @@
             }
         }
 
-        // ======================== MODAL ========================
-        document.querySelector('.modal-close').addEventListener('click', closeEditModal);
-        document.getElementById('btnCancelModal').addEventListener('click', closeEditModal);
-        document.getElementById('btnSaveModal').addEventListener('click', saveCode);
-        document.getElementById('editModal').addEventListener('click', (e) => { if(e.target === e.currentTarget) closeEditModal(); });
-
+        // ======================== MODAL & EDIT ========================
         function openEditModal(index) {
             currentEditIndex = parseInt(index);
             const item = tableData[currentEditIndex];
@@ -352,4 +340,11 @@
             if (tableData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Nessun codice acquisito</td></tr>';
                 document.getElementById('countTxt').textContent = '0 codici';
-                ['btnExportAlbum', 'btnExportCSV', 'btnClear'].forEach(id
+                ['btnExportAlbum', 'btnExportCSV', 'btnClear'].forEach(id => document.getElementById(id).disabled = true);
+                return;
+            }
+
+            for (let i = tableData.length - 1; i >= 0; i--) {
+                const row = tableData[i];
+                const tr = document.createElement('tr');
+                const time = row.timestamp.toLocaleTimeString('it-IT', { hou
