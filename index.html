@@ -48,8 +48,7 @@
         .loader { display: none; text-align: center; padding: 6px; font-size: 0.85rem; color: var(--muted); }
         .loader.active { display: block; }
         .empty-state { text-align: center; padding: 24px; color: var(--muted); font-style: italic; }
-
-        /* MODAL STYLES */
+        /* MODAL */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
         .modal.active { display: flex; }
         .modal-content { background: var(--card); border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; position: relative; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -64,7 +63,6 @@
 <body>
     <h1>📷 Scanner BDBCF Continuo</h1>
     <p class="subtitle">Formato: BDBCF + 5 caratteri hex [0-9A-F]</p>
-    
     <div id="toast-container" class="toast-container"></div>
 
     <div class="card">
@@ -124,7 +122,7 @@
         const ctx = processCanvas.getContext('2d', { willReadFrequently: true });
         
         let tableData = [];
-        let idCounter = 1;
+        let idCounter = 1; // Contatore sequenziale
         let stream = null, videoTrack = null;
         let worker = null;
         let isScanning = false, isProcessing = false, flashOn = false;
@@ -146,7 +144,6 @@
                 });
                 video.srcObject = stream;
                 videoTrack = stream.getVideoTracks()[0];
-                
                 video.onloadedmetadata = () => {
                     document.getElementById('cameraPlaceholder').style.display = 'none';
                     document.getElementById('btnToggleScan').disabled = false;
@@ -233,9 +230,7 @@
         async function loadWorker() {
             if (!worker) {
                 worker = await Tesseract.createWorker('ita+eng', 1, {
-                    logger: m => {
-                        if (m.status) document.getElementById('statusText').textContent = m.status;
-                    }
+                    logger: m => { if (m.status) document.getElementById('statusText').textContent = m.status; }
                 });
             }
             return worker;
@@ -245,7 +240,6 @@
             if (!isScanning || isProcessing) return;
             isProcessing = true;
             document.getElementById('loader').textContent = '⏳ Analisi frame...';
-
             try {
                 const frameData = captureFrame();
                 if (frameData && worker) {
@@ -299,11 +293,11 @@
                 setTimeout(() => overlay.classList.remove('found'), 500);
                 playBeepAndVibrate();
 
-                const startId = idCounter;
+                // ✅ CORRETTO: Assegna ID sequenziale incrementando il contatore
                 newCodes.forEach(code => {
-                    tableData.push({ id: startId + tableData.length, code, timestamp: new Date(), thumb: processCanvas.toDataURL('image/jpeg', 0.6) });
+                    tableData.push({ id: idCounter++, code, timestamp: new Date(), thumb: processCanvas.toDataURL('image/jpeg', 0.6) });
                 });
-                idCounter += newCodes.length;
+
                 renderTable();
                 showToast(`✅ Trovati ${newCodes.length} codice${newCodes.length>1?'i':''}`, 'success');
                 document.getElementById('foundCount').textContent = `${newCodes.length} validi`;
@@ -332,7 +326,6 @@
             if (!VALID_CODE_REGEX.test(newCode)) { showToast('Formato non valido: BDBCF + 5 hex [0-9A-F]', 'error'); return; }
             if (newCode.includes('O')) { showToast('La lettera O non è consentita', 'error'); return; }
 
-            // Controllo duplicati (escludendo la riga corrente)
             const isDuplicate = tableData.some((r, idx) => idx !== currentEditIndex && r.code === newCode);
             if (isDuplicate) { showToast('⚠️ Codice già presente in tabella', 'warning'); return; }
 
@@ -347,10 +340,12 @@
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = tableData.length ? '' : '<tr><td colspan="4" class="empty-state">Nessun codice</td></tr>';
             
-            // Mantieni indici originali per l'editing
+            // Indici invertiti per mostrare gli ultimi inseriti in cima
             const reversedIndices = [...Array(tableData.length).keys()].reverse();
             reversedIndices.forEach(i => {
                 const row = tableData[i];
                 const tr = document.createElement('tr');
                 const time = row.timestamp.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' });
-                tr.innerHTML = `<td>${row.id}</td><td style="font-weight:600;color:var(--primary);">${row.code}</td><td>${time}</td><td><img src
+                // Mostra l'ID assegnato (sequenziale)
+                tr.innerHTML = `<td>${row.id}</td><td style="font-weight:600;color:var(--primary);">${row.code}</td><td>${time}</td><td><img src="${row.thumb}" class="thumb" data-idx="${i}"></td>`;
+          
