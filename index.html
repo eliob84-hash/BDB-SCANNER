@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Scanner BDBCF Continuo</title>
-    <!-- Tesseract.js -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <!-- JSZip per esportazione album -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -25,7 +23,7 @@
         .media-box canvas { display: none; }
         .scan-overlay { position: absolute; inset: 12px; border: 2px dashed var(--primary); border-radius: 10px; pointer-events: none; display: none; }
         .scan-overlay.active { display: block; animation: pulse-border 2s infinite; }
-        .scan-overlay.found { border-color: var(--success); background: rgba(0,184,148,0.2); }
+        .scan-overlay.found { border-color: var(--success); background: rgba(0,184,148,0.15); }
         @keyframes pulse-border { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
 
         .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
@@ -58,7 +56,7 @@
 </head>
 <body>
     <h1>📷 Scanner BDBCF Continuo</h1>
-    <p class="subtitle">Formato fisso: BDBCF + 5 cifre (10 caratteri totali)</p>
+    <p class="subtitle">Formato: BDBCF + 5 cifre (10 char totali)</p>
     
     <div id="toast-container" class="toast-container"></div>
 
@@ -74,7 +72,7 @@
             <button class="btn btn-warning" id="btnFlash" onclick="toggleFlash()" disabled>🔦 Flash</button>
             <button class="btn btn-success" id="btnToggleScan" onclick="toggleScan()" disabled>▶️ Scansione</button>
         </div>
-        <div class="loader" id="loader">⏳ Analisi frame... <span id="progressTxt">0%</span></div>
+        <div class="loader" id="loader">⏳ Analisi frame...</div>
         <div class="status-bar">
             <span id="statusText">Pronto</span>
             <span id="foundCount">0 validi</span>
@@ -98,7 +96,7 @@
     </div>
 
     <script>
-        // ======================== STATO & VARIABILI ========================
+        // ======================== STATO ========================
         const video = document.getElementById('video');
         const processCanvas = document.getElementById('processCanvas');
         const ctx = processCanvas.getContext('2d', { willReadFrequently: true });
@@ -112,9 +110,10 @@
         let duplicateAlerts = new Map();
         let audioCtx = null;
         
-        const SCAN_INTERVAL = 1600; // ms
-        const MAX_DIM = 640; // Ottimizzato per mobile
-        const VALID_CODE_REGEX = /^BDBCF\d{5}$/; // Esattamente 10 char: BDBCF + 5 cifre
+        const SCAN_INTERVAL = 1500;
+        const MAX_DIM = 640;
+        // Regex rigorosa per validazione finale
+        const VALID_CODE_REGEX = /^BDBCF\d{5}$/;
 
         // ======================== CAMERA & FLASH ========================
         async function startCamera() {
@@ -148,12 +147,13 @@
                 if (!caps.torch) throw new Error('Non supportato');
                 flashOn = !flashOn;
                 await videoTrack.applyConstraints({ advanced: [{ torch: flashOn }] });
-                document.getElementById('btnFlash').textContent = flashOn ? '🔦 Flash ON' : '🔦 Flash';
-                document.getElementById('btnFlash').classList.toggle('btn-warning');
-                document.getElementById('btnFlash').classList.toggle('btn-success');
+                const btn = document.getElementById('btnFlash');
+                btn.textContent = flashOn ? '🔦 Flash ON' : '🔦 Flash';
+                btn.classList.toggle('btn-warning', !flashOn);
+                btn.classList.toggle('btn-success', flashOn);
                 showToast(flashOn ? '🔦 Flash acceso' : '🔦 Flash spento', flashOn ? 'success' : 'warning');
             } catch (e) {
-                showToast('⚠️ Flash non disponibile su questo dispositivo', 'warning');
+                showToast('⚠️ Flash non supportato da questo dispositivo', 'warning');
             }
         }
 
@@ -165,7 +165,6 @@
 
         function playBeepAndVibrate() {
             initAudio();
-            // Beep
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sine';
@@ -175,7 +174,6 @@
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
             osc.connect(gain).connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + 0.25);
-            // Vibrazione
             if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
         }
 
@@ -188,13 +186,19 @@
             const status = document.getElementById('statusText');
 
             if (isScanning) {
-                initAudio(); // Inizializza audio su primo tocco utente
+                initAudio();
                 btn.textContent = '⏸️ Ferma';
                 btn.classList.replace('btn-success', 'btn-warning');
                 overlay.classList.add('active');
                 loader.classList.add('active');
-                status.textContent = '🔍 Scansione attiva';
-                loadWorker().then(() => runScanLoop());
+                status.textContent = '⏳ Caricamento OCR...';
+                loadWorker().then(() => {
+                    status.textContent = '🔍 Scansione attiva';
+                    runScanLoop();
+                }).catch(err => {
+                    showToast('Errore caricamento OCR: ' + err.message, 'error');
+                    toggleScan(); // Ferma se fallisce
+                });
             } else {
                 btn.textContent = '▶️ Scansione';
                 btn.classList.replace('btn-warning', 'btn-success');
@@ -208,8 +212,11 @@
 
         async function loadWorker() {
             if (!worker) {
-                document.getElementById('statusText').textContent = '⏳ Caricamento OCR...';
-                worker = await Tesseract.createWorker('ita+eng', 1);
+                worker = await Tesseract.createWorker('ita+eng', 1, {
+                    logger: m => {
+                        if (m.status) document.getElementById('statusText').textContent = m.status;
+                    }
+                });
             }
             return worker;
         }
@@ -217,7 +224,7 @@
         async function runScanLoop() {
             if (!isScanning || isProcessing) return;
             isProcessing = true;
-            document.getElementById('statusText').textContent = '🔍 Analisi frame...';
+            document.getElementById('loader').textContent = '⏳ Analisi frame...';
 
             try {
                 const frameData = captureFrame();
@@ -225,9 +232,11 @@
                     const { data: { text } } = await worker.recognize(frameData);
                     extractAndAddCodes(text);
                 }
-            } catch (err) { console.warn('OCR fallito:', err); } 
-            finally {
+            } catch (err) { 
+                console.warn('OCR fallito:', err); 
+            } finally {
                 isProcessing = false;
+                document.getElementById('loader').textContent = '⏳ In attesa...';
                 if (isScanning) scanLoopId = setTimeout(runScanLoop, SCAN_INTERVAL);
             }
         }
@@ -235,17 +244,42 @@
         function captureFrame() {
             if (video.readyState < 2) return null;
             let w = video.videoWidth, h = video.videoHeight;
-            if (w > MAX_DIM || h > MAX_DIM) { const r = Math.min(MAX_DIM/w, MAX_DIM/h); w*=r; h*=r; }
-            processCanvas.width = Math.round(w); processCanvas.height = Math.round(h);
+            if (w > MAX_DIM || h > MAX_DIM) { 
+                const r = Math.min(MAX_DIM/w, MAX_DIM/h); 
+                w *= r; h *= r; 
+            }
+            processCanvas.width = Math.round(w); 
+            processCanvas.height = Math.round(h);
             ctx.drawImage(video, 0, 0, Math.round(w), Math.round(h));
             return processCanvas.toDataURL('image/jpeg', 0.75);
         }
 
-        // ======================== VALIDAZIONE & TABELLA ========================
+        // ======================== ✅ ESTRAZIONE CORRETTA ========================
         function extractAndAddCodes(rawText) {
-            // Estrae tutte le parole alfanumeriche di lunghezza >= 8
-            const words = rawText.match(/\b[A-Z0-9]{8,}\b/gi) || [];
-            const validMatches = words.filter(w => VALID_CODE_REGEX.test(w.toUpperCase()));
+            // 1. Pulizia base del testo OCR
+            const clean = rawText.replace(/[^A-Za-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+            const tokens = clean.split(/\s+/);
+            
+            const validMatches = [];
+            const seenInFrame = new Set();
+
+            for (const token of tokens) {
+                // Rimuove caratteri residui
+                let t = token.replace(/[^A-Za-z0-9]/g, '');
+                if (t.length < 10) continue;
+                if (!t.toUpperCase().startsWith('BDBCF')) continue;
+
+                // Prendi esattamente i primi 10 caratteri
+                let candidate = t.substring(0, 10).toUpperCase();
+
+                // Validazione rigorosa: BDBCF + 5 cifre, esclusa lettera 'O'
+                if (VALID_CODE_REGEX.test(candidate) && !candidate.includes('O')) {
+                    if (!seenInFrame.has(candidate)) {
+                        validMatches.push(candidate);
+                        seenInFrame.add(candidate);
+                    }
+                }
+            }
 
             if (validMatches.length === 0) return;
 
@@ -254,15 +288,14 @@
             const now = Date.now();
 
             validMatches.forEach(code => {
-                const upper = code.toUpperCase();
-                if (tableData.some(r => r.code === upper)) {
-                    dupes.push(upper);
+                if (tableData.some(r => r.code === code)) {
+                    dupes.push(code);
                 } else {
-                    newCodes.push(upper);
+                    newCodes.push(code);
                 }
             });
 
-            // Alert duplicati con debounce (5s)
+            // Alert duplicati con debounce 5s
             const freshDupes = dupes.filter(c => !duplicateAlerts.has(c) || now - duplicateAlerts.get(c) > 5000);
             if (freshDupes.length > 0) {
                 freshDupes.forEach(c => duplicateAlerts.set(c, now));
@@ -270,16 +303,21 @@
             }
 
             if (newCodes.length > 0) {
-                // Effetto visivo + audio
+                // Feedback visivo + audio
                 const overlay = document.getElementById('scanOverlay');
                 overlay.classList.add('found');
-                setTimeout(() => overlay.classList.remove('found'), 400);
+                setTimeout(() => overlay.classList.remove('found'), 500);
                 playBeepAndVibrate();
 
-                // Aggiunta tabella
+                // Aggiorna tabella
                 const startId = idCounter;
                 newCodes.forEach(code => {
-                    tableData.push({ id: startId + tableData.length, code, timestamp: new Date(), thumb: processCanvas.toDataURL('image/jpeg', 0.6) });
+                    tableData.push({ 
+                        id: startId + tableData.length, 
+                        code, 
+                        timestamp: new Date(), 
+                        thumb: processCanvas.toDataURL('image/jpeg', 0.6) 
+                    });
                 });
                 idCounter += newCodes.length;
                 renderTable();
@@ -288,6 +326,7 @@
             }
         }
 
+        // ======================== UI & EXPORT ========================
         function renderTable() {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = tableData.length ? '' : '<tr><td colspan="4" class="empty-state">Nessun codice</td></tr>';
@@ -298,69 +337,9 @@
                 tbody.appendChild(tr);
             });
             document.getElementById('countTxt').textContent = `${tableData.length} codici`;
-            document.getElementById('btnExportAlbum').disabled = tableData.length === 0;
-            document.getElementById('btnExportCSV').disabled = tableData.length === 0;
-            document.getElementById('btnClear').disabled = tableData.length === 0;
+            ['btnExportAlbum', 'btnExportCSV', 'btnClear'].forEach(id => {
+                document.getElementById(id).disabled = tableData.length === 0;
+            });
         }
 
-        // ======================== EXPORT ========================
-        async function downloadAlbum() {
-            if (tableData.length === 0) return;
-            showToast('📦 Generazione album in corso...', 'warning');
-            const zip = new JSZip();
-            const imgFolder = zip.folder("immagini");
-            let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Album BDBCF</title><style>body{font-family:system-ui;background:#0f0f1a;color:#eee;padding:20px;margin:0;}h1{text-align:center;color:#00d2ff;} .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px;} .card{background:#1a1a2e;padding:10px;border-radius:8px;text-align:center;border:1px solid #2a2a4a;} img{width:100%;border-radius:4px;margin-bottom:5px;} .code{font-weight:bold;color:#00b894;font-size:1.1rem;letter-spacing:1px;}</style></head><body><h1>📷 Album Scansioni</h1><div class="grid">`;
-
-            for (const row of tableData) {
-                const base64 = row.thumb.split(',')[1];
-                const fileName = `${row.code}.jpg`;
-                imgFolder.file(fileName, base64, {base64: true});
-                html += `<div class="card"><img src="immagini/${fileName}"><div class="code">${row.code}</div></div>`;
-            }
-            html += `</div></body></html>`;
-            zip.file("album.html", html);
-
-            const blob = await zip.generateAsync({type: "blob"});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `BDB_Album_${Date.now()}.zip`;
-            a.click(); URL.revokeObjectURL(url);
-            showToast('📦 Album ZIP scaricato', 'success');
-        }
-
-        function downloadCSV() {
-            if (!tableData.length) return;
-            let csv = 'ID,Codice BDBCF,Timestamp\n';
-            tableData.forEach(r => csv += `${r.id},"${r.code}","${r.timestamp.toLocaleString('it-IT')}"\n`);
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `BDB_Dati_${Date.now()}.csv`;
-            a.click(); URL.revokeObjectURL(url);
-            showToast('📄 CSV esportato', 'success');
-        }
-
-        function clearTable() {
-            if (confirm('Svuotare tutta la tabella e cancellare i dati?')) {
-                tableData = []; idCounter = 1; renderTable();
-                document.getElementById('foundCount').textContent = '0 validi';
-                showToast('🗑️ Dati cancellati', 'warning');
-            }
-        }
-
-        function showToast(msg, type='success') {
-            const t = document.createElement('div');
-            t.className = `toast ${type}`; t.textContent = msg;
-            document.getElementById('toast-container').appendChild(t);
-            setTimeout(() => t.remove(), 3500);
-        }
-
-        // Cleanup
-        window.addEventListener('beforeunload', async () => {
-            isScanning = false;
-            if (worker) await worker.terminate();
-            if (stream) stream.getTracks().forEach(t => t.stop());
-        });
-    </script>
-</body>
-</html>
+        async function downloadAlbum()
