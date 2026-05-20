@@ -79,8 +79,8 @@
         <h3 style="margin-bottom:10px; color:var(--primary);">📊 Tabella Codici</h3>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>#</th><th>Codice</th><th>Ora</th><th style="width:60px;">🖼️</th></tr></thead>
-                <tbody id="tableBody"><tr><td colspan="4" class="empty-state">Nessun codice acquisito</td></tr></tbody>
+                <thead><tr><th>Codice</th><th>Ora</th><th style="width:60px;">🖼️</th></tr></thead>
+                <tbody id="tableBody"><tr><td colspan="3" class="empty-state">Nessun codice acquisito</td></tr></tbody>
             </table>
         </div>
         <div class="btn-row">
@@ -98,7 +98,6 @@
         const ctx = processCanvas.getContext('2d', { willReadFrequently: true });
         
         let tableData = [];
-        let idCounter = 1;
         let stream = null, videoTrack = null;
         let worker = null;
         let isScanning = false, isProcessing = false, flashOn = false;
@@ -268,9 +267,9 @@
                 setTimeout(() => overlay.classList.remove('found'), 500);
                 playBeepAndVibrate();
 
-                // ✅ FIX NUMERAZIONE: assegnazione sequenziale corretta
+                // ✅ Salvataggio senza ID
                 newCodes.forEach(code => {
-                    tableData.push({ id: idCounter++, code, timestamp: new Date(), thumb: processCanvas.toDataURL('image/jpeg', 0.6) });
+                    tableData.push({ code, timestamp: new Date(), thumb: processCanvas.toDataURL('image/jpeg', 0.6) });
                 });
 
                 renderTable();
@@ -279,25 +278,23 @@
             }
         }
 
-        // ======================== ✏️ MODIFICA SEMPLICE (NUOVO) ========================
+        // ======================== ✏️ MODIFICA SEMPLICE ========================
         function editCode(index) {
             if (index < 0 || index >= tableData.length) return;
             const item = tableData[index];
             
-            // Prompt nativo: semplice, sicuro, funziona su tutti i mobile
-            const newCode = prompt(`Modifica codice #${item.id}:`, item.code);
-            if (newCode === null) return; // Annullato
+            const newCode = prompt(`Modifica codice:`, item.code);
+            if (newCode === null) return;
 
             const cleanCode = newCode.trim().toUpperCase();
+            if (!cleanCode) return;
             if (!/^[A-Z0-9]+$/.test(cleanCode)) { alert("❌ Caratteri non validi"); return; }
             if (!VALID_CODE_REGEX.test(cleanCode)) { alert("❌ Formato non valido (BDBCF + 5 hex)"); return; }
             if (cleanCode.includes('O')) { alert("❌ La lettera O non è consentita"); return; }
             
-            // Controllo duplicati
             const isDuplicate = tableData.some((r, idx) => idx !== index && r.code === cleanCode);
             if (isDuplicate) { alert("⚠️ Codice già presente in tabella"); return; }
 
-            // Aggiorna e aggiorna tabella
             tableData[index].code = cleanCode;
             renderTable();
             showToast("✅ Codice aggiornato", "success");
@@ -306,15 +303,13 @@
         // ======================== 📊 RENDER TABELLA ========================
         function renderTable() {
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = tableData.length ? '' : '<tr><td colspan="4" class="empty-state">Nessun codice acquisito</td></tr>';
+            tbody.innerHTML = tableData.length ? '' : '<tr><td colspan="3" class="empty-state">Nessun codice acquisito</td></tr>';
             
-            // Mostra ultimi in cima
             [...tableData].reverse().forEach((row, reverseIdx) => {
                 const originalIdx = tableData.length - 1 - reverseIdx;
                 const tr = document.createElement('tr');
                 const time = row.timestamp.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' });
-                // ✅ Aggiunto onclick semplice e affidabile
-                tr.innerHTML = `<td>${row.id}</td><td style="font-weight:600;color:var(--primary);">${row.code}</td><td>${time}</td><td><img src="${row.thumb}" class="thumb" onclick="editCode(${originalIdx})" alt="Modifica"></td>`;
+                tr.innerHTML = `<td style="font-weight:600;color:var(--primary);">${row.code}</td><td>${time}</td><td><img src="${row.thumb}" class="thumb" onclick="editCode(${originalIdx})" alt="Modifica"></td>`;
                 tbody.appendChild(tr);
             });
 
@@ -348,8 +343,17 @@
 
         function downloadCSV() {
             if (!tableData.length) return;
-            let csv = 'ID,Codice BDBCF,Timestamp\n';
-            tableData.forEach(r => csv += `${r.id},"${r.code}","${r.timestamp.toLocaleString('it-IT')}"\n`);
+            let csv = 'Codice BDBCF,Timestamp\n';
+            tableData.forEach(r => csv += `"${r.code}","${r.timestamp.toLocaleString('it-IT')}"\n`);
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement(
+            const a = document.createElement('a');
+            a.href = url; a.download = `BDB_Dati_${Date.now()}.csv`;
+            a.click(); URL.revokeObjectURL(url);
+            showToast('📄 CSV esportato', 'success');
+        }
+
+        function clearTable() {
+            if (confirm('Svuotare tutta la tabella?')) {
+                tableData = []; renderTable();
+                document.getElement
