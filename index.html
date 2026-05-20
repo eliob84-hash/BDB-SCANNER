@@ -49,9 +49,6 @@
         .loader { display: none; text-align: center; padding: 6px; font-size: 0.85rem; color: var(--muted); }
         .loader.active { display: block; }
         .empty-state { text-align: center; padding: 24px; color: var(--muted); font-style: italic; }
-        .perm-fail { background: var(--error); color: #fff; padding: 12px; border-radius: 8px; margin: 8px 0; font-size: 0.9rem; display: none; }
-        .perm-fail.show { display: block; }
-        .perm-fail a { color: #fff; text-decoration: underline; font-weight: bold; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
         .modal.active { display: flex; }
         .modal-content { background: var(--card); border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; position: relative; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -68,17 +65,16 @@
     <div id="toast-container" class="toast-container"></div>
 
     <div class="card">
-        <div id="permFailBox" class="perm-fail"></div>
         <div class="media-box">
             <video id="video" autoplay playsinline muted></video>
             <canvas id="processCanvas"></canvas>
             <div class="scan-overlay" id="scanOverlay"></div>
-            <div id="cameraPlaceholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#111; color:#666; font-size:0.9rem; text-align:center; padding:10px;">Premi "Avvia Camera"</div>
+            <div id="cameraPlaceholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#111; color:#666; font-size:0.9rem;">Premi "Avvia Camera"</div>
         </div>
-        <button class="btn btn-primary" id="btnStart">🎬 Avvia Camera</button>
+        <button class="btn btn-primary" id="btnStart" onclick="startCamera()">📷 Avvia Camera</button>
         <div class="btn-row">
-            <button class="btn btn-warning" id="btnFlash" disabled>🔦 Flash</button>
-            <button class="btn btn-success" id="btnToggleScan" disabled>▶️ Scansione</button>
+            <button class="btn btn-warning" id="btnFlash" onclick="toggleFlash()" disabled>🔦 Flash</button>
+            <button class="btn btn-success" id="btnToggleScan" onclick="toggleScan()" disabled>▶️ Scansione</button>
         </div>
         <div class="loader" id="loader">⏳ Analisi frame...</div>
         <div class="status-bar">
@@ -96,23 +92,23 @@
             </table>
         </div>
         <div class="btn-row">
-            <button class="btn btn-primary" id="btnExportAlbum" disabled>📦 Album ZIP</button>
-            <button class="btn btn-warning" id="btnExportCSV" disabled>📄 CSV</button>
+            <button class="btn btn-primary" id="btnExportAlbum" onclick="downloadAlbum()" disabled>📦 Album ZIP</button>
+            <button class="btn btn-warning" id="btnExportCSV" onclick="downloadCSV()" disabled>📄 CSV</button>
         </div>
-        <button class="btn btn-danger" id="btnClear" disabled>🗑️ Svuota</button>
+        <button class="btn btn-danger" id="btnClear" onclick="clearTable()" disabled>🗑️ Svuota</button>
         <p id="countTxt" style="text-align:center; margin-top:8px; font-size:0.8rem; color:#888;">0 codici</p>
     </div>
 
-    <div id="editModal" class="modal">
+    <div id="editModal" class="modal" onclick="if(event.target===this) closeEditModal()">
         <div class="modal-content">
-            <button class="modal-close">✕</button>
+            <button class="modal-close" onclick="closeEditModal()">✕</button>
             <h3 style="margin-bottom:12px; color:var(--primary); text-align:center;">🔍 Verifica & Modifica</h3>
             <img id="modalImage" src="" alt="Anteprima">
             <input type="text" id="modalCodeInput" placeholder="BDBCF00000" maxlength="10" autocomplete="off" inputmode="text">
             <p id="modalHint">Formato: BDBCF + 5 hex [0-9A-F] (vietata la O)</p>
             <div class="btn-row">
-                <button class="btn btn-success" id="btnSaveModal">💾 Salva</button>
-                <button class="btn btn-danger" id="btnCancelModal">❌ Annulla</button>
+                <button class="btn btn-success" onclick="saveCode()">💾 Salva</button>
+                <button class="btn btn-danger" onclick="closeEditModal()">❌ Annulla</button>
             </div>
         </div>
     </div>
@@ -137,75 +133,46 @@
         const SCAN_INTERVAL = 1000;
         const VALID_CODE_REGEX = /^BDBCF[0-9A-F]{5}$/i;
 
-        // ======================== INIT SICURA ========================
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('btnStart').addEventListener('click', startCamera);
-            document.getElementById('btnFlash').addEventListener('click', toggleFlash);
-            document.getElementById('btnToggleScan').addEventListener('click', toggleScan);
-            document.getElementById('btnExportAlbum').addEventListener('click', downloadAlbum);
-            document.getElementById('btnExportCSV').addEventListener('click', downloadCSV);
-            document.getElementById('btnClear').addEventListener('click', clearTable);
-            document.getElementById('btnSaveModal').addEventListener('click', saveCode);
-            document.getElementById('btnCancelModal').addEventListener('click', closeEditModal);
-            document.querySelector('.modal-close').addEventListener('click', closeEditModal);
-            document.getElementById('editModal').addEventListener('click', (e) => { if(e.target === e.currentTarget) closeEditModal(); });
-        });
-
-        // ======================== CAMERA ========================
+        // ======================== CAMERA (Logica stabile ripristinata) ========================
         async function startCamera() {
-            const btn = document.getElementById('btnStart');
-            const placeholder = document.getElementById('cameraPlaceholder');
-            const failBox = document.getElementById('permFailBox');
-            failBox.classList.remove('show');
-            btn.disabled = true;
-            btn.textContent = '⏳ Richiesta...';
-            placeholder.textContent = 'Richiesta accesso fotocamera...';
-
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' },
+                    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
                     audio: false
                 });
                 video.srcObject = stream;
                 videoTrack = stream.getVideoTracks()[0];
                 
                 video.onloadedmetadata = () => {
-                    placeholder.style.display = 'none';
+                    document.getElementById('cameraPlaceholder').style.display = 'none';
                     document.getElementById('btnToggleScan').disabled = false;
                     document.getElementById('btnFlash').disabled = false;
-                    btn.textContent = '🟢 Camera Attiva';
+                    document.getElementById('btnStart').textContent = '📷 Camera Attiva';
+                    document.getElementById('btnStart').disabled = true;
                     showToast('🟢 Camera pronta', 'success');
                 };
             } catch (err) {
-                btn.disabled = false;
-                btn.textContent = '🔄 Riprova';
-                placeholder.textContent = 'Errore accesso fotocamera';
-                showPermError(err);
+                showToast('❌ Errore camera: ' + err.message, 'error');
+                document.getElementById('btnStart').disabled = false;
+                document.getElementById('btnStart').textContent = '📷 Riprova';
             }
         }
 
-        function showPermError(err) {
-            const failBox = document.getElementById('permFailBox');
-            let msg = `❌ <b>${err.name}</b>: ${err.message}<br><br>`;
-            msg += `Se il prompt non appare:<br>1. Chrome ⋮ → Impostazioni → Privacy → Permessi sito → Fotocamera → <a href="chrome://settings/content/camera" target="_blank">Consenti</a><br>2. Ricarica la pagina`;
-            failBox.innerHTML = msg;
-            failBox.classList.add('show');
-            showToast('Permessi fotocamera bloccati', 'error');
-        }
-
-        async function toggleFlash() {
+        function toggleFlash() {
             if (!videoTrack) return;
             try {
                 const caps = videoTrack.getCapabilities();
                 if (!caps.torch) throw new Error('Non supportato');
                 flashOn = !flashOn;
-                await videoTrack.applyConstraints({ advanced: [{ torch: flashOn }] });
+                videoTrack.applyConstraints({ advanced: [{ torch: flashOn }] });
                 const btn = document.getElementById('btnFlash');
                 btn.textContent = flashOn ? '🔦 Flash ON' : '🔦 Flash';
                 btn.classList.toggle('btn-warning', !flashOn);
                 btn.classList.toggle('btn-success', flashOn);
                 showToast(flashOn ? '🔦 Flash acceso' : '🔦 Flash spento', flashOn ? 'success' : 'warning');
-            } catch (e) { showToast('⚠️ Flash non supportato', 'warning'); }
+            } catch (e) {
+                showToast('⚠️ Flash non supportato', 'warning');
+            }
         }
 
         // ======================== AUDIO & VIBRAZIONE ========================
@@ -229,7 +196,7 @@
             if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
         }
 
-        // ======================== SCANSIONE ========================
+        // ======================== SCANSIONE CONTINUA ========================
         function toggleScan() {
             isScanning = !isScanning;
             const btn = document.getElementById('btnToggleScan');
@@ -298,7 +265,7 @@
             return processCanvas.toDataURL('image/jpeg', 0.5);
         }
 
-        // ======================== OCR ========================
+        // ======================== OCR & VALIDAZIONE ========================
         function extractAndAddCodes(rawText) {
             const clean = rawText.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
             const matches = clean.match(/BDBCF[0-9A-F]{5}/g) || [];
@@ -337,11 +304,51 @@
             }
         }
 
-        // ======================== MODAL ========================
+        // ======================== MODAL & EDIT ========================
         function openEditModal(index) {
             currentEditIndex = parseInt(index);
             const item = tableData[currentEditIndex];
             document.getElementById('modalImage').src = item.thumb;
             const input = document.getElementById('modalCodeInput');
             input.value = item.code;
-            docu
+            document.getElementById('editModal').classList.add('active');
+            setTimeout(() => { input.focus(); input.select(); }, 100);
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+            currentEditIndex = -1;
+        }
+
+        function saveCode() {
+            const input = document.getElementById('modalCodeInput');
+            const newCode = input.value.trim().toUpperCase();
+
+            if (!/^[A-Z0-9]+$/.test(newCode)) { showToast('Caratteri non validi', 'error'); return; }
+            if (!VALID_CODE_REGEX.test(newCode)) { showToast('Formato non valido', 'error'); return; }
+            if (newCode.includes('O')) { showToast('La lettera O non è consentita', 'error'); return; }
+
+            const isDuplicate = tableData.some((r, idx) => idx !== currentEditIndex && r.code === newCode);
+            if (isDuplicate) { showToast('⚠️ Codice già presente', 'warning'); return; }
+
+            tableData[currentEditIndex].code = newCode;
+            renderTable();
+            closeEditModal();
+            showToast('✅ Codice aggiornato', 'success');
+        }
+
+        // ======================== TABELLA ========================
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            if (tableData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Nessun codice acquisito</td></tr>';
+                document.getElementById('countTxt').textContent = '0 codici';
+                ['btnExportAlbum', 'btnExportCSV', 'btnClear'].forEach(id => document.getElementById(id).disabled = true);
+                return;
+            }
+
+            for (let i = tableData.length - 1; i >= 0; i--) {
+                const row = tableData[i];
+                const tr = document.createElement('tr');
+ 
