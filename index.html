@@ -1,34 +1,109 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>OCR Scanner Test</title>
+<title>OCR Scanner Seriali</title>
 
-<!-- ✅ SCRIPT CORRETTI -->
+<!-- ✅ TESSERACT CORRETTO -->
 https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.jsscript>
 
 <style>
-body { font-family: system-ui; background:#111; color:white; padding:10px }
-video { width:100%; border:2px solid #444 }
-#log { margin-top:10px; font-size:14px }
+body {
+  font-family: system-ui, sans-serif;
+  background: #111;
+  color: white;
+  padding: 10px;
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+video {
+  width: 100%;
+  border-radius: 12px;
+  border: 2px solid #333;
+}
+
+/* Barra scanner */
+.scan-line {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: red;
+  animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+  0% { top: 15%; }
+  50% { top: 85%; }
+  100% { top: 15%; }
+}
+
+.scanner {
+  position: relative;
+}
+
+table {
+  width: 100%;
+  margin-top: 12px;
+  background: white;
+  color: black;
+  border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  text-align: center;
+}
+
+.thumb {
+  width: 80px;
+  border-radius: 6px;
+}
 </style>
 </head>
 
 <body>
 
-<h2>Scanner OCR (test)</h2>
+<h2>Scanner Seriali</h2>
 
-<video id="video" autoplay playsinline></video>
-<div id="log">In attesa...</div>
+<div class="scanner">
+  <video id="video" autoplay playsinline></video>
+  <div class="scan-line"></div>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>Seriale</th>
+  <th>Miniatura</th>
+</tr>
+</thead>
+<tbody id="results"></tbody>
+</table>
 
 <canvas id="canvas" hidden></canvas>
 
 <script>
 const SERIAL_REGEX = /^BDBCF00[0-9A-F]{3}$/;
+
 let worker;
-let scanning = false;
+let scanning = true;
+let foundSerials = [];
+
+// beep semplice
+const beep = new Audio(
+  "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
+);
 
 async function start() {
   // CAMERA
@@ -36,7 +111,6 @@ async function start() {
     video: { facingMode: "environment" }
   });
   video.srcObject = stream;
-
   await new Promise(r => video.onloadedmetadata = r);
 
   // OCR WORKER
@@ -44,7 +118,6 @@ async function start() {
   await worker.loadLanguage("eng");
   await worker.initialize("eng");
 
-  scanning = true;
   scanLoop();
 }
 
@@ -57,23 +130,49 @@ async function scanLoop() {
   canvas.width = video.videoWidth / 2;
   canvas.height = video.videoHeight / 2;
 
-  ctx.filter = "grayscale(100%) contrast(180%)";
+  // ✅ ottimizzato per plastica bianca
+  ctx.filter = "grayscale(100%) contrast(180%) brightness(110%)";
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
   const { data } = await worker.recognize(canvas);
 
   for (const w of data.words) {
-    const txt = w.text.replace(/O/g,"0").trim();
-    if (SERIAL_REGEX.test(txt)) {
-      document.getElementById("log").textContent =
-        "TROVATO: " + txt;
+    const text = w.text.replace(/O/g,"0").trim();
+    if (!SERIAL_REGEX.test(text)) continue;
+    if (foundSerials.includes(text)) continue;
 
-      navigator.vibrate(200);
-      break;
-    }
+    foundSerials.push(text);
+
+    // RITAGLIO SERIALe
+    const { x0,y0,x1,y1 } = w.bbox;
+    const wdt = x1-x0;
+    const hgt = y1-y0;
+
+    const crop = document.createElement("canvas");
+    crop.width = wdt;
+    crop.height = hgt;
+    crop.getContext("2d")
+      .drawImage(canvas, x0, y0, wdt, hgt, 0, 0, wdt, hgt);
+
+    const thumb = crop.toDataURL("image/jpeg");
+
+    addRow(text, thumb);
+
+    // FEEDBACK OPERATORE
+    beep.play();
+    navigator.vibrate(200);
   }
 
   setTimeout(scanLoop, 1200);
+}
+
+function addRow(serial, img) {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>${serial}</td>
+    <td><img class="thumb" src="${img}"></td>
+  `;
+  document.getElementById("results").appendChild(tr);
 }
 
 start();
