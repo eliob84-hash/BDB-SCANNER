@@ -66,7 +66,8 @@
 
     <div class="card">
         <div class="media-box">
-            <video id="video" autoplay playsinline muted></video>
+            <!-- ✅ RIMOSSO autoplay per evitare conflitti con il prompt dei permessi -->
+            <video id="video" playsinline muted></video>
             <canvas id="processCanvas"></canvas>
             <div class="scan-overlay" id="scanOverlay"></div>
             <div id="cameraPlaceholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#111; color:#666; font-size:0.9rem;">Premi "Avvia Camera"</div>
@@ -133,28 +134,46 @@
         const SCAN_INTERVAL = 1000;
         const VALID_CODE_REGEX = /^BDBCF[0-9A-F]{5}$/i;
 
-        // ======================== CAMERA (Logica stabile ripristinata) ========================
+        // ======================== CAMERA (FIX PERMOBILE) ========================
         async function startCamera() {
+            const btn = document.getElementById('btnStart');
+            const placeholder = document.getElementById('cameraPlaceholder');
+
+            // Verifica contesto sicuro
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showToast('❌ Fotocamera disponibile solo su HTTPS', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Richiesta...';
+            placeholder.textContent = 'Richiesta accesso fotocamera...';
+
             try {
+                // ✅ Vincoli MINIMALI per garantire l'apertura del prompt
                 stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+                    video: { facingMode: 'environment' },
                     audio: false
                 });
+                
                 video.srcObject = stream;
                 videoTrack = stream.getVideoTracks()[0];
                 
+                // ✅ Avvio manuale (più affidabile di autoplay su mobile)
+                await video.play();
+
                 video.onloadedmetadata = () => {
-                    document.getElementById('cameraPlaceholder').style.display = 'none';
+                    placeholder.style.display = 'none';
                     document.getElementById('btnToggleScan').disabled = false;
                     document.getElementById('btnFlash').disabled = false;
-                    document.getElementById('btnStart').textContent = '📷 Camera Attiva';
-                    document.getElementById('btnStart').disabled = true;
+                    btn.textContent = '📷 Camera Attiva';
                     showToast('🟢 Camera pronta', 'success');
                 };
             } catch (err) {
-                showToast('❌ Errore camera: ' + err.message, 'error');
-                document.getElementById('btnStart').disabled = false;
-                document.getElementById('btnStart').textContent = '📷 Riprova';
+                btn.disabled = false;
+                btn.textContent = '📷 Riprova';
+                placeholder.textContent = 'Errore accesso o permesso negato';
+                showToast('❌ ' + err.message, 'error');
             }
         }
 
@@ -339,16 +358,4 @@
 
         // ======================== TABELLA ========================
         function renderTable() {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-            if (tableData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Nessun codice acquisito</td></tr>';
-                document.getElementById('countTxt').textContent = '0 codici';
-                ['btnExportAlbum', 'btnExportCSV', 'btnClear'].forEach(id => document.getElementById(id).disabled = true);
-                return;
-            }
-
-            for (let i = tableData.length - 1; i >= 0; i--) {
-                const row = tableData[i];
-                const tr = document.createElement('tr');
- 
+            const tbody = document.ge
