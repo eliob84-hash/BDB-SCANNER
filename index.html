@@ -4,96 +4,223 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Scanner BDBCF</title>
+<title>📷 Scanner BDBCF PRO+</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <style>
 body {
-  font-family: system-ui;
+  margin:0;
+  font-family:system-ui;
   background:#0f0f1a;
   color:#fff;
   text-align:center;
 }
 
-video { width:100%; }
+.container {
+  position:relative;
+}
 
-button {
-  width:90%;
-  padding:12px;
-  margin:6px;
-  border:none;
+video {
+  width:100%;
+  background:black;
+}
+
+/* area scan */
+.scan-box {
+  position:absolute;
+  left:15%;
+  top:30%;
+  width:70%;
+  height:25%;
+  border:2px dashed #00d2ff;
   border-radius:10px;
 }
 
-.primary { background:#00d2ff; }
-.success { background:#00b894; }
-.training { background:#fdcb6e; color:#000; }
+/* linea scanner 🔴 */
+.scan-line {
+  position:absolute;
+  width:100%;
+  height:2px;
+  background:red;
+  animation:scan 1.5s infinite;
+}
+
+@keyframes scan {
+  0% { top:0 }
+  100% { top:100% }
+}
+
+button {
+  width:90%;
+  padding:14px;
+  margin:8px;
+  border:none;
+  border-radius:10px;
+  font-size:1rem;
+  background:#00d2ff;
+  cursor:pointer;
+}
+
+.status {
+  font-weight:bold;
+  padding:8px;
+}
+
+.ok { color:#00ff9c; }
+.err { color:#ff4d4d; }
 
 </style>
 </head>
 
 <body>
 
-<h2>🤖 AI Scanner BDBCF</h2>
+<h2>📷 Scanner BDBCF PRO+</h2>
 
-<video id="video" playsinline muted></video>
+<div class="container">
+  <video id="video" playsinline muted></video>
 
-<button class="primary" onclick="startCamera()">📸 Camera</button>
-<button class="success" onclick="scan()">🔍 Scan</button>
+  <div class="scan-box">
+    <div class="scan-line"></div>
+  </div>
+</div>
 
-<h3>🧠 Training</h3>
-<div id="trainButtons"></div>
+<button onclick="toggleCamera()">📸 Camera</button>
+<button onclick="toggleFlash()">🔦 Flash</button>
 
-<p id="status">Pronto</p>
+<div id="status" class="status">🟡 Pronto</div>
 
 <script>
-let video = document.getElementById("video");
-let stream;
+const video = document.getElementById("video");
 
-let classifier;
-let modelReady = false;
+let stream = null;
+let track = null;
+let flashOn = false;
 
-const HEX = "0123456789ABCDEF".split("");
+let worker;
+let scanning = false;
+let busy = false;
 
-// ================= INIT AI =================
-async function initAI(){
-  classifier = knnClassifier.create();
-  modelReady = true;
+let votes = new Map();
 
-  // crea bottoni training
-  const container = document.getElementById("trainButtons");
+const REGEX = /^BDBCF00[0-9A-F]{3}$/;
 
-  HEX.forEach(ch => {
-    let btn = document.createElement("button");
-    btn.textContent = "Add " + ch;
-    btn.className = "training";
+// ================= CAMERA TOGGLE =================
+async function toggleCamera(){
 
-    btn.onclick = () => addExample(ch);
-    container.appendChild(btn);
-  });
+  if(stream){
+    // STOP
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+    scanning = false;
+    setStatus("⏹️ Camera spenta");
+    return;
+  }
+
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" }
+    });
+
+    video.srcObject = stream;
+    await video.play();
+
+    track = stream.getVideoTracks()[0];
+
+    setStatus("🟡 Avvio OCR...");
+
+    worker = await Tesseract.createWorker("eng");
+
+    await worker.setParameters({
+      tessedit_char_whitelist: "BDBCF0123456789ABCDEF",
+      tessedit_pageseg_mode: 7
+    });
+
+    scanning = true;
+    loop();
+
+    setStatus("🟢 Scanner attivo");
+
+  } catch(e){
+    alert("Errore camera: " + e.message);
+  }
 }
 
-// ================= CAMERA =================
-async function startCamera(){
-  stream = await navigator.mediaDevices.getUserMedia({
-    video:{ facingMode:"environment" }
-  });
+// ================= FLASH =================
+async function toggleFlash(){
 
-  video.srcObject = stream;
-  await video.play();
+  if(!track) return;
 
-  if(!modelReady) await initAI();
+  try{
+    const cap = track.getCapabilities();
 
-  status("🟢 Camera attiva");
+    if(!cap.torch){
+      setStatus("⚠️ Flash non supportato");
+      return;
+    }
+
+    flashOn = !flashOn;
+
+    await track.applyConstraints({
+      advanced: [{ torch: flashOn }]
+    });
+
+    setStatus(flashOn ? "🔦 Flash ON" : "🔦 Flash OFF");
+
+  } catch(e){
+    setStatus("❌ Errore flash");
+  }
 }
 
-// ================= CAPTURE =================
-function getCharImage(){
+// ================= LOOP =================
+function loop(){
+  if(!scanning) return;
+
+  if(!busy){
+    scanFrame();
+  }
+
+  setTimeout(loop, 700);
+}
+
+// ================= SCAN =================
+async function scanFrame(){
+
+  if(video.readyState < 2) return;
+
+  busy = true;
+
+  try{
+
+    const variants = getVariants();
+
+    for(const canvas of variants){
+      const result = await worker.recognize(canvas);
+      process(result.data.text);
+    }
+
+  } catch(e){
+    console.log(e);
+  }
+
+  busy = false;
+}
+
+// ================= VARIANTI =================
+function getVariants(){
+  return [
+    preprocess(0,false),
+    preprocess(3,false),
+    preprocess(-3,false),
+    preprocess(0,true)
+  ];
+}
+
+// ================= PREPROCESS =================
+function preprocess(angle=0, invert=false){
 
   const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d", { willReadFrequently:true });
 
   const w = video.videoWidth;
   const h = video.videoHeight;
@@ -101,55 +228,95 @@ function getCharImage(){
   const cw = w * 0.7;
   const ch = h * 0.25;
 
-  const x = (w-cw)/2;
-  const y = (h-ch)/2;
+  const x = (w - cw) / 2;
+  const y = (h - ch) / 2;
 
-  canvas.width = 64;
-  canvas.height = 64;
+  canvas.width = 600;
+  canvas.height = 200;
 
-  ctx.drawImage(video, x, y, cw, ch, 0, 0, 64, 64);
+  ctx.translate(300,100);
+  ctx.rotate(angle * Math.PI/180);
 
-  return tf.browser.fromPixels(canvas)
-           .mean(2)
-           .expandDims(2)
-           .toFloat()
-           .div(255)
-           .reshape([1,64,64,1]);
-}
+  ctx.drawImage(video, x, y, cw, ch, -300, -100, 600, 200);
 
-// ================= TRAINING =================
-async function addExample(label){
+  let img = ctx.getImageData(0,0,600,200);
+  let d = img.data;
 
-  const img = getCharImage();
+  for(let i=0;i<d.length;i+=4){
 
-  classifier.addExample(img, label);
+    let gray = (d[i]+d[i+1]+d[i+2])/3;
 
-  status("✅ Training " + label);
-}
+    if(invert) gray = 255-gray;
 
-// ================= SCAN =================
-async function scan(){
+    let val = gray > 140 ? 255 : 0;
 
-  if(classifier.getNumClasses() === 0){
-    alert("⚠️ Prima fai training!");
-    return;
+    d[i]=d[i+1]=d[i+2]=val;
   }
 
-  const img = getCharImage();
+  ctx.putImageData(img,0,0);
 
-  const result = await classifier.predictClass(img);
+  return canvas;
+}
 
-  let predicted = result.label;
+// ================= PROCESS =================
+function process(text){
 
-  // costruzione codice simulata (prefix fisso)
-  let code = "BDBCF" + predicted.repeat(5);
+  let clean = normalize(text);
 
-  status("✅ " + code);
+  const matches = clean.match(/BDBCF00[0-9A-F]{3}/g) || [];
+
+  matches.forEach(code => {
+
+    if(!REGEX.test(code)) return;
+
+    let count = votes.get(code) || 0;
+    count++;
+
+    votes.set(code, count);
+
+    if(count >= 2){
+      confirm(code);
+      votes.clear();
+    }
+  });
+}
+
+// ================= NORMALIZE =================
+function normalize(text){
+  return text.toUpperCase()
+    .replace(/O/g,"0")
+    .replace(/I/g,"1")
+    .replace(/L/g,"1")
+    .replace(/S/g,"5")
+    .replace(/[^A-Z0-9]/g,"");
+}
+
+// ================= SUCCESS =================
+function confirm(code){
+
+  setStatus("✅ " + code, true);
+
+  beep();
+  if(navigator.vibrate) navigator.vibrate(120);
+
+  document.body.style.background="#033";
+  setTimeout(()=> document.body.style.background="#0f0f1a",100);
+}
+
+// ================= AUDIO =================
+function beep(){
+  const ctx = new AudioContext();
+  const osc = ctx.createOscillator();
+  osc.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + 0.08);
 }
 
 // ================= UI =================
-function status(msg){
-  document.getElementById("status").textContent = msg;
+function setStatus(msg, ok=false){
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.className = "status " + (ok?"ok":"");
 }
 </script>
 
