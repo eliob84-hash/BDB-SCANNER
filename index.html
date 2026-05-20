@@ -4,32 +4,92 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scanner BDBCF</title>
+<title>Scanner BDBCF PRO</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <style>
-body { font-family: Arial; background:#111;color:#eee;padding:10px; }
-button { padding:10px;margin:5px;border:none;border-radius:6px;cursor:pointer; }
-#video { width:100%;border-radius:10px; }
-table { width:100%;margin-top:10px;border-collapse:collapse; }
-td,th { border:1px solid #333;padding:6px;text-align:left; }
-.thumb { width:50px; cursor:pointer; }
+body {
+  font-family: system-ui;
+  background:#0f0f1a;
+  color:#eee;
+  padding:12px;
+}
+
+h1 { text-align:center; }
+
+.video-box {
+  position: relative;
+  border-radius:12px;
+  overflow:hidden;
+  background:#000;
+}
+
+video, canvas {
+  width:100%;
+  height:auto;
+}
+
+.scan-box {
+  position:absolute;
+  inset:15%;
+  border:2px dashed #00d2ff;
+  border-radius:10px;
+  animation:pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,100%{opacity:0.6}
+  50%{opacity:1}
+}
+
+button {
+  width:100%;
+  padding:12px;
+  margin-top:6px;
+  border:none;
+  border-radius:10px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.primary { background:#00d2ff;color:#000; }
+.success { background:#00b894;color:#fff; }
+.warning { background:#fdcb6e;color:#000; }
+.danger  { background:#e74c3c;color:#fff; }
+
+table {
+  width:100%;
+  margin-top:10px;
+  border-collapse:collapse;
+  font-size:0.9rem;
+}
+
+td,th {
+  border-bottom:1px solid #333;
+  padding:8px;
+}
+
+.thumb {
+  width:50px;
+  border-radius:6px;
+}
+
 </style>
 </head>
 
 <body>
 
-<h2>📷 Scanner BDBCF</h2>
+<h1>📷 Scanner BDBCF PRO</h1>
 
-<video id="video" autoplay playsinline></video>
+<div class="video-box">
+  <video id="video" autoplay playsinline muted></video>
+  <div class="scan-box"></div>
+</div>
 
-<button onclick="startCamera()">Avvia Camera</button>
-<button onclick="toggleScan()">Start/Stop Scan</button>
-<button onclick="downloadCSV()">CSV</button>
-<button onclick="downloadZIP()">ZIP</button>
-<button onclick="clearTable()">Svuota</button>
+<button class="primary" onclick="startCamera()">Avvia Camera</button>
+<button class="success" onclick="toggleScan()">Start / Stop Scan</button>
 
 <p id="status">Pronto</p>
 
@@ -37,148 +97,28 @@ td,th { border:1px solid #333;padding:6px;text-align:left; }
 <thead>
 <tr><th>#</th><th>Codice</th><th>Ora</th><th>Img</th></tr>
 </thead>
-<tbody id="tableBody"></tbody>
+<tbody id="tbody"></tbody>
 </table>
 
-<script>
-const video = document.getElementById('video');
-const canvas = document.createElement('canvas');
-const ctx = canvas.getContext('2d');
+<button class="warning" onclick="downloadCSV()">CSV</button>
+<button class="primary" onclick="downloadZIP()">ZIP</button>
+<button class="danger" onclick="clearData()">Svuota</button>
 
-let stream, worker;
+<script>
+const video = document.getElementById("video");
+const canvas = document.createElement("canvas");
+const ctx = canvas.getContext("2d");
+
+let worker, stream;
 let scanning = false;
 let data = [];
 let idCounter = 1;
 
 const REGEX = /^BDBCF[0-9A-F]{5}$/;
+const SCAN_INTERVAL = 1200;
 
-// CAMERA
+// ================= CAMERA =================
 async function startCamera(){
-    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    video.srcObject = stream;
-}
-
-// OCR LOOP
-async function toggleScan(){
-    scanning = !scanning;
-    document.getElementById('status').textContent = scanning?"Scansione...":"Stop";
-
-    if(scanning){
-        if(!worker){
-            worker = await Tesseract.createWorker('eng');
-        }
-        loop();
-    }
-}
-
-async function loop(){
-    if(!scanning) return;
-
-    capture();
-
-    const {data:{text}} = await worker.recognize(canvas);
-    processText(text);
-
-    setTimeout(loop,1500);
-}
-
-function capture(){
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video,0,0);
-}
-
-// OCR PARSE
-function processText(text){
-    const clean = text.replace(/[^A-Z0-9]/gi,'').toUpperCase();
-    const matches = clean.match(/BDBCF[0-9A-F]{5}/g) || [];
-
-    matches.forEach(code=>{
-        if(!REGEX.test(code)) return;
-        if(data.some(r=>r.code===code)) return;
-
-        data.push({
-            id: idCounter++,
-            code,
-            time: new Date(),
-            img: canvas.toDataURL()
-        });
-
-        beep();
-    });
-
-    render();
-}
-
-// FEEDBACK
-function beep(){
-    const ctx = new AudioContext();
-    const o = ctx.createOscillator();
-    o.connect(ctx.destination);
-    o.start();
-    o.stop(ctx.currentTime+0.1);
-}
-
-// TABLE
-function render(){
-    const tb = document.getElementById('tableBody');
-    tb.innerHTML = '';
-
-    data.slice().reverse().forEach((r,i)=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML=`
-        <td>${r.id}</td>
-        <td>${r.code}</td>
-        <td>${r.time.toLocaleTimeString()}</td>
-        <td><img src="${r.img}" class="thumb" onclick="editCode(${data.length-t("Modifica codice", data[i].code);
-    if(!val) return;
-
-    const c = val.toUpperCase();
-    if(!REGEX.test(c)) return alert("Formato errato");
-
-    data[i].code = c;
-    render();
-}
-
-// EXPORT CSV
-function downloadCSV(){
-    let csv="Codice,Timestamp\n";
-    data.forEach(r=>{
-        csv+=`${r.code},${r.time.toLocaleString()}\n`;
-    });
-
-    const blob=new Blob([csv]);
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download="export.csv";
-    a.click();
-}
-
-// EXPORT ZIP
-async function downloadZIP(){
-    const zip=new JSZip();
-    const folder=zip.folder("img");
-
-    data.forEach(r=>{
-        const base64=r.img.split(',')[1];
-        folder.file(r.code+".jpg",base64,{base64:true});
-    });
-
-    const blob=await zip.generateAsync({type:"blob"});
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download="album.zip";
-    a.click();
-}
-
-// CLEAR
-function clearTable(){
-    if(confirm("Sicuro?")){
-        data=[];
-        render();
-    }
-}
-</script>
-
-</body>
-</html>
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:"environment" },
