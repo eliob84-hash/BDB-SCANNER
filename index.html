@@ -5,29 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scanner Seriali OCR</title>
 
-<!-- LIBRERIE -->
-https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.jsscript>
+<!-- LIBRERIE CORRETTE -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.jsscript>
 
 <style>
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
-  background: linear-gradient(180deg,#0f2027,#203a43,#2c5364);
+  font-family: system-ui, sans-serif;
+  background: #111;
   color: white;
   padding: 12px;
 }
 
-h1 {
-  text-align: center;
-  margin-bottom: 10px;
-}
+h1 { text-align: center; }
 
 .scanner {
   position: relative;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 0 20px rgba(0,0,0,.5);
 }
 
 video {
@@ -36,32 +32,25 @@ video {
 }
 
 /* Overlay scanner */
-.overlay {
-  position: absolute;
-  inset: 0;
-  border: 2px solid rgba(255,255,255,.3);
-  pointer-events: none;
-}
-
 .scan-line {
   position: absolute;
   left: 0;
   width: 100%;
   height: 3px;
   background: red;
-  animation: scan 2.2s linear infinite;
+  animation: scan 2s linear infinite;
 }
 
 @keyframes scan {
-  0% { top: 10%; }
-  50% { top: 90%; }
-  100% { top: 10%; }
+  0% { top: 15%; }
+  50% { top: 85%; }
+  100% { top: 15%; }
 }
 
 .controls {
   display: flex;
   gap: 8px;
-  margin: 12px 0;
+  margin: 10px 0;
 }
 
 button {
@@ -73,16 +62,15 @@ button {
   font-weight: 600;
 }
 
-.primary { background: #00c853; color: black; }
-.secondary { background: #455a64; color: white; }
+.primary { background: #00e676; color: black; }
+.secondary { background: #444; color: white; }
 
 table {
   width: 100%;
   background: white;
   color: black;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
-  margin-top: 12px;
 }
 
 th, td {
@@ -91,10 +79,7 @@ th, td {
   text-align: center;
 }
 
-.thumb {
-  width: 70px;
-  border-radius: 6px;
-}
+.thumb { width: 70px; border-radius: 6px; }
 </style>
 </head>
 
@@ -104,9 +89,7 @@ th, td {
 
 <div class="scanner">
   <video id="video" autoplay playsinline></video>
-  <div class="overlay">
-    <div class="scan-line"></div>
-  </div>
+  <div class="scan-line"></div>
 </div>
 
 <div class="controls">
@@ -117,10 +100,7 @@ th, td {
 
 <table>
 <thead>
-<tr>
-  <th>Seriale</th>
-  <th>Immagine</th>
-</tr>
+<tr><th>Seriale</th><th>Immagine</th></tr>
 </thead>
 <tbody id="results"></tbody>
 </table>
@@ -130,7 +110,7 @@ th, td {
 <script>
 let stream, track, flashOn = false;
 const results = [];
-const regex = /BDBCF00[0-9A-F]{3}/;
+const regex = /^BDBCF00[0-9A-F]{3}$/;
 
 const beep = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
 
@@ -153,27 +133,28 @@ async function toggleFlash() {
 
 async function scan() {
   const canvas = document.getElementById("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
   const ctx = canvas.getContext("2d");
 
-  // miglioramento contrasto
-  ctx.filter = "contrast(140%) grayscale(100%)";
-  ctx.drawImage(video, 0, 0);
+  canvas.width = video.videoWidth / 2;
+  canvas.height = video.videoHeight / 2;
 
-  const img = canvas.toDataURL("image/jpeg");
+  ctx.filter = "grayscale(100%) contrast(160%)";
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  const result = await Tesseract.recognize(img, "eng", {
-    tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
-    preserve_interword_spaces: 1
-  });
+  const result = await Tesseract.recognize(
+    canvas,
+    "eng",
+    {
+      tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+      tessedit_char_whitelist: "BDFC0123456789ABCDEF"
+    }
+  );
 
   result.data.words.forEach(word => {
-    let text = word.text.replace(/O/g,"0").trim();
+    const text = word.text.replace(/O/g,"0").trim();
     if (!regex.test(text)) return;
     if (results.find(r => r.serial === text)) return;
 
-    // Ritaglio bounding box
     const { x0,y0,x1,y1 } = word.bbox;
     const w = x1-x0, h = y1-y0;
 
@@ -186,7 +167,6 @@ async function scan() {
     results.push({ serial:text, image:thumb });
     addRow(text, thumb);
 
-    // FEEDBACK OPERATORE
     beep.play();
     navigator.vibrate(200);
   });
