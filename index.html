@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scanner Seriali OCR</title>
 
-<!-- LIBRERIE CORRETTE -->
+<!-- ✅ LIBRERIE CARICATE CORRETTAMENTE -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.jsscript>
 
@@ -13,17 +13,21 @@ https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.jsscript>
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
-  background: #111;
+  background: #0b0f14;
   color: white;
   padding: 12px;
 }
 
-h1 { text-align: center; }
+h1 {
+  text-align: center;
+  margin-bottom: 10px;
+}
 
 .scanner {
   position: relative;
   border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 0 20px rgba(0,0,0,.6);
 }
 
 video {
@@ -31,7 +35,7 @@ video {
   display: block;
 }
 
-/* Overlay scanner */
+/* Barra rossa scanner */
 .scan-line {
   position: absolute;
   left: 0;
@@ -50,7 +54,7 @@ video {
 .controls {
   display: flex;
   gap: 8px;
-  margin: 10px 0;
+  margin: 12px 0;
 }
 
 button {
@@ -63,14 +67,15 @@ button {
 }
 
 .primary { background: #00e676; color: black; }
-.secondary { background: #444; color: white; }
+.secondary { background: #455a64; color: white; }
 
 table {
   width: 100%;
   background: white;
   color: black;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
+  margin-top: 12px;
 }
 
 th, td {
@@ -79,7 +84,10 @@ th, td {
   text-align: center;
 }
 
-.thumb { width: 70px; border-radius: 6px; }
+.thumb {
+  width: 70px;
+  border-radius: 6px;
+}
 </style>
 </head>
 
@@ -93,14 +101,17 @@ th, td {
 </div>
 
 <div class="controls">
-  <button class="primary" onclick="scan()">Scansiona</button>
+  <button class="primary" onclick="toggleScan()">Avvia / Stop</button>
   <button class="secondary" onclick="toggleFlash()">Flash</button>
   <button class="secondary" onclick="exportExcel()">Excel</button>
 </div>
 
 <table>
 <thead>
-<tr><th>Seriale</th><th>Immagine</th></tr>
+<tr>
+  <th>Seriale</th>
+  <th>Immagine</th>
+</tr>
 </thead>
 <tbody id="results"></tbody>
 </table>
@@ -109,10 +120,16 @@ th, td {
 
 <script>
 let stream, track, flashOn = false;
-const results = [];
-const regex = /^BDBCF00[0-9A-F]{3}$/;
+let scanning = false;
+let busy = false;
 
-const beep = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
+const results = [];
+const SERIAL_REGEX = /^BDBCF00[0-9A-F]{3}$/;
+
+// beep minimale
+const beep = new Audio(
+  "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
+);
 
 async function startCamera() {
   stream = await navigator.mediaDevices.getUserMedia({
@@ -131,14 +148,30 @@ async function toggleFlash() {
   await track.applyConstraints({ advanced: [{ torch: flashOn }] });
 }
 
-async function scan() {
+function toggleScan() {
+  scanning = !scanning;
+  if (scanning) scanLoop();
+}
+
+async function scanLoop() {
+  if (!scanning) return;
+  if (!busy) {
+    busy = true;
+    await scanOnce();
+    busy = false;
+  }
+  setTimeout(scanLoop, 1200); // scansione continua controllata
+}
+
+async function scanOnce() {
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
 
   canvas.width = video.videoWidth / 2;
   canvas.height = video.videoHeight / 2;
 
-  ctx.filter = "grayscale(100%) contrast(160%)";
+  // ✅ OTTIMIZZATO PER PLASTICA BIANCA
+  ctx.filter = "grayscale(100%) contrast(180%) brightness(110%)";
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
   const result = await Tesseract.recognize(
@@ -152,7 +185,7 @@ async function scan() {
 
   result.data.words.forEach(word => {
     const text = word.text.replace(/O/g,"0").trim();
-    if (!regex.test(text)) return;
+    if (!SERIAL_REGEX.test(text)) return;
     if (results.find(r => r.serial === text)) return;
 
     const { x0,y0,x1,y1 } = word.bbox;
@@ -172,17 +205,19 @@ async function scan() {
   });
 }
 
-function addRow(serial,img){
+function addRow(serial,img) {
   const tr = document.createElement("tr");
   tr.innerHTML = `<td>${serial}</td><td><img class="thumb" src="${img}"></td>`;
   document.getElementById("results").appendChild(tr);
 }
 
-function exportExcel(){
-  const ws = XLSX.utils.json_to_sheet(results.map(r=>({Seriale:r.serial})));
+function exportExcel() {
+  const ws = XLSX.utils.json_to_sheet(
+    results.map(r => ({ Seriale: r.serial }))
+  );
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,"Seriali");
-  XLSX.writeFile(wb,"seriali.xlsx");
+  XLSX.utils.book_append_sheet(wb, ws, "Seriali");
+  XLSX.writeFile(wb, "seriali.xlsx");
 }
 
 startCamera();
