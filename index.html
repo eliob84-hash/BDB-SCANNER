@@ -4,9 +4,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📷 Scanner BDBCF PRO+</title>
+<title>Scanner BDBCF Completo</title>
 
+<!-- OCR -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<!-- ZIP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <style>
 body {
@@ -17,16 +21,10 @@ body {
   text-align:center;
 }
 
-.container {
-  position:relative;
-}
+video { width:100%; }
 
-video {
-  width:100%;
-  background:black;
-}
+.container { position:relative; }
 
-/* area scan */
 .scan-box {
   position:absolute;
   left:15%;
@@ -34,10 +32,8 @@ video {
   width:70%;
   height:25%;
   border:2px dashed #00d2ff;
-  border-radius:10px;
 }
 
-/* linea scanner 🔴 */
 .scan-line {
   position:absolute;
   width:100%;
@@ -47,276 +43,305 @@ video {
 }
 
 @keyframes scan {
-  0% { top:0 }
-  100% { top:100% }
+  0%{top:0}
+  100%{top:100%}
 }
 
 button {
   width:90%;
-  padding:14px;
-  margin:8px;
+  padding:12px;
+  margin:6px;
   border:none;
   border-radius:10px;
   font-size:1rem;
-  background:#00d2ff;
-  cursor:pointer;
 }
 
-.status {
-  font-weight:bold;
-  padding:8px;
+.primary { background:#00d2ff; }
+.success { background:#00b894; }
+.warning { background:#fdcb6e; color:#000; }
+
+table {
+  width:100%;
+  margin-top:10px;
+  border-collapse:collapse;
+  font-size:0.9rem;
 }
 
-.ok { color:#00ff9c; }
-.err { color:#ff4d4d; }
+td,th {
+  border-bottom:1px solid #333;
+  padding:6px;
+}
+
+.thumb {
+  width:50px;
+  border-radius:6px;
+}
 
 </style>
 </head>
 
 <body>
 
-<h2>📷 Scanner BDBCF PRO+</h2>
+<h2>📷 Scanner BDBCF</h2>
 
 <div class="container">
   <video id="video" playsinline muted></video>
-
   <div class="scan-box">
     <div class="scan-line"></div>
   </div>
 </div>
 
-<button onclick="toggleCamera()">📸 Camera</button>
-<button onclick="toggleFlash()">🔦 Flash</button>
+<button class="primary" onclick="toggleCamera()">📸 Camera</button>
+<button class="warning" onclick="toggleFlash()">🔦 Flash</button>
 
-<div id="status" class="status">🟡 Pronto</div>
+<p id="status">🟡 Pronto</p>
+
+<button class="success" onclick="downloadCSV()">📄 CSV</button>
+<button class="success" onclick="downloadZIP()">📦 ZIP</button>
+
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Codice</th>
+<th>Ora</th>
+<th>Img</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
 
 <script>
 const video = document.getElementById("video");
 
-let stream = null;
-let track = null;
-let flashOn = false;
-
+let stream=null, track=null, flashOn=false;
 let worker;
-let scanning = false;
-let busy = false;
+let scanning=false, busy=false;
 
 let votes = new Map();
+let data = [];
+let id = 1;
 
 const REGEX = /^BDBCF00[0-9A-F]{3}$/;
 
-// ================= CAMERA TOGGLE =================
+// ================= CAMERA =================
 async function toggleCamera(){
 
   if(stream){
-    // STOP
-    stream.getTracks().forEach(t => t.stop());
-    stream = null;
-    scanning = false;
-    setStatus("⏹️ Camera spenta");
+    stream.getTracks().forEach(t=>t.stop());
+    stream=null;
+    scanning=false;
+    setStatus("⏹️ Camera OFF");
     return;
   }
 
-  try{
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" }
-    });
+  stream = await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:"environment"}
+  });
 
-    video.srcObject = stream;
-    await video.play();
+  video.srcObject = stream;
+  await video.play();
 
-    track = stream.getVideoTracks()[0];
+  track = stream.getVideoTracks()[0];
 
-    setStatus("🟡 Avvio OCR...");
+  worker = await Tesseract.createWorker("eng");
 
-    worker = await Tesseract.createWorker("eng");
+  await worker.setParameters({
+    tessedit_char_whitelist: "BDBCF0123456789ABCDEF",
+    tessedit_pageseg_mode: 7
+  });
 
-    await worker.setParameters({
-      tessedit_char_whitelist: "BDBCF0123456789ABCDEF",
-      tessedit_pageseg_mode: 7
-    });
+  scanning=true;
+  loop();
 
-    scanning = true;
-    loop();
-
-    setStatus("🟢 Scanner attivo");
-
-  } catch(e){
-    alert("Errore camera: " + e.message);
-  }
+  setStatus("🟢 Attivo");
 }
 
 // ================= FLASH =================
 async function toggleFlash(){
-
   if(!track) return;
 
-  try{
-    const cap = track.getCapabilities();
-
-    if(!cap.torch){
-      setStatus("⚠️ Flash non supportato");
-      return;
-    }
-
-    flashOn = !flashOn;
-
-    await track.applyConstraints({
-      advanced: [{ torch: flashOn }]
-    });
-
-    setStatus(flashOn ? "🔦 Flash ON" : "🔦 Flash OFF");
-
-  } catch(e){
-    setStatus("❌ Errore flash");
+  const cap = track.getCapabilities();
+  if(!cap.torch){
+    setStatus("⚠️ Flash non supportato");
+    return;
   }
+
+  flashOn=!flashOn;
+
+  await track.applyConstraints({
+    advanced:[{torch:flashOn}]
+  });
+
+  setStatus(flashOn?"🔦 ON":"🔦 OFF");
 }
 
 // ================= LOOP =================
 function loop(){
   if(!scanning) return;
 
-  if(!busy){
-    scanFrame();
-  }
+  if(!busy) scan();
 
-  setTimeout(loop, 700);
+  setTimeout(loop,700);
 }
 
 // ================= SCAN =================
-async function scanFrame(){
+async function scan(){
 
-  if(video.readyState < 2) return;
-
-  busy = true;
+  busy=true;
 
   try{
+    const canv = preprocess();
+    const {data:{text}} = await worker.recognize(canv);
+    process(text, canv);
+  }catch(e){console.log(e)}
 
-    const variants = getVariants();
-
-    for(const canvas of variants){
-      const result = await worker.recognize(canvas);
-      process(result.data.text);
-    }
-
-  } catch(e){
-    console.log(e);
-  }
-
-  busy = false;
-}
-
-// ================= VARIANTI =================
-function getVariants(){
-  return [
-    preprocess(0,false),
-    preprocess(3,false),
-    preprocess(-3,false),
-    preprocess(0,true)
-  ];
+  busy=false;
 }
 
 // ================= PREPROCESS =================
-function preprocess(angle=0, invert=false){
+function preprocess(){
 
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d", { willReadFrequently:true });
+  const c=document.createElement("canvas");
+  const ctx=c.getContext("2d");
 
-  const w = video.videoWidth;
-  const h = video.videoHeight;
+  const w=video.videoWidth;
+  const h=video.videoHeight;
 
-  const cw = w * 0.7;
-  const ch = h * 0.25;
+  const cw=w*0.7;
+  const ch=h*0.25;
 
-  const x = (w - cw) / 2;
-  const y = (h - ch) / 2;
+  const x=(w-cw)/2;
+  const y=(h-ch)/2;
 
-  canvas.width = 600;
-  canvas.height = 200;
+  c.width=600;
+  c.height=200;
 
-  ctx.translate(300,100);
-  ctx.rotate(angle * Math.PI/180);
+  ctx.drawImage(video,x,y,cw,ch,0,0,600,200);
 
-  ctx.drawImage(video, x, y, cw, ch, -300, -100, 600, 200);
-
-  let img = ctx.getImageData(0,0,600,200);
-  let d = img.data;
+  let img=ctx.getImageData(0,0,600,200);
+  let d=img.data;
 
   for(let i=0;i<d.length;i+=4){
-
-    let gray = (d[i]+d[i+1]+d[i+2])/3;
-
-    if(invert) gray = 255-gray;
-
-    let val = gray > 140 ? 255 : 0;
-
-    d[i]=d[i+1]=d[i+2]=val;
+    let g=(d[i]+d[i+1]+d[i+2])/3;
+    let v=g>140?255:0;
+    d[i]=d[i+1]=d[i+2]=v;
   }
 
   ctx.putImageData(img,0,0);
 
-  return canvas;
+  return c;
 }
 
 // ================= PROCESS =================
-function process(text){
+function process(text, canvas){
 
-  let clean = normalize(text);
+  let clean=text.toUpperCase()
+    .replace(/O/g,"0")
+    .replace(/I/g,"1")
+    .replace(/[^A-Z0-9]/g,"");
 
-  const matches = clean.match(/BDBCF00[0-9A-F]{3}/g) || [];
+  const matches=clean.match(/BDBCF00[0-9A-F]{3}/g)||[];
 
-  matches.forEach(code => {
+  matches.forEach(code=>{
 
     if(!REGEX.test(code)) return;
 
-    let count = votes.get(code) || 0;
+    let count=votes.get(code)||0;
     count++;
+    votes.set(code,count);
 
-    votes.set(code, count);
+    if(count>=2){
+      if(data.some(d=>d.code===code)){
+        setStatus("⚠️ Duplicato");
+        votes.clear();
+        return;
+      }
 
-    if(count >= 2){
-      confirm(code);
+      addData(code, canvas);
       votes.clear();
     }
   });
 }
 
-// ================= NORMALIZE =================
-function normalize(text){
-  return text.toUpperCase()
-    .replace(/O/g,"0")
-    .replace(/I/g,"1")
-    .replace(/L/g,"1")
-    .replace(/S/g,"5")
-    .replace(/[^A-Z0-9]/g,"");
+// ================= ADD DATA =================
+function addData(code, canvas){
+
+  const time=new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+
+  const img=canvas.toDataURL("image/jpeg",0.7);
+
+  data.push({
+    id:id++,
+    code,
+    time,
+    img
+  });
+
+  render();
+
+  setStatus("✅ "+code);
 }
 
-// ================= SUCCESS =================
-function confirm(code){
+// ================= RENDER =================
+function render(){
 
-  setStatus("✅ " + code, true);
+  const tb=document.getElementById("tbody");
+  tb.innerHTML="";
 
-  beep();
-  if(navigator.vibrate) navigator.vibrate(120);
+  data.slice().reverse().forEach(r=>{
+    const tr=document.createElement("tr");
 
-  document.body.style.background="#033";
-  setTimeout(()=> document.body.style.background="#0f0f1a",100);
+    tr.innerHTML=`
+      <td>${r.id}</td>
+      <td>${r.code}</td>
+      <td>${r.time}</td>
+      <td><img src="${r.img}" class="======== CSV =================
+function downloadCSV(){
+
+  let csv="Codice,Ora\n";
+
+  data.forEach(r=>{
+    csv+=`${r.code},${r.time}\n`;
+  });
+
+  const blob=new Blob([csv]);
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="codici.csv";
+  a.click();
 }
 
-// ================= AUDIO =================
-function beep(){
-  const ctx = new AudioContext();
-  const osc = ctx.createOscillator();
-  osc.connect(ctx.destination);
-  osc.start();
-  osc.stop(ctx.currentTime + 0.08);
+// ================= ZIP =================
+async function downloadZIP(){
+
+  const zip=new JSZip();
+  const folder=zip.folder("img");
+
+  data.forEach(r=>{
+    const base64=r.img.split(',')[1];
+    folder.file(r.code+".jpg",base64,{base64:true});
+  });
+
+  let html="<h1>Album</h1>";
+
+  data.forEach(r=>{
+    html+=`<div><img src="img/${r.code}..code}</div>`;
+  });
+
+  zip.file("index.html",html);
+
+  const blob=await zip.generateAsync({type:"blob"});
+
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="album.zip";
+  a.click();
 }
 
 // ================= UI =================
-function setStatus(msg, ok=false){
-  const el = document.getElementById("status");
-  el.textContent = msg;
-  el.className = "status " + (ok?"ok":"");
+function setStatus(msg){
+  document.getElementById("status").textContent=msg;
 }
 </script>
 
