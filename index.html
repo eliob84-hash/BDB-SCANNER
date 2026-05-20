@@ -5,41 +5,56 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scanner Seriali OCR</title>
 
+<!-- LIBRERIE -->
 https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.jsscript>
 https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.jsscript>
 
 <style>
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
-  background: #f4f6f8;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: linear-gradient(180deg,#0f2027,#203a43,#2c5364);
+  color: white;
   padding: 12px;
 }
 
-h1 { text-align: center; }
+h1 {
+  text-align: center;
+  margin-bottom: 10px;
+}
 
 .scanner {
   position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(0,0,0,.5);
 }
 
 video {
   width: 100%;
-  border-radius: 12px;
+  display: block;
 }
 
-/* Barra rossa scanner */
+/* Overlay scanner */
+.overlay {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(255,255,255,.3);
+  pointer-events: none;
+}
+
 .scan-line {
   position: absolute;
   left: 0;
   width: 100%;
   height: 3px;
   background: red;
-  animation: scan 2.5s linear infinite;
+  animation: scan 2.2s linear infinite;
 }
 
 @keyframes scan {
   0% { top: 10%; }
-  50% { top: 85%; }
+  50% { top: 90%; }
   100% { top: 10%; }
 }
 
@@ -53,23 +68,21 @@ button {
   flex: 1;
   padding: 14px;
   font-size: 16px;
-  border-radius: 8px;
+  border-radius: 10px;
   border: none;
-  background: #0078d4;
-  color: white;
+  font-weight: 600;
 }
 
-.secondary {
-  background: #666;
-}
+.primary { background: #00c853; color: black; }
+.secondary { background: #455a64; color: white; }
 
 table {
   width: 100%;
-  margin-top: 15px;
   background: white;
-  border-collapse: collapse;
-  border-radius: 8px;
+  color: black;
+  border-radius: 12px;
   overflow: hidden;
+  margin-top: 12px;
 }
 
 th, td {
@@ -91,11 +104,13 @@ th, td {
 
 <div class="scanner">
   <video id="video" autoplay playsinline></video>
-  <div class="scan-line"></div>
+  <div class="overlay">
+    <div class="scan-line"></div>
+  </div>
 </div>
 
 <div class="controls">
-  <button onclick="capture()">Scansiona</button>
+  <button class="primary" onclick="scan()">Scansiona</button>
   <button class="secondary" onclick="toggleFlash()">Flash</button>
   <button class="secondary" onclick="exportExcel()">Excel</button>
 </div>
@@ -115,7 +130,9 @@ th, td {
 <script>
 let stream, track, flashOn = false;
 const results = [];
-const regex = /BDBCF00[0-9A-F]{3}/g;
+const regex = /BDBCF00[0-9A-F]{3}/;
+
+const beep = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
 
 async function startCamera() {
   stream = await navigator.mediaDevices.getUserMedia({
@@ -134,62 +151,58 @@ async function toggleFlash() {
   await track.applyConstraints({ advanced: [{ torch: flashOn }] });
 }
 
-async function capture() {
+async function scan() {
   const canvas = document.getElementById("canvas");
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   const ctx = canvas.getContext("2d");
+
+  // miglioramento contrasto
+  ctx.filter = "contrast(140%) grayscale(100%)";
   ctx.drawImage(video, 0, 0);
 
-  const image = canvas.toDataURL("image/jpeg");
+  const img = canvas.toDataURL("image/jpeg");
 
-  const { data } = await Tesseract.recognize(image, "eng", {
-    tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT
+  const result = await Tesseract.recognize(img, "eng", {
+    tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+    preserve_interword_spaces: 1
   });
 
-  let text = data.text.replace(/O/g, "0");
-  const matches = text.match(regex);
-  if (!matches) return;
-
-  data.words.forEach(word => {
-    const clean = word.text.replace(/O/g, "0");
-    if (!clean.match(regex)) return;
-
-    if (results.find(r => r.serial === clean)) return;
+  result.data.words.forEach(word => {
+    let text = word.text.replace(/O/g,"0").trim();
+    if (!regex.test(text)) return;
+    if (results.find(r => r.serial === text)) return;
 
     // Ritaglio bounding box
-    const { x0, y0, x1, y1 } = word.bbox;
-    const w = x1 - x0;
-    const h = y1 - y0;
+    const { x0,y0,x1,y1 } = word.bbox;
+    const w = x1-x0, h = y1-y0;
 
     const crop = document.createElement("canvas");
-    crop.width = w;
-    crop.height = h;
-    crop.getContext("2d").drawImage(canvas, x0, y0, w, h, 0, 0, w, h);
+    crop.width = w; crop.height = h;
+    crop.getContext("2d").drawImage(canvas,x0,y0,w,h,0,0,w,h);
 
     const thumb = crop.toDataURL("image/jpeg");
 
-    results.push({ serial: clean, image: thumb });
-    addRow(clean, thumb);
+    results.push({ serial:text, image:thumb });
+    addRow(text, thumb);
+
+    // FEEDBACK OPERATORE
+    beep.play();
+    navigator.vibrate(200);
   });
 }
 
-function addRow(serial, img) {
+function addRow(serial,img){
   const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td>${serial}</td>
-    <td><img class="thumb" src="${img}"></td>
-  `;
+  tr.innerHTML = `<td>${serial}</td><td><img class="thumb" src="${img}"></td>`;
   document.getElementById("results").appendChild(tr);
 }
 
-function exportExcel() {
-  const ws = XLSX.utils.json_to_sheet(
-    results.map(r => ({ Seriale: r.serial }))
-  );
+function exportExcel(){
+  const ws = XLSX.utils.json_to_sheet(results.map(r=>({Seriale:r.serial})));
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Seriali");
-  XLSX.writeFile(wb, "seriali.xlsx");
+  XLSX.utils.book_append_sheet(wb,ws,"Seriali");
+  XLSX.writeFile(wb,"seriali.xlsx");
 }
 
 startCamera();
