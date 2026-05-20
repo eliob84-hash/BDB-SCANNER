@@ -1,19 +1,18 @@
 
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tjs</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<title>Scanner BDBCF</title>
 
-<style>
+<!-- ✅ SCRIPT CORRETTI -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.minrc="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.jstyle>
 body {
   margin:0;
   font-family:system-ui;
-  background:#0f0f1a;
+  background:#111;
   color:#fff;
   text-align:center;
 }
@@ -38,7 +37,6 @@ video { width:100%; }
   background:red;
   animation:scan 1.5s infinite;
 }
-
 @keyframes scan {
   0%{top:0}
   100%{top:100%}
@@ -49,31 +47,19 @@ button {
   padding:12px;
   margin:6px;
   border:none;
-  border-radius:10px;
-  font-size:1rem;
+  border-radius:8px;
 }
-
-.primary { background:#00d2ff; }
-.success { background:#00b894; }
-.warning { background:#fdcb6e; color:#000; }
 
 table {
   width:100%;
   margin-top:10px;
   border-collapse:collapse;
-  font-size:0.9rem;
 }
-
 td,th {
   border-bottom:1px solid #333;
   padding:6px;
 }
-
-.thumb {
-  width:50px;
-  border-radius:6px;
-}
-
+.thumb { width:50px; }
 </style>
 </head>
 
@@ -83,190 +69,139 @@ td,th {
 
 <div class="container">
   <video id="video" playsinline muted></video>
-  <div class="scan-box">
-    <div class="scan-line"></div>
-  </div>
+  <div class="scan-box"><div class="scan-line"></div></div>
 </div>
 
-<button class="primary" onclick="toggleCamera()">📸 Camera</button>
-<button class="warning" onclick="toggleFlash()">🔦 Flash</button>
+<button onclick="toggleCamera()">📸 Camera</button>
+<button onclick="toggleFlash()">🔦 Flash</button>
 
-<p id="status">🟡 Pronto</p>
-
-<button class="success" onclick="downloadCSV()">📄 CSV</button>
-<button class="success" onclick="downloadZIP()">📦 ZIP</button>
+<p id="status">Pronto</p>
 
 <table>
-<thead>
-<tr>
-<th>#</th>
-<th>Codice</th>
-<th>Ora</th>
-<th>Img</th>
-</tr>
-</thead>
+<thead><tr><th>#</th><th>Codice</th><th>Ora</th><th>Img</th></tr></thead>
 <tbody id="tbody"></tbody>
 </table>
 
 <script>
+// ================= VARIABILI =================
 const video = document.getElementById("video");
 
-let stream=null, track=null, flashOn=false;
-let worker;
-let scanning=false, busy=false;
+let stream = null;
+let track = null;
+let flashOn = false;
 
-let votes = new Map();
+let worker = null;
+let scanning = false;
+
 let data = [];
 let id = 1;
-
-const REGEX = /^BDBCF00[0-9A-F]{3}$/;
 
 // ================= CAMERA =================
 async function toggleCamera(){
 
-  if(stream){
-    stream.getTracks().forEach(t=>t.stop());
-    stream=null;
-    scanning=false;
-    setStatus("⏹️ Camera OFF");
-    return;
+  try{
+    if(stream){
+      stream.getTracks().forEach(t=>t.stop());
+      stream = null;
+      scanning = false;
+      setStatus("Camera OFF");
+      return;
+    }
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:"environment" }
+    });
+
+    video.srcObject = stream;
+    await video.play();
+
+    track = stream.getVideoTracks()[0];
+
+    worker = await Tesseract.createWorker("eng");
+
+    scanning = true;
+    loop();
+
+    setStatus("Camera ON");
+
+  } catch(e){
+    alert("Errore: " + e.message);
   }
-
-  stream = await navigator.mediaDevices.getUserMedia({
-    video:{facingMode:"environment"}
-  });
-
-  video.srcObject = stream;
-  await video.play();
-
-  track = stream.getVideoTracks()[0];
-
-  worker = await Tesseract.createWorker("eng");
-
-  await worker.setParameters({
-    tessedit_char_whitelist: "BDBCF0123456789ABCDEF",
-    tessedit_pageseg_mode: 7
-  });
-
-  scanning=true;
-  loop();
-
-  setStatus("🟢 Attivo");
 }
 
 // ================= FLASH =================
 async function toggleFlash(){
+
   if(!track) return;
 
-  const cap = track.getCapabilities();
-  if(!cap.torch){
-    setStatus("⚠️ Flash non supportato");
-    return;
+  try{
+    const cap = track.getCapabilities();
+
+    if(!cap.torch){
+      setStatus("Flash non supportato");
+      return;
+    }
+
+    flashOn = !flashOn;
+
+    await track.applyConstraints({
+      advanced:[{ torch: flashOn }]
+    });
+
+    setStatus(flashOn ? "Flash ON" : "Flash OFF");
+
+  } catch(e){
+    setStatus("Errore flash");
   }
-
-  flashOn=!flashOn;
-
-  await track.applyConstraints({
-    advanced:[{torch:flashOn}]
-  });
-
-  setStatus(flashOn?"🔦 ON":"🔦 OFF");
 }
 
 // ================= LOOP =================
-function loop(){
+async function loop(){
   if(!scanning) return;
 
-  if(!busy) scan();
+  await scan();
 
-  setTimeout(loop,700);
+  setTimeout(loop, 1200);
 }
 
 // ================= SCAN =================
 async function scan(){
 
-  busy=true;
+  if(video.readyState < 2) return;
 
-  try{
-    const canv = preprocess();
-    const {data:{text}} = await worker.recognize(canv);
-    process(text, canv);
-  }catch(e){console.log(e)}
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
 
-  busy=false;
-}
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
 
-// ================= PREPROCESS =================
-function preprocess(){
+  ctx.drawImage(video,0,0);
 
-  const c=document.createElement("canvas");
-  const ctx=c.getContext("2d");
+  const { data:{ text } } = await worker.recognize(canvas);
 
-  const w=video.videoWidth;
-  const h=video.videoHeight;
-
-  const cw=w*0.7;
-  const ch=h*0.25;
-
-  const x=(w-cw)/2;
-  const y=(h-ch)/2;
-
-  c.width=600;
-  c.height=200;
-
-  ctx.drawImage(video,x,y,cw,ch,0,0,600,200);
-
-  let img=ctx.getImageData(0,0,600,200);
-  let d=img.data;
-
-  for(let i=0;i<d.length;i+=4){
-    let g=(d[i]+d[i+1]+d[i+2])/3;
-    let v=g>140?255:0;
-    d[i]=d[i+1]=d[i+2]=v;
-  }
-
-  ctx.putImageData(img,0,0);
-
-  return c;
+  process(text, canvas);
 }
 
 // ================= PROCESS =================
 function process(text, canvas){
 
-  let clean=text.toUpperCase()
+  let clean = text.toUpperCase()
     .replace(/O/g,"0")
     .replace(/I/g,"1")
     .replace(/[^A-Z0-9]/g,"");
 
-  const matches=clean.match(/BDBCF00[0-9A-F]{3}/g)||[];
+  const match = clean.match(/BDBCF00[0-9A-F]{3}/);
 
-  matches.forEach(code=>{
+  if(!match) return;
 
-    if(!REGEX.test(code)) return;
+  const code = match[0];
 
-    let count=votes.get(code)||0;
-    count++;
-    votes.set(code,count);
+  // ✅ evita duplicati
+  if(data.some(d=>d.code === code)) return;
 
-    if(count>=2){
-      if(data.some(d=>d.code===code)){
-        setStatus("⚠️ Duplicato");
-        votes.clear();
-        return;
-      }
+  const time = new Date().toLocaleTimeString();
 
-      addData(code, canvas);
-      votes.clear();
-    }
-  });
-}
-
-// ================= ADD DATA =================
-function addData(code, canvas){
-
-  const time=new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
-
-  const img=canvas.toDataURL("image/jpeg",0.7);
+  const img = canvas.toDataURL("image/jpeg",0.7);
 
   data.push({
     id:id++,
@@ -277,68 +212,30 @@ function addData(code, canvas){
 
   render();
 
-  setStatus("✅ "+code);
+  setStatus("✅ " + code);
 }
 
-// ================= RENDER =================
+// ================= TABELLA =================
 function render(){
 
-  const tb=document.getElementById("tbody");
-  tb.innerHTML="";
+  const tb = document.getElementById("tbody");
+  tb.innerHTML = "";
 
-  data.slice().reverse().forEach(r=>{
-    const tr=document.createElement("tr");
+  data.slice().reverse().forEach(r => {
 
-    tr.innerHTML=`
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
       <td>${r.id}</td>
       <td>${r.code}</td>
       <td>${r.time}</td>
-      <td><img src="${r.img}" class="======== CSV =================
-function downloadCSV(){
-
-  let csv="Codice,Ora\n";
-
-  data.forEach(r=>{
-    csv+=`${r.code},${r.time}\n`;
+      <td><img src="${r.img}" class="thumbendChild(tr);
   });
-
-  const blob=new Blob([csv]);
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="codici.csv";
-  a.click();
-}
-
-// ================= ZIP =================
-async function downloadZIP(){
-
-  const zip=new JSZip();
-  const folder=zip.folder("img");
-
-  data.forEach(r=>{
-    const base64=r.img.split(',')[1];
-    folder.file(r.code+".jpg",base64,{base64:true});
-  });
-
-  let html="<h1>Album</h1>";
-
-  data.forEach(r=>{
-    html+=`<div><img src="img/${r.code}..code}</div>`;
-  });
-
-  zip.file("index.html",html);
-
-  const blob=await zip.generateAsync({type:"blob"});
-
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="album.zip";
-  a.click();
 }
 
 // ================= UI =================
 function setStatus(msg){
-  document.getElementById("status").textContent=msg;
+  document.getElementById("status").textContent = msg;
 }
 </script>
 
