@@ -4,287 +4,152 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📷 BDBCF Ultra Scanner</title>
+<title>AI Scanner BDBCF</title>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier"></script>
 
 <style>
 body {
   font-family: system-ui;
   background:#0f0f1a;
-  color:#eee;
-  padding:12px;
+  color:#fff;
   text-align:center;
 }
 
-h1 { font-size:1.3rem; }
-
-.video-box {
-  position:relative;
-  border-radius:14px;
-  overflow:hidden;
-  background:#000;
-}
-
-video {
-  width:100%;
-}
-
-.scan-area {
-  position:absolute;
-  left:20%;
-  top:30%;
-  width:60%;
-  height:30%;
-  border:2px dashed #00d2ff;
-  border-radius:10px;
-}
-
-.scan-line {
-  position:absolute;
-  width:100%;
-  height:2px;
-  background:#00ffcc;
-  animation:scan 2s infinite;
-}
-
-@keyframes scan {
-  0%{ top:0 }
-  100%{ top:100% }
-}
+video { width:100%; }
 
 button {
-  width:100%;
-  padding:14px;
-  margin-top:8px;
+  width:90%;
+  padding:12px;
+  margin:6px;
   border:none;
   border-radius:10px;
-  font-weight:bold;
-  font-size:1rem;
 }
 
-.primary { background:#00d2ff;color:#000; }
+.primary { background:#00d2ff; }
 .success { background:#00b894; }
-.warning { background:#fdcb6e;color:#000; }
-.danger { background:#e74c3c; }
+.training { background:#fdcb6e; color:#000; }
 
-table {
-  width:100%;
-  margin-top:10px;
-  border-collapse:collapse;
-}
-
-td,th {
-  border-bottom:1px solid #333;
-  padding:6px;
-}
-
-.thumb {
-  width:40px;
-}
 </style>
 </head>
 
 <body>
 
-<h1>📷 Scanner BDBCF ULTRA</h1>
+<h2>🤖 AI Scanner BDBCF</h2>
 
-<div class="video-box">
-  <video id="video" playsinline muted></video>
-
-  <div class="scan-area">
-    <div class="scan-line"></div>
-  </div>
-</div>
+<video id="video" playsinline muted></video>
 
 <button class="primary" onclick="startCamera()">📸 Camera</button>
-<button class="success" onclick="toggleScan()">▶️ Scan</button>
-<button class="warning" onclick="downloadCSV()">📄 CSV</button>
-<button class="danger" onclick="clearData()">🗑️ Reset</button>
+<button class="success" onclick="scan()">🔍 Scan</button>
 
-<p id="status">🟡 Pronto</p>
+<h3>🧠 Training</h3>
+<div id="trainButtons"></div>
 
-<table>
-<thead><tr><th>#</th><th>Codice</th><th>Ora</th></tr></thead>
-<tbody id="tbody"></tbody>
-</table>
+<p id="status">Pronto</p>
 
 <script>
-const video = document.getElementById("video");
+let video = document.getElementById("video");
+let stream;
 
-let stream = null;
-let worker = null;
-let scanning = false;
-let processing = false;
+let classifier;
+let modelReady = false;
 
-let data = [];
-let id = 1;
+const HEX = "0123456789ABCDEF".split("");
 
-const REGEX = /^BDBCF[0-9A-F]{5}$/;
-const SCAN_DELAY = 1200;
+// ================= INIT AI =================
+async function initAI(){
+  classifier = knnClassifier.create();
+  modelReady = true;
 
-let lastSeen = new Map();
+  // crea bottoni training
+  const container = document.getElementById("trainButtons");
+
+  HEX.forEach(ch => {
+    let btn = document.createElement("button");
+    btn.textContent = "Add " + ch;
+    btn.className = "training";
+
+    btn.onclick = () => addExample(ch);
+    container.appendChild(btn);
+  });
+}
 
 // ================= CAMERA =================
 async function startCamera(){
-  try{
-    if(stream) stream.getTracks().forEach(t=>t.stop());
+  stream = await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode:"environment" }
+  });
 
-    stream = await navigator.mediaDevices.getUserMedia({
-      video:{ facingMode:"environment" }
-    });
+  video.srcObject = stream;
+  await video.play();
 
-    video.srcObject = stream;
-    await video.play();
+  if(!modelReady) await initAI();
 
-    status("🟢 Camera attiva");
-
-  }catch(e){
-    alert("Errore camera: "+e.message);
-  }
+  status("🟢 Camera attiva");
 }
 
-// ================= SCAN =================
-async function toggleScan(){
-  if(!stream){
-    alert("⚠️ Avvia prima la camera");
-    return;
-  }
+// ================= CAPTURE =================
+function getCharImage(){
 
-  scanning = !scanning;
-
-  status(scanning ? "🔍 Scanning..." : "⏸️ Stop");
-
-  if(scanning){
-    if(!worker){
-      worker = await Tesseract.createWorker("eng");
-    }
-    loop();
-  }
-}
-
-// ================= LOOP =================
-async function loop(){
-  if(!scanning || processing) return;
-
-  processing = true;
-
-  try{
-    const canvas = cropFrame();
-    const {data:{text}} = await worker.recognize(canvas);
-    processText(text);
-  }catch(e){ console.log(e); }
-
-  processing = false;
-
-  setTimeout(loop, SCAN_DELAY);
-}
-
-// ================= CROP (BOOST PERFORMANCE X3) =================
-function cropFrame(){
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
   const w = video.videoWidth;
   const h = video.videoHeight;
 
-  const cropW = w * 0.6;
-  const cropH = h * 0.3;
+  const cw = w * 0.7;
+  const ch = h * 0.25;
 
-  const x = (w - cropW)/2;
-  const y = (h - cropH)/2;
+  const x = (w-cw)/2;
+  const y = (h-ch)/2;
 
-  canvas.width = 640;
-  canvas.height = 300;
+  canvas.width = 64;
+  canvas.height = 64;
 
-  ctx.drawImage(video, x, y, cropW, cropH, 0, 0, 640, 300);
+  ctx.drawImage(video, x, y, cw, ch, 0, 0, 64, 64);
 
-  return canvas;
+  return tf.browser.fromPixels(canvas)
+           .mean(2)
+           .expandDims(2)
+           .toFloat()
+           .div(255)
+           .reshape([1,64,64,1]);
 }
 
-// ================= OCR =================
-function processText(text){
-  const clean = text.replace(/[^A-Z0-9]/gi,'').toUpperCase();
-  const found = clean.match(/BDBCF[0-9A-F]{5}/g) || [];
+// ================= TRAINING =================
+async function addExample(label){
 
-  const now = Date.now();
+  const img = getCharImage();
 
-  found.forEach(code=>{
+  classifier.addExample(img, label);
 
-    if(!REGEX.test(code)) return;
+  status("✅ Training " + label);
+}
 
-    if(lastSeen.has(code) && now - lastSeen.get(code) < 5000) return;
+// ================= SCAN =================
+async function scan(){
 
-    lastSeen.set(code, now);
+  if(classifier.getNumClasses() === 0){
+    alert("⚠️ Prima fai training!");
+    return;
+  }
 
-    if(data.some(r=>r.code===code)) return;
+  const img = getCharImage();
 
-    data.push({
-      id:id++,
-      code,
-      time:new Date()
-    });
+  const result = await classifier.predictClass(img);
 
-    feedback();
-  });
+  let predicted = result.label;
 
-  render();
+  // costruzione codice simulata (prefix fisso)
+  let code = "BDBCF" + predicted.repeat(5);
+
+  status("✅ " + code);
 }
 
 // ================= UI =================
-function render(){
-  const tb = document.getElementById("tbody");
-  tb.innerHTML = "";
-
-  data.slice().reverse().forEach(r=>{
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td>${r.id}</td>
-      <td style="color:#00d2ff;font-weight:bold">${r.code}</td>
-      <td>${r.time.toLocaleTimeString()}</td>
-    `;
-
-    tb.appendChild(tr);
-  });
-}
-
 function status(msg){
   document.getElementById("status").textContent = msg;
-}
-
-// ================= FEEDBACK =================
-function feedback(){
-  const audio = new AudioContext();
-  const osc = audio.createOscillator();
-  osc.connect(audio.destination);
-  osc.start();
-  osc.stop(audio.currentTime + 0.08);
-
-  if(navigator.vibrate) navigator.vibrate(120);
-}
-
-// ================= EXPORT =================
-function downloadCSV(){
-  let csv = "Codice,Timestamp\n";
-
-  data.forEach(r=>{
-    csv += `${r.code},${r.time.toLocaleString()}\n`;
-  });
-
-  const blob = new Blob([csv]);
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "bdbcf.csv";
-  a.click();
-}
-
-// ================= CLEAR =================
-function clearData(){
-  if(confirm("Svuotare dati?")){
-    data = [];
-    render();
-  }
 }
 </script>
 
