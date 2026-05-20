@@ -48,7 +48,6 @@
         .loader { display: none; text-align: center; padding: 6px; font-size: 0.85rem; color: var(--muted); }
         .loader.active { display: block; }
         .empty-state { text-align: center; padding: 24px; color: var(--muted); font-style: italic; }
-        /* MODAL */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
         .modal.active { display: flex; }
         .modal-content { background: var(--card); border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; position: relative; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -119,6 +118,7 @@
         const video = document.getElementById('video');
         const processCanvas = document.getElementById('processCanvas');
         const ctx = processCanvas.getContext('2d', { willReadFrequently: true });
+        const tableBody = document.getElementById('tableBody');
         
         let tableData = [];
         let idCounter = 1;
@@ -130,8 +130,8 @@
         let audioCtx = null;
         let currentEditIndex = -1;
         
-        const SCAN_INTERVAL = 1500;  // Mantenuto valore originale per stabilità
-        const MAX_DIM = 640;          // Mantenuto valore originale
+        const SCAN_INTERVAL = 1500;
+        const MAX_DIM = 640;
         const VALID_CODE_REGEX = /^BDBCF[0-9A-F]{5}$/i;
 
         // ======================== CAMERA (IDENTICA ALLA VERSIONE FUNZIONANTE) ========================
@@ -281,25 +281,37 @@
                 document.getElementById('scanOverlay').classList.add('found');
                 setTimeout(() => document.getElementById('scanOverlay').classList.remove('found'), 500);
                 playBeepAndVibrate();
+                
+                // ✅ FIX NUMERAZIONE: idCounter++ semplice e sequenziale
                 newCodes.forEach(code => {
-                    tableData.push({ id: idCounter++, code, timestamp: new Date(), thumb: processCanvas.toDataURL('image/jpeg', 0.6) });
+                    tableData.push({ 
+                        id: idCounter++, 
+                        code, 
+                        timestamp: new Date(), 
+                        thumb: processCanvas.toDataURL('image/jpeg', 0.6) 
+                    });
                 });
+                
                 renderTable();
                 showToast(`✅ +${newCodes.length} codice${newCodes.length>1?'i':''}`, 'success');
                 document.getElementById('foundCount').textContent = `${newCodes.length} validi`;
             }
         }
 
-        // ======================== MODAL FUNCTIONS (ISOLATE E SICURE) ========================
+        // ======================== MODAL FUNCTIONS ========================
         function openEditModal(index) {
+            if (index < 0 || index >= tableData.length) return;
             currentEditIndex = index;
             const item = tableData[index];
-            if (!item) return;
             document.getElementById('modalImage').src = item.thumb;
             const input = document.getElementById('modalCodeInput');
             input.value = item.code;
             document.getElementById('editModal').classList.add('active');
-            setTimeout(() => { input.focus(); input.select(); }, 150);
+            // Focus ritardato per mobile
+            setTimeout(() => { 
+                input.focus(); 
+                input.select(); 
+            }, 200);
         }
 
         function closeEditModal() {
@@ -311,33 +323,32 @@
             if (currentEditIndex < 0 || currentEditIndex >= tableData.length) return;
             const input = document.getElementById('modalCodeInput');
             const newCode = input.value.trim().toUpperCase();
+            
             if (!/^[A-Z0-9]+$/.test(newCode)) { showToast('Caratteri non validi', 'error'); return; }
             if (!VALID_CODE_REGEX.test(newCode)) { showToast('Formato non valido', 'error'); return; }
             if (newCode.includes('O')) { showToast('La lettera O non è consentita', 'error'); return; }
+            
             const isDuplicate = tableData.some((r, idx) => idx !== currentEditIndex && r.code === newCode);
             if (isDuplicate) { showToast('⚠️ Codice già presente', 'warning'); return; }
+            
             tableData[currentEditIndex].code = newCode;
             renderTable();
             closeEditModal();
             showToast('✅ Codice aggiornato', 'success');
         }
 
-        // ======================== RENDER TABELLA (SEMPLIFICATO E SICURO) ========================
+        // ======================== RENDER TABELLA (FIX CLICK + NUMERI) ========================
         function renderTable() {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
+            tableBody.innerHTML = '';
             if (tableData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Nessun codice</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="4" class="empty-state">Nessun codice acquisito</td></tr>';
                 document.getElementById('countTxt').textContent = '0 codici';
                 ['btnExportAlbum','btnExportCSV','btnClear'].forEach(id => document.getElementById(id).disabled = true);
                 return;
             }
-            // Mostra ultimi in cima, con indice corretto per il click
+
+            // Mostra ultimi in cima
             for (let i = tableData.length - 1; i >= 0; i--) {
                 const row = tableData[i];
                 const tr = document.createElement('tr');
-                const time = row.timestamp.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
-                const tdImg = document.createElement('td');
-                const img = document.createElement('img');
-                img.src = row.thumb;
-                img.classNa
+                const time = row.timestamp
