@@ -3,224 +3,80 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scanner Seriali OCR</title>
 
-<!-- ✅ LIBRERIE CARICATE CORRETTAMENTE -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.jsscript>
+<title>OCR Scanner Test</title>
+
+<!-- ✅ SCRIPT CORRETTI -->
+https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.jsscript>
 
 <style>
-body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
-  background: #0b0f14;
-  color: white;
-  padding: 12px;
-}
-
-h1 {
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-.scanner {
-  position: relative;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 0 20px rgba(0,0,0,.6);
-}
-
-video {
-  width: 100%;
-  display: block;
-}
-
-/* Barra rossa scanner */
-.scan-line {
-  position: absolute;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: red;
-  animation: scan 2s linear infinite;
-}
-
-@keyframes scan {
-  0% { top: 15%; }
-  50% { top: 85%; }
-  100% { top: 15%; }
-}
-
-.controls {
-  display: flex;
-  gap: 8px;
-  margin: 12px 0;
-}
-
-button {
-  flex: 1;
-  padding: 14px;
-  font-size: 16px;
-  border-radius: 10px;
-  border: none;
-  font-weight: 600;
-}
-
-.primary { background: #00e676; color: black; }
-.secondary { background: #455a64; color: white; }
-
-table {
-  width: 100%;
-  background: white;
-  color: black;
-  border-radius: 12px;
-  overflow: hidden;
-  margin-top: 12px;
-}
-
-th, td {
-  padding: 8px;
-  border-bottom: 1px solid #ddd;
-  text-align: center;
-}
-
-.thumb {
-  width: 70px;
-  border-radius: 6px;
-}
+body { font-family: system-ui; background:#111; color:white; padding:10px }
+video { width:100%; border:2px solid #444 }
+#log { margin-top:10px; font-size:14px }
 </style>
 </head>
 
 <body>
 
-<h1>Scanner Seriali</h1>
+<h2>Scanner OCR (test)</h2>
 
-<div class="scanner">
-  <video id="video" autoplay playsinline></video>
-  <div class="scan-line"></div>
-</div>
-
-<div class="controls">
-  <button class="primary" onclick="toggleScan()">Avvia / Stop</button>
-  <button class="secondary" onclick="toggleFlash()">Flash</button>
-  <button class="secondary" onclick="exportExcel()">Excel</button>
-</div>
-
-<table>
-<thead>
-<tr>
-  <th>Seriale</th>
-  <th>Immagine</th>
-</tr>
-</thead>
-<tbody id="results"></tbody>
-</table>
+<video id="video" autoplay playsinline></video>
+<div id="log">In attesa...</div>
 
 <canvas id="canvas" hidden></canvas>
 
 <script>
-let stream, track, flashOn = false;
-let scanning = false;
-let busy = false;
-
-const results = [];
 const SERIAL_REGEX = /^BDBCF00[0-9A-F]{3}$/;
+let worker;
+let scanning = false;
 
-// beep minimale
-const beep = new Audio(
-  "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
-);
-
-async function startCamera() {
-  stream = await navigator.mediaDevices.getUserMedia({
+async function start() {
+  // CAMERA
+  const stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: "environment" }
   });
   video.srcObject = stream;
-  track = stream.getVideoTracks()[0];
-}
 
-async function toggleFlash() {
-  if (!track.getCapabilities().torch) {
-    alert("Flash non supportato");
-    return;
-  }
-  flashOn = !flashOn;
-  await track.applyConstraints({ advanced: [{ torch: flashOn }] });
-}
+  await new Promise(r => video.onloadedmetadata = r);
 
-function toggleScan() {
-  scanning = !scanning;
-  if (scanning) scanLoop();
+  // OCR WORKER
+  worker = await Tesseract.createWorker();
+  await worker.loadLanguage("eng");
+  await worker.initialize("eng");
+
+  scanning = true;
+  scanLoop();
 }
 
 async function scanLoop() {
   if (!scanning) return;
-  if (!busy) {
-    busy = true;
-    await scanOnce();
-    busy = false;
-  }
-  setTimeout(scanLoop, 1200); // scansione continua controllata
-}
 
-async function scanOnce() {
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
 
   canvas.width = video.videoWidth / 2;
   canvas.height = video.videoHeight / 2;
 
-  // ✅ OTTIMIZZATO PER PLASTICA BIANCA
-  ctx.filter = "grayscale(100%) contrast(180%) brightness(110%)";
+  ctx.filter = "grayscale(100%) contrast(180%)";
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  const result = await Tesseract.recognize(
-    canvas,
-    "eng",
-    {
-      tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
-      tessedit_char_whitelist: "BDFC0123456789ABCDEF"
+  const { data } = await worker.recognize(canvas);
+
+  for (const w of data.words) {
+    const txt = w.text.replace(/O/g,"0").trim();
+    if (SERIAL_REGEX.test(txt)) {
+      document.getElementById("log").textContent =
+        "TROVATO: " + txt;
+
+      navigator.vibrate(200);
+      break;
     }
-  );
+  }
 
-  result.data.words.forEach(word => {
-    const text = word.text.replace(/O/g,"0").trim();
-    if (!SERIAL_REGEX.test(text)) return;
-    if (results.find(r => r.serial === text)) return;
-
-    const { x0,y0,x1,y1 } = word.bbox;
-    const w = x1-x0, h = y1-y0;
-
-    const crop = document.createElement("canvas");
-    crop.width = w; crop.height = h;
-    crop.getContext("2d").drawImage(canvas,x0,y0,w,h,0,0,w,h);
-
-    const thumb = crop.toDataURL("image/jpeg");
-
-    results.push({ serial:text, image:thumb });
-    addRow(text, thumb);
-
-    beep.play();
-    navigator.vibrate(200);
-  });
+  setTimeout(scanLoop, 1200);
 }
 
-function addRow(serial,img) {
-  const tr = document.createElement("tr");
-  tr.innerHTML = `<td>${serial}</td><td><img class="thumb" src="${img}"></td>`;
-  document.getElementById("results").appendChild(tr);
-}
-
-function exportExcel() {
-  const ws = XLSX.utils.json_to_sheet(
-    results.map(r => ({ Seriale: r.serial }))
-  );
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Seriali");
-  XLSX.writeFile(wb, "seriali.xlsx");
-}
-
-startCamera();
+start();
 </script>
 
 </body>
