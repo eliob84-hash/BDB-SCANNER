@@ -1,42 +1,62 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scanner Seriali OCR</title>
 
-<title>OCR Scanner Seriali</title>
-
-<!-- ✅ TESSERACT CORRETTO -->
+<!-- ✅ SCRIPT CORRETTO (NON MODIFICARE) -->
 https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.jsscript>
 
 <style>
 body {
+  margin: 0;
   font-family: system-ui, sans-serif;
-  background: #111;
+  background: #0b0f14;
   color: white;
   padding: 10px;
 }
 
 h2 {
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+}
+
+.scanner {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(0,0,0,.6);
 }
 
 video {
   width: 100%;
-  border-radius: 12px;
-  border: 2px solid #333;
+  display: block;
 }
 
-/* Barra scanner */
+/* Overlay area */
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.overlay::before {
+  content: "";
+  position: absolute;
+  inset: 15% 10%;
+  border: 2px solid rgba(0,255,0,.6);
+  border-radius: 8px;
+}
+
+/* Scan line */
 .scan-line {
   position: absolute;
-  left: 0;
-  width: 100%;
+  left: 10%;
+  right: 10%;
   height: 3px;
   background: red;
-  animation: scan 2s linear infinite;
+  animation: scan 2.2s linear infinite;
 }
 
 @keyframes scan {
@@ -45,13 +65,34 @@ video {
   100% { top: 15%; }
 }
 
-.scanner {
-  position: relative;
+.controls {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+button {
+  flex: 1;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+}
+
+.primary {
+  background: #00e676;
+  color: black;
+}
+
+.secondary {
+  background: #455a64;
+  color: white;
 }
 
 table {
   width: 100%;
-  margin-top: 12px;
+  margin-top: 10px;
   background: white;
   color: black;
   border-collapse: collapse;
@@ -66,7 +107,7 @@ th, td {
 }
 
 .thumb {
-  width: 80px;
+  width: 75px;
   border-radius: 6px;
 }
 </style>
@@ -78,7 +119,13 @@ th, td {
 
 <div class="scanner">
   <video id="video" autoplay playsinline></video>
-  <div class="scan-line"></div>
+  <div class="overlay">
+    <div class="scan-line"></div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="secondary" onclick="toggleFlash()">Flash</button>
 </div>
 
 <table>
@@ -99,8 +146,10 @@ const SERIAL_REGEX = /^BDBCF00[0-9A-F]{3}$/;
 let worker;
 let scanning = true;
 let foundSerials = [];
+let track;
+let flashOn = false;
 
-// beep semplice
+// beep
 const beep = new Audio(
   "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
 );
@@ -113,12 +162,23 @@ async function start() {
   video.srcObject = stream;
   await new Promise(r => video.onloadedmetadata = r);
 
+  track = stream.getVideoTracks()[0];
+
   // OCR WORKER
   worker = await Tesseract.createWorker();
   await worker.loadLanguage("eng");
   await worker.initialize("eng");
 
   scanLoop();
+}
+
+async function toggleFlash() {
+  if (!track?.getCapabilities().torch) {
+    alert("Flash non supportato su questo dispositivo");
+    return;
+  }
+  flashOn = !flashOn;
+  await track.applyConstraints({ advanced: [{ torch: flashOn }] });
 }
 
 async function scanLoop() {
@@ -143,10 +203,8 @@ async function scanLoop() {
 
     foundSerials.push(text);
 
-    // RITAGLIO SERIALe
     const { x0,y0,x1,y1 } = w.bbox;
-    const wdt = x1-x0;
-    const hgt = y1-y0;
+    const wdt = x1-x0, hgt = y1-y0;
 
     const crop = document.createElement("canvas");
     crop.width = wdt;
@@ -155,10 +213,8 @@ async function scanLoop() {
       .drawImage(canvas, x0, y0, wdt, hgt, 0, 0, wdt, hgt);
 
     const thumb = crop.toDataURL("image/jpeg");
-
     addRow(text, thumb);
 
-    // FEEDBACK OPERATORE
     beep.play();
     navigator.vibrate(200);
   }
