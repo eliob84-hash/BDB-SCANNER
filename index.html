@@ -4,10 +4,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scanner BDBCF PRO</title>
+<title>📷 BDBCF Ultra Scanner</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <style>
 body {
@@ -15,110 +14,279 @@ body {
   background:#0f0f1a;
   color:#eee;
   padding:12px;
+  text-align:center;
 }
 
-h1 { text-align:center; }
+h1 { font-size:1.3rem; }
 
 .video-box {
-  position: relative;
-  border-radius:12px;
+  position:relative;
+  border-radius:14px;
   overflow:hidden;
   background:#000;
 }
 
-video, canvas {
+video {
   width:100%;
-  height:auto;
 }
 
-.scan-box {
+.scan-area {
   position:absolute;
-  inset:15%;
+  left:20%;
+  top:30%;
+  width:60%;
+  height:30%;
   border:2px dashed #00d2ff;
   border-radius:10px;
-  animation:pulse 2s infinite;
 }
 
-@keyframes pulse {
-  0%,100%{opacity:0.6}
-  50%{opacity:1}
+.scan-line {
+  position:absolute;
+  width:100%;
+  height:2px;
+  background:#00ffcc;
+  animation:scan 2s infinite;
+}
+
+@keyframes scan {
+  0%{ top:0 }
+  100%{ top:100% }
 }
 
 button {
   width:100%;
-  padding:12px;
-  margin-top:6px;
+  padding:14px;
+  margin-top:8px;
   border:none;
   border-radius:10px;
   font-weight:bold;
-  cursor:pointer;
+  font-size:1rem;
 }
 
 .primary { background:#00d2ff;color:#000; }
-.success { background:#00b894;color:#fff; }
+.success { background:#00b894; }
 .warning { background:#fdcb6e;color:#000; }
-.danger  { background:#e74c3c;color:#fff; }
+.danger { background:#e74c3c; }
 
 table {
   width:100%;
   margin-top:10px;
   border-collapse:collapse;
-  font-size:0.9rem;
 }
 
 td,th {
   border-bottom:1px solid #333;
-  padding:8px;
+  padding:6px;
 }
 
 .thumb {
-  width:50px;
-  border-radius:6px;
+  width:40px;
 }
-
 </style>
 </head>
 
 <body>
 
-<h1>📷 Scanner BDBCF PRO</h1>
+<h1>📷 Scanner BDBCF ULTRA</h1>
 
 <div class="video-box">
-  <video id="video" autoplay playsinline muted></video>
-  <div class="scan-box"></div>
+  <video id="video" playsinline muted></video>
+
+  <div class="scan-area">
+    <div class="scan-line"></div>
+  </div>
 </div>
 
-<button class="primary" onclick="startCamera()">Avvia Camera</button>
-<button class="success" onclick="toggleScan()">Start / Stop Scan</button>
+<button class="primary" onclick="startCamera()">📸 Camera</button>
+<button class="success" onclick="toggleScan()">▶️ Scan</button>
+<button class="warning" onclick="downloadCSV()">📄 CSV</button>
+<button class="danger" onclick="clearData()">🗑️ Reset</button>
 
-<p id="status">Pronto</p>
+<p id="status">🟡 Pronto</p>
 
 <table>
-<thead>
-<tr><th>#</th><th>Codice</th><th>Ora</th><th>Img</th></tr>
-</thead>
+<thead><tr><th>#</th><th>Codice</th><th>Ora</th></tr></thead>
 <tbody id="tbody"></tbody>
 </table>
 
-<button class="warning" onclick="downloadCSV()">CSV</button>
-<button class="primary" onclick="downloadZIP()">ZIP</button>
-<button class="danger" onclick="clearData()">Svuota</button>
-
 <script>
 const video = document.getElementById("video");
-const canvas = document.createElement("canvas");
-const ctx = canvas.getContext("2d");
 
-let worker, stream;
+let stream = null;
+let worker = null;
 let scanning = false;
+let processing = false;
+
 let data = [];
-let idCounter = 1;
+let id = 1;
 
 const REGEX = /^BDBCF[0-9A-F]{5}$/;
-const SCAN_INTERVAL = 1200;
+const SCAN_DELAY = 1200;
+
+let lastSeen = new Map();
 
 // ================= CAMERA =================
 async function startCamera(){
-  try {
+  try{
+    if(stream) stream.getTracks().forEach(t=>t.stop());
+
     stream = await navigator.mediaDevices.getUserMedia({
-      video:{ facingMode:"environment" },
+      video:{ facingMode:"environment" }
+    });
+
+    video.srcObject = stream;
+    await video.play();
+
+    status("🟢 Camera attiva");
+
+  }catch(e){
+    alert("Errore camera: "+e.message);
+  }
+}
+
+// ================= SCAN =================
+async function toggleScan(){
+  if(!stream){
+    alert("⚠️ Avvia prima la camera");
+    return;
+  }
+
+  scanning = !scanning;
+
+  status(scanning ? "🔍 Scanning..." : "⏸️ Stop");
+
+  if(scanning){
+    if(!worker){
+      worker = await Tesseract.createWorker("eng");
+    }
+    loop();
+  }
+}
+
+// ================= LOOP =================
+async function loop(){
+  if(!scanning || processing) return;
+
+  processing = true;
+
+  try{
+    const canvas = cropFrame();
+    const {data:{text}} = await worker.recognize(canvas);
+    processText(text);
+  }catch(e){ console.log(e); }
+
+  processing = false;
+
+  setTimeout(loop, SCAN_DELAY);
+}
+
+// ================= CROP (BOOST PERFORMANCE X3) =================
+function cropFrame(){
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const w = video.videoWidth;
+  const h = video.videoHeight;
+
+  const cropW = w * 0.6;
+  const cropH = h * 0.3;
+
+  const x = (w - cropW)/2;
+  const y = (h - cropH)/2;
+
+  canvas.width = 640;
+  canvas.height = 300;
+
+  ctx.drawImage(video, x, y, cropW, cropH, 0, 0, 640, 300);
+
+  return canvas;
+}
+
+// ================= OCR =================
+function processText(text){
+  const clean = text.replace(/[^A-Z0-9]/gi,'').toUpperCase();
+  const found = clean.match(/BDBCF[0-9A-F]{5}/g) || [];
+
+  const now = Date.now();
+
+  found.forEach(code=>{
+
+    if(!REGEX.test(code)) return;
+
+    if(lastSeen.has(code) && now - lastSeen.get(code) < 5000) return;
+
+    lastSeen.set(code, now);
+
+    if(data.some(r=>r.code===code)) return;
+
+    data.push({
+      id:id++,
+      code,
+      time:new Date()
+    });
+
+    feedback();
+  });
+
+  render();
+}
+
+// ================= UI =================
+function render(){
+  const tb = document.getElementById("tbody");
+  tb.innerHTML = "";
+
+  data.slice().reverse().forEach(r=>{
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${r.id}</td>
+      <td style="color:#00d2ff;font-weight:bold">${r.code}</td>
+      <td>${r.time.toLocaleTimeString()}</td>
+    `;
+
+    tb.appendChild(tr);
+  });
+}
+
+function status(msg){
+  document.getElementById("status").textContent = msg;
+}
+
+// ================= FEEDBACK =================
+function feedback(){
+  const audio = new AudioContext();
+  const osc = audio.createOscillator();
+  osc.connect(audio.destination);
+  osc.start();
+  osc.stop(audio.currentTime + 0.08);
+
+  if(navigator.vibrate) navigator.vibrate(120);
+}
+
+// ================= EXPORT =================
+function downloadCSV(){
+  let csv = "Codice,Timestamp\n";
+
+  data.forEach(r=>{
+    csv += `${r.code},${r.time.toLocaleString()}\n`;
+  });
+
+  const blob = new Blob([csv]);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "bdbcf.csv";
+  a.click();
+}
+
+// ================= CLEAR =================
+function clearData(){
+  if(confirm("Svuotare dati?")){
+    data = [];
+    render();
+  }
+}
+</script>
+
+</body>
+</html>
