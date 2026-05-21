@@ -26,12 +26,20 @@
             background:linear-gradient(135deg,var(--bg-card),#1a2332); padding:16px 20px;
             position:sticky; top:0; z-index:100; border-bottom:1px solid var(--border); backdrop-filter:blur(20px);
         }
+        .header-top { display:flex; align-items:center; justify-content:space-between; }
         .header h1 {
             font-size:18px; font-weight:700;
             background:linear-gradient(135deg,var(--primary-light),var(--accent));
             -webkit-background-clip:text; -webkit-text-fill-color:transparent;
             display:flex; align-items:center; gap:8px;
         }
+        .version-badge {
+            font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500;
+            color:#10b981; cursor:pointer; padding:3px 8px; border-radius:6px;
+            background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2);
+            transition:all 0.2s; white-space:nowrap;
+        }
+        .version-badge:hover { background:rgba(16,185,129,0.15); }
         .scan-counter { display:flex; align-items:center; justify-content:space-between; margin-top:6px; }
         .scan-counter .label { font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:6px; }
         .scan-counter .count {
@@ -44,6 +52,11 @@
         }
         .scanning-indicator .dot { width:5px; height:5px; background:var(--accent); border-radius:50%; animation:blink 1s infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+        .paused-indicator {
+            display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--warning);
+            padding:3px 8px; background:rgba(245,158,11,0.1); border-radius:12px;
+        }
+        .paused-indicator .dot { width:5px; height:5px; background:var(--warning); border-radius:50%; }
         .config-panel { padding:14px 18px; display:flex; flex-direction:column; gap:10px; }
         .input-group label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim); margin-bottom:4px; }
         .input-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -114,20 +127,19 @@
             padding:12px; margin-bottom:10px; animation:slideIn 0.3s ease-out;
         }
         @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-        .record-top { display:flex; align-items:center; gap:12px; }
+        .record-top { display:flex; align-items:flex-start; gap:12px; }
 
-        /* IMMAGINE PIÙ GRANDE */
         .record-image-wrap {
-            width:130px; height:60px; border-radius:8px; overflow:hidden; background:#000;
+            width:80px; height:36px; border-radius:6px; overflow:hidden; background:#000;
             flex-shrink:0; cursor:pointer; position:relative; border:1px solid var(--border);
         }
-        .record-image-wrap img { width:100%; height:100%; object-fit:cover; image-rendering:auto; }
-        .record-image-wrap .zoom-icon { position:absolute; bottom:2px; right:2px; background:rgba(0,0,0,0.7); border-radius:4px; padding:2px; }
-        .record-image-wrap .zoom-icon svg { width:11px; height:11px; color:white; }
+        .record-image-wrap img {
+            width:100%; height:100%; object-fit:contain; image-rendering:auto;
+        }
+        .record-image-wrap .zoom-icon { position:absolute; bottom:1px; right:1px; background:rgba(0,0,0,0.7); border-radius:3px; padding:1px; }
+        .record-image-wrap .zoom-icon svg { width:10px; height:10px; color:white; }
 
         .record-info { flex:1; min-width:0; }
-
-        /* SERIALE COMPATTO */
         .serial-display {
             font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:500;
             padding:5px 7px; background:var(--bg-input); border:1px solid var(--border);
@@ -136,7 +148,6 @@
         }
         .serial-display.modified { color:var(--warning); border-color:var(--warning); }
         .serial-display:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.15); width:130px; }
-
         .record-meta { font-size:10px; color:var(--text-dim); margin-top:4px; display:flex; flex-wrap:wrap; gap:6px; }
         .mod-badge { background:var(--warning); color:#1e293b; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:700; }
         .delete-btn { background:none; border:none; color:var(--text-dim); cursor:pointer; padding:6px; border-radius:8px; transition:all 0.2s; flex-shrink:0; }
@@ -162,6 +173,8 @@
         }
         .note-input.visible { display:block; }
         .note-input:focus { border-color:#ec4899; }
+
+        /* Image modal */
         .image-modal {
             position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.95);
             z-index:1000; display:none; align-items:center; justify-content:center; cursor:pointer;
@@ -173,6 +186,41 @@
             border:none; color:white; width:36px; height:36px; border-radius:50%; cursor:pointer;
             font-size:18px; display:flex; align-items:center; justify-content:center;
         }
+
+        /* Version modal */
+        .version-modal {
+            position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7);
+            z-index:1500; display:none; align-items:center; justify-content:center; padding:20px;
+        }
+        .version-modal.visible { display:flex; }
+        .version-modal-box {
+            background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
+            padding:24px; max-width:380px; width:100%; max-height:80vh; overflow-y:auto;
+        }
+        .version-modal-box h3 {
+            font-size:18px; margin-bottom:4px;
+            background:linear-gradient(135deg,var(--primary-light),var(--accent));
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+        }
+        .version-modal-box .ver-date { font-size:12px; color:var(--text-dim); margin-bottom:16px; }
+        .changelog-item {
+            padding:10px 0; border-bottom:1px solid rgba(71,85,105,0.3);
+        }
+        .changelog-item:last-child { border-bottom:none; }
+        .changelog-item .ch-ver { font-size:12px; font-weight:600; color:var(--accent); font-family:'JetBrains Mono',monospace; }
+        .changelog-item .ch-date { font-size:10px; color:var(--text-dim); margin-left:6px; }
+        .changelog-item .ch-desc { font-size:12px; color:var(--text-muted); margin-top:4px; }
+        .changelog-item .ch-tags { margin-top:4px; display:flex; gap:4px; flex-wrap:wrap; }
+        .ch-tag { font-size:9px; padding:2px 6px; border-radius:4px; font-weight:600; }
+        .ch-tag.feat { background:rgba(37,99,235,0.15); color:var(--primary-light); }
+        .ch-tag.fix { background:rgba(16,185,129,0.15); color:var(--accent); }
+        .ch-tag.ui { background:rgba(245,158,11,0.15); color:var(--warning); }
+        .version-modal-close {
+            margin-top:16px; width:100%; padding:10px; background:var(--bg-input);
+            border:1px solid var(--border); border-radius:var(--radius); color:var(--text);
+            font-family:'Inter',sans-serif; font-weight:600; cursor:pointer; font-size:13px;
+        }
+
         .toast {
             position:fixed; top:20px; left:50%; transform:translateX(-50%) translateY(-100px);
             background:var(--bg-card); border:1px solid var(--border); padding:12px 20px;
@@ -212,16 +260,19 @@
             display:none;
         }
         .cooldown-overlay.active { display:block; }
-        @media (max-width:380px) { .btn { padding:8px 8px; font-size:11px; } .status-btn { font-size:9px; padding:3px 6px; } .record-image-wrap { width:110px; height:52px; } }
+        @media (max-width:380px) { .btn { padding:8px 8px; font-size:11px; } .status-btn { font-size:9px; padding:3px 6px; } .record-image-wrap { width:70px; height:32px; } }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-        Scanner Seriali OCR
-    </h1>
+    <div class="header-top">
+        <h1>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            Scanner Seriali OCR
+        </h1>
+        <span class="version-badge" id="versionBadge" onclick="openVersionModal()">v1.2.0</span>
+    </div>
     <div class="scan-counter">
         <span class="label">Seriali: <span class="count" id="scanCount">0</span></span>
         <span id="scanIndicator"></span>
@@ -276,9 +327,20 @@
     </div>
 </div>
 
+<!-- Image zoom modal -->
 <div class="image-modal" id="imageModal" onclick="closeModal()">
     <button class="close-modal-btn" onclick="closeModal()">✕</button>
     <img id="modalImage" src="" alt="Zoom">
+</div>
+
+<!-- Version modal -->
+<div class="version-modal" id="versionModal" onclick="closeVersionModal()">
+    <div class="version-modal-box" onclick="event.stopPropagation()">
+        <h3>📋 Changelog</h3>
+        <div class="ver-date">Generato il 22/05/2026 — 15:40 UTC+2</div>
+        <div id="changelogContent"></div>
+        <button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button>
+    </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -306,9 +368,31 @@
 </div>
 
 <script>
+// ===== CONFIG =====
+const APP_VERSION = '1.2.0';
+const APP_BUILD_DATE = '22/05/2026 15:40';
+const CHANGELOG = [
+    {
+        ver: 'v1.2.0', date: '22/05/2026 15:40',
+        desc: 'Immagine anteprima ridotta e visibile per intero. Pausa scansione durante tap-zoom. Aggiunto numero versione con changelog.',
+        tags: ['ui','feat']
+    },
+    {
+        ver: 'v1.1.0', date: '22/05/2026 14:30',
+        desc: 'Validazione seriale: accettati solo 10 caratteri. Rimossa selezione "Good" di default. Anteprima ritagliata al seriale +15px. Timeout di 1s dopo lettura per evitare false letture.',
+        tags: ['feat','fix']
+    },
+    {
+        ver: 'v1.0.0', date: '22/05/2026 12:00',
+        desc: 'Versione iniziale: Scanner OCR con Tesseract.js. Rilevamento seriale pattern [A-Z]{2}BCF00[A-F0-9]{3}. Esportazione Excel e ZIP. Feedback aptico e sonoro. Gestione duplicati.',
+        tags: ['feat']
+    }
+];
+
+// ===== STATE =====
 let cameraActive=false, flashOn=false, multiDetect=false, videoEl=null, stream=null, ocrWorker=null, scanTimer=null;
 let records=[], scanTotal=0, confirmCallback=null, audioCtx=null;
-let scanCooldown=false; // Timeout di 1 secondo dopo lettura OK
+let scanCooldown=false, scanPaused=false; // paused = durante tap-zoom
 const SERIAL_PATTERN=/^[A-Z]{2}BCF00[A-F0-9]{3}$/;
 
 function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx;}
@@ -340,7 +424,7 @@ async function startCamera(){
         await new Promise(r=>{videoEl.onloadedmetadata=()=>r();});
         document.getElementById('cameraContainer').classList.add('active');
         document.getElementById('btnFlash').disabled=false;
-        document.getElementById('scanIndicator').innerHTML='<span class="scanning-indicator"><span class="dot"></span> Scansione attiva</span>';
+        updateScanIndicator();
         cameraActive=true;
         document.getElementById('ocrStatus').textContent='Caricamento OCR...';
         ocrWorker=await Tesseract.createWorker('eng',1,{logger:(m)=>{if(m.status==='recognizing text'){document.getElementById('progressBar').style.width=Math.round(m.progress*100)+'%';document.getElementById('ocrStatus').textContent=`OCR ${Math.round(m.progress*100)}%`;}}});
@@ -356,16 +440,25 @@ function stopCamera(){
     if(scanTimer){clearInterval(scanTimer);scanTimer=null;}
     if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
     if(ocrWorker){ocrWorker.terminate();ocrWorker=null;}
-    cameraActive=false;flashOn=false;videoEl=null;scanCooldown=false;
+    cameraActive=false;flashOn=false;videoEl=null;scanCooldown=false;scanPaused=false;
     document.getElementById('cameraContainer').classList.remove('active');
     document.getElementById('btnFlash').disabled=true;
     document.getElementById('btnFlash').classList.remove('btn-accent');document.getElementById('btnFlash').classList.add('btn-warning');
-    document.getElementById('scanIndicator').innerHTML='';document.getElementById('progressBar').style.width='0%';
+    document.getElementById('progressBar').style.width='0%';
     document.getElementById('cooldownOverlay').classList.remove('active');
+    updateScanIndicator();
     resetBtnCamera();toast('📷 Fotocamera spenta','warning');
 }
 
 function resetBtnCamera(){const btn=document.getElementById('btnCamera');btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Avvia OCR</span>`;btn.classList.add('btn-primary');btn.classList.remove('btn-danger');}
+
+function updateScanIndicator(){
+    const el=document.getElementById('scanIndicator');
+    if(!cameraActive){el.innerHTML='';return;}
+    if(scanPaused){el.innerHTML='<span class="paused-indicator"><span class="dot"></span> In pausa (zoom)</span>';return;}
+    if(scanCooldown){el.innerHTML='<span class="paused-indicator"><span class="dot"></span> Cooldown...</span>';return;}
+    el.innerHTML='<span class="scanning-indicator"><span class="dot"></span> Scansione attiva</span>';
+}
 
 async function toggleFlash(){
     if(!stream)return;
@@ -379,7 +472,7 @@ function toggleMultiDetect(){multiDetect=!multiDetect;document.getElementById('t
 async function scanFrame(){
     if(!cameraActive||!videoEl||!ocrWorker)return;
     if(videoEl.readyState<2)return;
-    if(scanCooldown)return; // Bloccato durante cooldown
+    if(scanCooldown||scanPaused)return;
     beepScan();
 
     const canvas=document.getElementById('captureCanvas'),ctx=canvas.getContext('2d');
@@ -444,14 +537,15 @@ function processSerial(serial,imgData){
     const isDup=records.some(r=>r.serial===serial);
     if(isDup){toast('⚠️ Duplicato: '+serial,'warning');beepDup();vib('dup');return;}
 
-    // Attiva cooldown di 1 secondo
     scanCooldown=true;
     document.getElementById('cooldownOverlay').classList.add('active');
     document.getElementById('ocrStatus').textContent='⏱ Cooldown 1s...';
+    updateScanIndicator();
     setTimeout(()=>{
         scanCooldown=false;
         document.getElementById('cooldownOverlay').classList.remove('active');
-        if(cameraActive) document.getElementById('ocrStatus').textContent='Scansione in corso...';
+        if(cameraActive&&!scanPaused) document.getElementById('ocrStatus').textContent='Scansione in corso...';
+        updateScanIndicator();
     },1000);
 
     const operator=document.getElementById('operatorName').value.trim()||'N/D';
@@ -510,9 +604,35 @@ function deleteRecord(id){
     });
 }
 
-function openModal(id){const rec=records.find(r=>r.id===id);if(!rec||!rec.image)return;document.getElementById('modalImage').src=rec.image;document.getElementById('imageModal').classList.add('visible');}
-function closeModal(){document.getElementById('imageModal').classList.remove('visible');}
+// ===== IMAGE MODAL (pausa scansione) =====
+function openModal(id){
+    const rec=records.find(r=>r.id===id);if(!rec||!rec.image)return;
+    scanPaused=true;
+    updateScanIndicator();
+    document.getElementById('modalImage').src=rec.image;
+    document.getElementById('imageModal').classList.add('visible');
+}
+function closeModal(){
+    document.getElementById('imageModal').classList.remove('visible');
+    scanPaused=false;
+    updateScanIndicator();
+}
 
+// ===== VERSION MODAL =====
+function openVersionModal(){
+    const el=document.getElementById('changelogContent');
+    el.innerHTML=CHANGELOG.map(c=>`
+        <div class="changelog-item">
+            <span class="ch-ver">${c.ver}</span><span class="ch-date">${c.date}</span>
+            <div class="ch-desc">${c.desc}</div>
+            <div class="ch-tags">${c.tags.map(t=>`<span class="ch-tag ${t}">${t.toUpperCase()}</span>`).join('')}</div>
+        </div>
+    `).join('');
+    document.getElementById('versionModal').classList.add('visible');
+}
+function closeVersionModal(){document.getElementById('versionModal').classList.remove('visible');}
+
+// ===== EXPORT =====
 function exportExcel(){
     if(records.length===0){toast('Nessun record','warning');return;}
     const data=records.map((r,i)=>({'#':i+1,'Timestamp':r.timestamp,'Seriale':r.serial,'Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,'Operatore':r.operator,'Stato':r.status||'—','Note':r.note}));
