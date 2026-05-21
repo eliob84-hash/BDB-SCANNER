@@ -232,7 +232,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             Scanner Seriali OCR
         </h1>
-        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v1.7.0</span>
+        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v1.8.0</span>
     </div>
     <div class="scan-counter">
         <span class="label">Seriali: <span class="count" id="scanCount">0</span></span>
@@ -308,13 +308,12 @@
 <div class="version-modal" id="versionModal" onclick="closeVersionModal()">
     <div class="version-modal-box" onclick="event.stopPropagation()">
         <h3>📋 Changelog</h3>
-        <div class="ver-date" id="versionBuildDate">Generato il 22/05/2026 — 20:00 UTC+2</div>
+        <div class="ver-date" id="versionBuildDate">Generato il 22/05/2026 — 21:00 UTC+2</div>
         <div id="changelogContent"></div>
         <button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button>
     </div>
 </div>
 
-<!-- Pedana change modal -->
 <div class="confirm-modal" id="pedanaModal">
     <div class="confirm-box">
         <h3 id="pedanaModalTitle">📍 Pedana / Posizione</h3>
@@ -361,18 +360,19 @@
 </div>
 
 <script>
-const APP_VERSION = '1.7.0';
-const APP_BUILD_DATE = '22/05/2026 20:00';
+const APP_VERSION = '1.8.0';
+const APP_BUILD_DATE = '22/05/2026 21:00';
 const CHANGELOG = [
-    { ver:'v1.7.0', date:'22/05/2026 20:00', desc:'Anteprima cropata al seriale con margine. Pedana modal mostra anche il seriale di riferimento.', tags:['ui'] },
+    { ver:'v1.8.0', date:'22/05/2026 21:00', desc:'Fix seriali parziali: testo grezzo deve avere ≥10 caratteri. Messaggi errore modifica specifici (lunghezza vs prefisso).', tags:['fix'] },
+    { ver:'v1.7.0', date:'22/05/2026 20:00', desc:'Anteprima cropata al seriale con margine. Pedana modal mostra seriale di riferimento.', tags:['ui'] },
     { ver:'v1.6.0', date:'22/05/2026 19:00', desc:'Pedana/Posizione obbligatoria. Pop-up conferma mantieni/cambia dopo ogni scansione.', tags:['feat'] },
-    { ver:'v1.5.1', date:'22/05/2026 18:00', desc:'Rimossi hint password dal modal. Campo password type="password".', tags:['ui'] },
-    { ver:'v1.5.0', date:'22/05/2026 17:30', desc:'Pattern seriale stretto a BDBCF00. Password HHMM per changelog. Anteprima = frame OCR.', tags:['fix','feat'] },
-    { ver:'v1.4.0', date:'22/05/2026 16:45', desc:'Confidenza OCR e correzioni (O→0, S→5). Badge colorati confidenza.', tags:['feat'] },
-    { ver:'v1.3.0', date:'22/05/2026 16:10', desc:'Rimossa lente da anteprima. Immagine 130px come seriale.', tags:['ui'] },
-    { ver:'v1.2.0', date:'22/05/2026 15:40', desc:'Anteprima ridotta. Pausa durante zoom. Versione con changelog.', tags:['ui','feat'] },
+    { ver:'v1.5.1', date:'22/05/2026 18:00', desc:'Rimossi hint password. Campo password type="password".', tags:['ui'] },
+    { ver:'v1.5.0', date:'22/05/2026 17:30', desc:'Pattern stretto a BDBCF00. Password HHMM per changelog.', tags:['fix','feat'] },
+    { ver:'v1.4.0', date:'22/05/2026 16:45', desc:'Confidenza OCR e correzioni. Badge colorati confidenza.', tags:['feat'] },
+    { ver:'v1.3.0', date:'22/05/2026 16:10', desc:'Rimossa lente da anteprima. Immagine 130px.', tags:['ui'] },
+    { ver:'v1.2.0', date:'22/05/2026 15:40', desc:'Anteprima ridotta. Pausa durante zoom.', tags:['ui','feat'] },
     { ver:'v1.1.0', date:'22/05/2026 14:30', desc:'Solo 10 caratteri. No Good default. Timeout 1s.', tags:['feat','fix'] },
-    { ver:'v1.0.0', date:'22/05/2026 12:00', desc:'Versione iniziale: OCR Tesseract.js, Excel, ZIP, aptico, duplicati.', tags:['feat'] }
+    { ver:'v1.0.0', date:'22/05/2026 12:00', desc:'Versione iniziale.', tags:['feat'] }
 ];
 
 let cameraActive=false, flashOn=false, multiDetect=false, videoEl=null, stream=null, ocrWorker=null, scanTimer=null;
@@ -396,9 +396,33 @@ function closeConfirm(){document.getElementById('confirmModal').classList.remove
 function executeConfirm(){if(confirmCallback)confirmCallback();closeConfirm();}
 
 const OCR_CORRECTION_MAP={'O':'0','o':'0','Q':'0','I':'1','l':'1','i':'1','S':'5','s':'5','Z':'2','z':'2'};
-function fixOCR(raw){let c=[],f='';for(let i=0;i<raw.length;i++){if(OCR_CORRECTION_MAP.hasOwnProperty(raw[i])){f+=OCR_CORRECTION_MAP[raw[i]];c.push(`${raw[i]}→${OCR_CORRECTION_MAP[raw[i]]}`);}else{f+=raw[i];}}return{fixed:f.toUpperCase(),corrections:c};}
-function detectCorrections(raw,serial){const c=[],ru=raw.toUpperCase(),mn=Math.min(ru.length,serial.length);for(let i=0;i<mn;i++){if(ru[i]!==serial[i])c.push(`${ru[i]}→${serial[i]}`);}return c;}
-function isValidSerial(s){return SERIAL_PATTERN.test(s);}
+
+function fixOCR(raw){
+    let corrections=[], fixed='';
+    for(let i=0;i<raw.length;i++){
+        if(OCR_CORRECTION_MAP.hasOwnProperty(raw[i])){
+            fixed+=OCR_CORRECTION_MAP[raw[i]];
+            corrections.push(`${raw[i]}→${OCR_CORRECTION_MAP[raw[i]]}`);
+        } else { fixed+=raw[i]; }
+    }
+    return {fixed:fixed.toUpperCase(), corrections};
+}
+
+function detectCorrections(raw,serial){
+    const corrections=[], ru=raw.toUpperCase(), mn=Math.min(ru.length,serial.length);
+    for(let i=0;i<mn;i++){ if(ru[i]!==serial[i]) corrections.push(`${ru[i]}→${serial[i]}`); }
+    return corrections;
+}
+
+function isValidSerial(s){ return SERIAL_PATTERN.test(s); }
+
+// Validate serial and return specific error message
+function validateSerial(s) {
+    if (s.length !== 10) return 'Il seriale deve avere esattamente 10 caratteri (attuali: '+s.length+')';
+    if (!s.startsWith('BDBCF00')) return 'Il seriale deve iniziare con "BDBCF00"';
+    if (!SERIAL_PATTERN.test(s)) return 'Caratteri non validi (solo 0-9, A-F dopo BDBCF00)';
+    return null;
+}
 
 function cropFromBbox(canvas,rw,rh,bbox,margin){
     const{x0,y0,x1,y1}=bbox;
@@ -412,9 +436,19 @@ function cropFromBbox(canvas,rw,rh,bbox,margin){
 
 // ===== VERSION PASSWORD =====
 let versionPwdTimeout=null;
-function requestVersionAccess(){const n=new Date();versionPwdTimeout=String(n.getHours()).padStart(2,'0')+String(n.getMinutes()).padStart(2,'0');document.getElementById('versionPassword').value='';document.getElementById('passwordModal').classList.add('visible');setTimeout(()=>{const i=document.getElementById('versionPassword');if(i)i.focus();},200);}
+function requestVersionAccess(){
+    const n=new Date();
+    versionPwdTimeout=String(n.getHours()).padStart(2,'0')+String(n.getMinutes()).padStart(2,'0');
+    document.getElementById('versionPassword').value='';
+    document.getElementById('passwordModal').classList.add('visible');
+    setTimeout(()=>{const i=document.getElementById('versionPassword');if(i)i.focus();},200);
+}
 function closePasswordModal(){document.getElementById('passwordModal').classList.remove('visible');versionPwdTimeout=null;}
-function checkVersionPassword(){const i=document.getElementById('versionPassword').value.trim();if(i===versionPwdTimeout){closePasswordModal();openVersionModal();}else{toast('❌ Errata','error');beepErr();vib('err');document.getElementById('versionPassword').value='';document.getElementById('versionPassword').focus();}}
+function checkVersionPassword(){
+    const i=document.getElementById('versionPassword').value.trim();
+    if(i===versionPwdTimeout){closePasswordModal();openVersionModal();}
+    else{toast('❌ Errata','error');beepErr();vib('err');document.getElementById('versionPassword').value='';document.getElementById('versionPassword').focus();}
+}
 document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('passwordModal').classList.contains('visible'))checkVersionPassword();});
 
 // ===== PEDANA MODAL =====
@@ -439,9 +473,7 @@ function pedanaChange(){
     np.value=lastScanPedana||'';
     setTimeout(()=>np.focus(),100);
 }
-function pedanaCancel(){
-    document.getElementById('pedanaChangeInput').style.display='none';
-}
+function pedanaCancel(){document.getElementById('pedanaChangeInput').style.display='none';}
 function pedanaConfirm(){
     const nv=document.getElementById('newPedanaInput').value.trim();
     if(!nv){toast('Campo obbligatorio','error');return;}
@@ -452,11 +484,7 @@ function pedanaConfirm(){
     if(pedanaCallback)pedanaCallback(nv);
     pedanaCallback=null;
 }
-document.addEventListener('keydown',(e)=>{
-    if(e.key==='Enter'&&document.getElementById('pedanaChangeInput').style.display==='block'){
-        pedanaConfirm();
-    }
-});
+document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('pedanaChangeInput').style.display==='block')pedanaConfirm();});
 
 async function toggleCamera(){if(cameraActive){stopCamera();}else{await startCamera();}}
 
@@ -517,14 +545,8 @@ function toggleMultiDetect(){multiDetect=!multiDetect;document.getElementById('t
 
 function checkPedanaRequired(){
     const p=document.getElementById('pedana').value.trim();
-    if(!p){
-        document.getElementById('pedana').classList.add('missing');
-        toast('⚠️ Inserisci Pedana/Posizione','error');
-        beepErr();vib('err');
-        return false;
-    }
-    document.getElementById('pedana').classList.remove('missing');
-    return true;
+    if(!p){document.getElementById('pedana').classList.add('missing');toast('⚠️ Inserisci Pedana/Posizione','error');beepErr();vib('err');return false;}
+    document.getElementById('pedana').classList.remove('missing');return true;
 }
 
 async function scanFrame(){
@@ -556,18 +578,24 @@ async function scanFrame(){
             const words=result.data.words||[];
             for(const word of words){
                 let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
-                if(cleaned.length<8)continue;
+                
+                // FIX: il testo grezzo DEVE avere almeno 10 caratteri
+                // Previene seriali parziali inventati dall'OCR
+                if(cleaned.length < 10) continue;
+                
                 let{fixed,corrections}=fixOCR(cleaned);
                 const wordConf=Math.round(word.confidence);
+                
+                // Match diretto: fixed deve essere esattamente 10 caratteri
                 if(fixed.length===10&&isValidSerial(fixed)&&!foundSerials.includes(fixed)){
                     const fc=detectCorrections(cleaned,fixed);
-                    // Crop con margine 15px
                     const imgData=cropFromBbox(canvas,rw,rh,word.bbox,15);
                     foundSerials.push(fixed);
                     processSerial(fixed,imgData,wordConf,fc);
                     if(!multiDetect)return;
                     continue;
                 }
+                // Sliding window per seriali embedded in testo più lungo
                 for(let i=0;i<=cleaned.length-10;i++){
                     const sub=cleaned.substring(i,i+10);
                     let{fixed:sf}=fixOCR(sub);
@@ -663,7 +691,11 @@ function editSerial(id,newVal){
     const input=document.querySelector(`#record-${id} .serial-display`);const orig=input?.dataset?.orig||rec.serial;
     if(newVal===orig)return;
     let{fixed}=fixOCR(newVal.trim().toUpperCase());
-    if(!isValidSerial(fixed)){toast('❌ Seriale non valido (deve iniziare con BDBCF00)','error');beepErr();input.value=orig;return;}
+    
+    // Messaggio di errore specifico
+    const errMsg=validateSerial(fixed);
+    if(errMsg){toast('❌ '+errMsg,'error');beepErr();input.value=orig;return;}
+    
     showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{
         if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Seriale già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}
         rec.serial=fixed;rec.modified=true;toast('Seriale modificato: '+fixed,'success');beepOk();renderRecords();
