@@ -1,31 +1,31 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scanner BDBCF PRO</title>
+<title>Scanner continuo BDBCF</title>
 
-<!-- ✅ SCRIPT CORRETTI -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <style>
 body {
   margin:0;
   font-family:system-ui;
-  background:#0f0f1a;
+  background:#111;
   color:#fff;
+  text-align:center;
 }
 
 video { width:100%; }
 
-.container { position:relative; }
+.wrapper {
+  position:relative;
+}
 
 .scan-box {
   position:absolute;
   left:15%;
-  top:30%;
+  top:35%;
   width:70%;
   height:25%;
   border:2px dashed #00d2ff;
@@ -33,317 +33,175 @@ video { width:100%; }
 
 .scan-line {
   position:absolute;
-  width:100%;
   height:2px;
+  width:100%;
   background:red;
-  animation:scan 1.5s infinite;
+  animation:scan 2s infinite;
 }
 
 @keyframes scan {
-  0%{top:0}
-  100%{top:100%}
+  0% { top:0 }
+  100% { top:100% }
 }
 
 button {
   width:90%;
-  margin:5px;
   padding:12px;
+  margin:5px;
   border:none;
   border-radius:10px;
+  background:#00d2ff;
 }
 
-input {
-  width:90%;
-  padding:10px;
-  margin:5px;
-}
+#status { margin-top:10px }
 
-table {
-  width:100%;
-  font-size:0.85rem;
-  margin-top:10px;
-}
-
-.thumb { width:60px; }
-.modified { color:#ff9800; }
 </style>
 </head>
 
 <body>
 
-<h3 style="text-align:center">📷 Scanner BDBCF</h3>
+<h2>📷 Scanner continuo</h2>
 
-<input id="operator" placeholder="👤 Operatore">
-<input id="batch" placeholder="📦 Posizione">
-
-<div class="container">
+<div class="wrapper">
   <video id="video" playsinline muted></video>
   <div class="scan-box"><div class="scan-line"></div></div>
 </div>
 
-<button onclick="toggleCamera()">📸 Camera</button>
-<button onclick="toggleFlash()">🔦 Flash</button>
-<button onclick="downloadCSV()">📄 Excel</button>
-<button onclick="downloadZIP()">📦 ZIP</button>
+<button onclick="startCamera()">📸 Avvia</button>
+<button onclick="stopCamera()">⏹️ Stop</button>
 
-<p id="status" style="text-align:center">🟡 Pronto</p>
-<p style="text-align:center">Totale: <span id="count">0</span></p>
-
-<table>
-<thead>
-<tr>
-<th>Ora</th><th>Seriale</th><th>Stato</th><th>Img</th><th>❌</th>
-</tr>
-</thead>
-<tbody id="tbody"></tbody>
-</table>
+<p id="status">Pronto</p>
 
 <script>
 const video = document.getElementById("video");
 
-let stream=null;
-let track=null;
-let flashOn=false;
+let stream = null;
+let worker = null;
+let running = false;
 
-let worker=null;
-let scanning=false;
-
-let data=[];
-
-const REGEX=/^BDBCF00[0-9A-F]{3}$/;
+const REGEX = /^BDBCF00[0-9A-F]{3}$/;
 
 // ================= CAMERA =================
-async function toggleCamera(){
-
-  if(stream){
-    stream.getTracks().forEach(t=>t.stop());
-    stream=null;
-    scanning=false;
-    setStatus("⏹️ OFF");
-    return;
-  }
+async function startCamera(){
 
   try{
     stream = await navigator.mediaDevices.getUserMedia({
-      video:{ facingMode:"environment" },
-      audio:false
+      video:{ facingMode:"environment" }
     });
 
-    video.srcObject=stream;
+    video.srcObject = stream;
     await video.play();
 
-    track = stream.getVideoTracks()[0];
+    document.getElementById("status").textContent = "✅ Camera attiva";
 
-    worker = await Tesseract.createWorker("eng");
-
-    scanning=true;
-    loop();
-
-    setStatus("✅ Attivo");
+    startScanner();
 
   } catch(e){
-    alert("Errore camera: "+e.message);
+    alert("Errore camera: " + e.message);
   }
 }
 
-// ================= FLASH =================
-async function toggleFlash(){
-
-  if(!track) return;
-
-  try{
-    const cap = track.getCapabilities();
-
-    if(!cap.torch){
-      setStatus("⚠️ Flash non supportato");
-      return;
-    }
-
-    flashOn=!flashOn;
-
-    await track.applyConstraints({
-      advanced:[{ torch: flashOn }]
-    });
-
-    setStatus(flashOn ? "🔦 ON" : "🔦 OFF");
-
-  } catch(e){
-    setStatus("❌ Errore flash");
+function stopCamera(){
+  if(stream){
+    stream.getTracks().forEach(t => t.stop());
+    running = false;
+    document.getElementById("status").textContent = "⏹️ Stop";
   }
-}
-
-// ================= LOOP =================
-async function loop(){
-  if(!scanning) return;
-
-  await scan();
-
-  setTimeout(loop,1000);
-}
-
-// ================= SCAN =================
-async function scan(){
-
-  if(video.readyState < 2) return;
-
-  const c=document.createElement("canvas");
-  const ctx=c.getContext("2d");
-
-  c.width=video.videoWidth;
-  c.height=video.videoHeight;
-
-  ctx.drawImage(video,0,0);
-
-  const {data:{text}}=await worker.recognize(c);
-
-  process(text,c);
 }
 
 // ================= OCR =================
-function process(text,canvas){
+async function startScanner(){
+
+  running = true;
+
+  if(!worker){
+    worker = await Tesseract.createWorker("eng");
+  }
+
+  scanLoop();
+}
+
+// ================= LOOP =================
+async function scanLoop(){
+
+  if(!running) return;
+
+  try{
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const w = video.videoWidth;
+    const h = video.videoHeight;
+
+    // ✅ crop centrale
+    const cw = w * 0.6;
+    const ch = h * 0.3;
+
+    const x = (w - cw)/2;
+    const y = (h - ch)/2;
+
+    canvas.width = 600;
+    canvas.height = 300;
+
+    ctx.drawImage(video, x, y, cw, ch, 0, 0, 600, 300);
+
+    const { data:{ text } } = await worker.recognize(canvas);
+
+    processText(text);
+
+  } catch(e){
+    console.log(e);
+  }
+
+  setTimeout(scanLoop, 1200);
+}
+
+// ================= PARSE =================
+let lastCode = "";
+
+function processText(text){
 
   let clean = text.toUpperCase()
     .replace(/O/g,"0")
     .replace(/I/g,"1")
     .replace(/[^A-Z0-9]/g,"");
 
-  const matches = clean.match(/BDBCF00[0-9A-F]{3}/g)||[];
+  const matches = clean.match(/BDBCF00[0-9A-F]{3}/g) || [];
 
-  matches.forEach(code=>{
+  matches.forEach(code => {
 
     if(!REGEX.test(code)) return;
 
-    if(data.some(d=>d.code===code)){
-      feedbackError();
-      return;
-    }
+    // evita ripetizioni immediate
+    if(code === lastCode) return;
 
-    add(code,canvas);
+    lastCode = code;
+
+    onDetected(code);
   });
 }
 
-// ================= ADD =================
-function add(code,canvas){
+// ================= EVENTO =================
+function onDetected(code){
 
-  const obj={
-    time:new Date().toLocaleTimeString(),
-    code,
-    status:"Good",
-    modified:false,
-    img:canvas.toDataURL("image/jpeg",0.7)
-  };
+  document.getElementById("status").textContent = "✅ " + code;
 
-  data.push(obj);
-  render();
+  beep();
 
-  feedbackOK();
-}
-
-// ================= RENDER =================
-function render(){
-
-  const tb=document.getElementById("tbody");
-  tb.innerHTML="";
-
-  data.slice().reverse().forEach((r,i)=>{
-
-    const tr=document.createElement("tr");
-
-    tr.innerHTML=`
-      <td>${r.time}</td>
-      <td class="${r.modified?'modified':''}" onclick="edit(${i})">${r.code}</td>
-      <td>${r.status}</td>
-      <td><img src="${})">🗑️</button></td>
-    `;
-
-    tb.appendChild(tr);
-  });
-
-  document.getElementById("count").textContent=data.length;
-}
-
-// ================= EDIT =================
-function edit(i){
-  let val=prompt("Modifica codice",data[i].code);
-  if(!val) return;
-
-  val=val.toUpperCase();
-
-  if(!REGEX.test(val)){
-    alert("Formato errato");
-    return;
-  }
-
-  data[i].code=val;
-  data[i].modified=true;
-  render();
-}
-
-// ================= REMOVE =================
-function removeRow(i){
-  if(confirm("Elimina record?")){
-    data.splice(i,1);
-    render();
+  if(navigator.vibrate){
+    navigator.vibrate(100);
   }
 }
 
-// ================= EXPORT =================
-function downloadCSV(){
-
-  let csv="Seriale,Ora\n";
-
-  data.forEach(r=>{
-    csv+=`${r.code},${r.time}\n`;
-  });
-
-  const blob=new Blob([csv]);
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="export.csv";
-  a.click();
-}
-
-async function downloadZIP(){
-
-  const zip=new JSZip();
-  const folder=zip.folder("img");
-
-  data.forEach(r=>{
-    const base64=r.img.split(',')[1];
-    folder.file(r.code+".jpg",base64,{base64:true});
-  });
-
-  const blob=await zip.generateAsync({type:"blob"});
-
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="images.zip";
-  a.click();
-}
-
-// ================= FEEDBACK =================
-function feedbackOK(){
-  beep(800);
-  if(navigator.vibrate) navigator.vibrate([100,50,100]);
-}
-
-function feedbackError(){
-  beep(200);
-  if(navigator.vibrate) navigator.vibrate(200);
-}
-
-function beep(freq){
-  const ctx=new AudioContext();
-  const osc=ctx.createOscillator();
-  osc.frequency.value=freq;
+// ================= AUDIO =================
+function beep(){
+  const ctx = new AudioContext();
+  const osc = ctx.createOscillator();
+  osc.frequency.value = 800;
   osc.connect(ctx.destination);
   osc.start();
-  osc.stop(ctx.currentTime+0.1);
-}
-
-// ================= UI =================
-function setStatus(msg){
-  document.getElementById("status").textContent=msg;
+  osc.stop(ctx.currentTime + 0.1);
 }
 </script>
 
