@@ -128,18 +128,13 @@
         }
         @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
 
-        /* Riga superiore: immagine + seriale + elimina */
-        .record-top {
-            display:flex; align-items:center; gap:10px; flex-wrap:nowrap;
-        }
+        .record-top { display:flex; align-items:center; gap:10px; flex-wrap:nowrap; }
 
         .record-image-wrap {
             width:130px; height:50px; border-radius:6px; overflow:hidden; background:#000;
             flex-shrink:0; cursor:pointer; position:relative; border:1px solid var(--border);
         }
-        .record-image-wrap img {
-            width:100%; height:100%; object-fit:contain; image-rendering:auto;
-        }
+        .record-image-wrap img { width:100%; height:100%; object-fit:contain; image-rendering:auto; }
 
         .record-info { flex:1; min-width:0; }
         .serial-display {
@@ -150,8 +145,22 @@
         }
         .serial-display.modified { color:var(--warning); border-color:var(--warning); }
         .serial-display:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.15); width:130px; }
-        .record-meta { font-size:10px; color:var(--text-dim); margin-top:4px; display:flex; flex-wrap:wrap; gap:6px; }
+
+        .record-meta {
+            font-size:10px; color:var(--text-dim); margin-top:4px;
+            display:flex; flex-wrap:wrap; gap:5px; align-items:center;
+        }
+        .meta-tag {
+            display:inline-flex; align-items:center; gap:3px;
+            padding:1px 5px; border-radius:3px; font-size:9px; font-weight:600;
+            font-family:'JetBrains Mono',monospace;
+        }
+        .meta-tag.conf-high { background:rgba(16,185,129,0.12); color:var(--accent); }
+        .meta-tag.conf-mid { background:rgba(245,158,11,0.12); color:var(--warning); }
+        .meta-tag.conf-low { background:rgba(239,68,68,0.12); color:var(--danger); }
+        .meta-tag.correction { background:rgba(139,92,246,0.12); color:#a78bfa; }
         .mod-badge { background:var(--warning); color:#1e293b; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:700; }
+
         .delete-btn { background:none; border:none; color:var(--text-dim); cursor:pointer; padding:6px; border-radius:8px; transition:all 0.2s; flex-shrink:0; }
         .delete-btn:hover { background:rgba(239,68,68,0.15); color:var(--danger); }
         .delete-btn svg { width:18px; height:18px; }
@@ -175,6 +184,7 @@
         }
         .note-input.visible { display:block; }
         .note-input:focus { border-color:#ec4899; }
+
         .image-modal {
             position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.95);
             z-index:1000; display:none; align-items:center; justify-content:center; cursor:pointer;
@@ -259,6 +269,7 @@
             .status-btn { font-size:9px; padding:3px 6px; }
             .record-image-wrap { width:120px; height:46px; }
             .serial-display { width:120px; }
+            .record-meta { gap:3px; }
         }
     </style>
 </head>
@@ -270,7 +281,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             Scanner Seriali OCR
         </h1>
-        <span class="version-badge" id="versionBadge" onclick="openVersionModal()">v1.3.0</span>
+        <span class="version-badge" id="versionBadge" onclick="openVersionModal()">v1.4.0</span>
     </div>
     <div class="scan-counter">
         <span class="label">Seriali: <span class="count" id="scanCount">0</span></span>
@@ -336,7 +347,7 @@
 <div class="version-modal" id="versionModal" onclick="closeVersionModal()">
     <div class="version-modal-box" onclick="event.stopPropagation()">
         <h3>📋 Changelog</h3>
-        <div class="ver-date">Generato il 22/05/2026 — 16:10 UTC+2</div>
+        <div class="ver-date">Generato il 22/05/2026 — 16:45 UTC+2</div>
         <div id="changelogContent"></div>
         <button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button>
     </div>
@@ -368,9 +379,14 @@
 
 <script>
 // ===== CONFIG =====
-const APP_VERSION = '1.3.0';
-const APP_BUILD_DATE = '22/05/2026 16:10';
+const APP_VERSION = '1.4.0';
+const APP_BUILD_DATE = '22/05/2026 16:45';
 const CHANGELOG = [
+    {
+        ver: 'v1.4.0', date: '22/05/2026 16:45',
+        desc: 'Aggiunta percentuale confidenza OCR e correzioni applicate (O→0, S→5, ecc.). Visualizzazione minimale con badge colorati in base al livello di confidenza.',
+        tags: ['feat']
+    },
     {
         ver: 'v1.3.0', date: '22/05/2026 16:10',
         desc: 'Rimossa icona lente di ingrandimento dall\'anteprima. Ingrandito riquadro immagine a 130px (stessa larghezza del seriale testuale). Entrambi sulla stessa riga.',
@@ -412,7 +428,46 @@ function showConfirm(title,msg,cb){document.getElementById('confirmTitle').textC
 function closeConfirm(){document.getElementById('confirmModal').classList.remove('visible');confirmCallback=null;}
 function executeConfirm(){if(confirmCallback)confirmCallback();closeConfirm();}
 
-function fixOCR(raw){return raw.replace(/O/g,'0').replace(/o/g,'0').replace(/Q/g,'0').replace(/I/g,'1').replace(/l/g,'1').replace(/i/g,'1').replace(/S/g,'5').replace(/s/g,'5').replace(/Z/g,'2').toUpperCase();}
+// ===== OCR CORRECTIONS =====
+const OCR_CORRECTION_MAP = {
+    'O':'0', 'o':'0', 'Q':'0', 'o':'0',
+    'I':'1', 'l':'1', 'i':'1',
+    'S':'5', 's':'5',
+    'Z':'2', 'z':'2'
+};
+
+function fixOCR(raw) {
+    let corrections = [];
+    let fixed = '';
+    for (let i = 0; i < raw.length; i++) {
+        const ch = raw[i];
+        if (OCR_CORRECTION_MAP.hasOwnProperty(ch)) {
+            const replacement = OCR_CORRECTION_MAP[ch];
+            fixed += replacement;
+            corrections.push(`${ch}→${replacement}`);
+        } else {
+            fixed += ch;
+        }
+    }
+    return { fixed: fixed.toUpperCase(), corrections };
+}
+
+function detectCorrections(raw, serial) {
+    const corrections = [];
+    const rawUpper = raw.toUpperCase();
+    const minLen = Math.min(rawUpper.length, serial.length);
+    for (let i = 0; i < minLen; i++) {
+        const r = rawUpper[i];
+        const s = serial[i];
+        if (r !== s && OCR_CORRECTION_MAP.hasOwnProperty(r) && OCR_CORRECTION_MAP[r] === s) {
+            corrections.push(`${r}→${s}`);
+        } else if (r !== s && rawUpper.length === serial.length) {
+            corrections.push(`${r}→${s}`);
+        }
+    }
+    return corrections;
+}
+
 function isValidSerial(s){return SERIAL_PATTERN.test(s);}
 
 async function toggleCamera(){if(cameraActive){stopCamera();}else{await startCamera();}}
@@ -501,21 +556,24 @@ async function scanFrame(){
             for(const word of words){
                 let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
                 if(cleaned.length<8)continue;
-                let fixed=fixOCR(cleaned);
+                let {fixed, corrections}=fixOCR(cleaned);
+                const wordConf = Math.round(word.confidence);
                 if(fixed.length===10&&isValidSerial(fixed)&&!foundSerials.includes(fixed)){
                     const imgData=cropFromBbox(canvas,rw,rh,word.bbox,15);
+                    const finalCorrections=detectCorrections(cleaned, fixed);
                     foundSerials.push(fixed);
-                    processSerial(fixed,imgData);
+                    processSerial(fixed, imgData, wordConf, finalCorrections);
                     if(!multiDetect)return;
                     continue;
                 }
                 for(let i=0;i<=cleaned.length-10;i++){
                     const sub=cleaned.substring(i,i+10);
-                    const subFixed=fixOCR(sub);
+                    let {fixed:subFixed, corrections:subCorr}=fixOCR(sub);
                     if(isValidSerial(subFixed)&&!foundSerials.includes(subFixed)){
                         const imgData=cropFromBbox(canvas,rw,rh,word.bbox,15);
+                        const finalCorrections=detectCorrections(sub, subFixed);
                         foundSerials.push(subFixed);
-                        processSerial(subFixed,imgData);
+                        processSerial(subFixed, imgData, Math.round(word.confidence), finalCorrections);
                         if(!multiDetect)return;
                         break;
                     }
@@ -537,7 +595,13 @@ function cropFromBbox(canvas,rw,rh,bbox,margin){
     return cc.toDataURL('image/jpeg',0.75);
 }
 
-function processSerial(serial,imgData){
+function getConfClass(conf) {
+    if (conf >= 80) return 'conf-high';
+    if (conf >= 60) return 'conf-mid';
+    return 'conf-low';
+}
+
+function processSerial(serial, imgData, confidence, corrections){
     const isDup=records.some(r=>r.serial===serial);
     if(isDup){toast('⚠️ Duplicato: '+serial,'warning');beepDup();vib('dup');return;}
 
@@ -555,7 +619,11 @@ function processSerial(serial,imgData){
     const operator=document.getElementById('operatorName').value.trim()||'N/D';
     const pedana=document.getElementById('pedana').value.trim()||'N/D';
     const ts=new Date().toLocaleString('it-IT');
-    records.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial,timestamp:ts,operator,pedana,modified:false,status:'',note:'',image:imgData||null});
+    records.unshift({
+        id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+        serial, timestamp:ts, operator, pedana, modified:false, status:'', note:'',
+        image:imgData||null, confidence:confidence||0, corrections:corrections||[]
+    });
     scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
     beepOk();vib('ok');renderRecords();toast('✅ '+serial,'success');
 }
@@ -563,7 +631,12 @@ function processSerial(serial,imgData){
 function renderRecords(){
     const el=document.getElementById('recordsList');
     if(records.length===0){el.innerHTML=`<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h.01M12 7h.01M17 7h.01M7 12h10M7 17h6"/></svg><p>Nessun seriale scansionato.<br>Avvia la fotocamera per iniziare.</p></div>`;return;}
-    el.innerHTML=records.map(r=>`
+    el.innerHTML=records.map(r=>{
+        const confClass = getConfClass(r.confidence);
+        const corrHtml = r.corrections && r.corrections.length > 0
+            ? `<span class="meta-tag correction" title="Correzioni OCR">⚡ ${r.corrections.join(', ')}</span>`
+            : '';
+        return `
         <div class="record-card" id="record-${r.id}">
             <div class="record-top">
                 <div class="record-image-wrap" onclick="openModal('${r.id}')">
@@ -571,7 +644,14 @@ function renderRecords(){
                 </div>
                 <div class="record-info">
                     <input type="text" class="serial-display ${r.modified?'modified':''}" value="${r.serial}" onchange="editSerial('${r.id}',this.value)" onfocus="this.dataset.orig=this.value" spellcheck="false" autocomplete="off" maxlength="12">
-                    <div class="record-meta"><span>🕐 ${r.timestamp}</span><span>👤 ${r.operator}</span><span>📍 ${r.pedana}</span>${r.modified?'<span class="mod-badge">MODIF.</span>':''}</div>
+                    <div class="record-meta">
+                        <span class="meta-tag ${confClass}" title="Confidenza OCR">🎯 ${r.confidence}%</span>
+                        ${corrHtml}
+                        <span>🕐 ${r.timestamp}</span>
+                        <span>👤 ${r.operator}</span>
+                        <span>📍 ${r.pedana}</span>
+                        ${r.modified?'<span class="mod-badge">MODIF.</span>':''}
+                    </div>
                 </div>
                 <button class="delete-btn" onclick="deleteRecord('${r.id}')" title="Elimina"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
             </div>
@@ -585,13 +665,14 @@ function renderRecords(){
                 ${r.status?`<button class="status-btn active-none" onclick="setStatus('${r.id}','')">✕ Reset</button>`:''}
             </div>
             <input type="text" class="note-input ${r.status==='Dubbio/Altro'?'visible':''}" placeholder="Note..." value="${r.note}" onchange="setNote('${r.id}',this.value)">
-        </div>`).join('');
+        </div>`;
+    }).join('');
 }
 
 function editSerial(id,newVal){
     const rec=records.find(r=>r.id===id);if(!rec)return;
     const input=document.querySelector(`#record-${id} .serial-display`);const orig=input?.dataset?.orig||rec.serial;
-    if(newVal===orig)return;let fixed=fixOCR(newVal.trim().toUpperCase());
+    if(newVal===orig)return;let fixed=fixOCR(newVal.trim().toUpperCase()).fixed;
     showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{
         if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Seriale già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}
         rec.serial=fixed;rec.modified=true;toast('Seriale modificato: '+fixed,'success');beepOk();renderRecords();
@@ -635,8 +716,14 @@ function closeVersionModal(){document.getElementById('versionModal').classList.r
 
 function exportExcel(){
     if(records.length===0){toast('Nessun record','warning');return;}
-    const data=records.map((r,i)=>({'#':i+1,'Timestamp':r.timestamp,'Seriale':r.serial,'Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,'Operatore':r.operator,'Stato':r.status||'—','Note':r.note}));
-    const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];
+    const data=records.map((r,i)=>({
+        '#':i+1,'Timestamp':r.timestamp,'Seriale':r.serial,
+        'Confidenza %':r.confidence,
+        'Correzioni OCR':r.corrections&&r.corrections.length?r.corrections.join(', '):'—',
+        'Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,
+        'Operatore':r.operator,'Stato':r.status||'—','Note':r.note
+    }));
+    const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:12},{wch:20},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Scansioni');
     XLSX.writeFile(wb,`Scansioni_${new Date().toISOString().slice(0,10)}.xlsx`);toast(`📊 Excel: ${records.length} record`,'success');vib('ok');
 }
@@ -647,7 +734,7 @@ async function exportZip(){
     try{
         const zip=new JSZip(),imgF=zip.folder('immagini');let cnt=0;
         for(const r of records){if(r.image){imgF.file(`${r.serial}_${r.id}.jpg`,r.image.split(',')[1],{base64:true});cnt++;}}
-        const csv='N,Timestamp,Seriale,Modificato,Lotto,Operatore,Stato,Note\n'+records.map((r,i)=>`${i+1},${r.timestamp},${r.serial},${r.modified?'Sì':'No'},${r.pedana},${r.operator},${r.status||'—'},"${r.note}"`).join('\n');
+        const csv='N,Timestamp,Seriale,Confidenza%,CorrezioniOCR,Modificato,Lotto,Operatore,Stato,Note\n'+records.map((r,i)=>`${i+1},${r.timestamp},${r.serial},${r.confidence},"${(r.corrections||[]).join(', ')}",${r.modified?'Sì':'No'},${r.pedana},${r.operator},${r.status||'—'},"${r.note}"`).join('\n');
         zip.file('riepilogo.csv',csv);
         const blob=await zip.generateAsync({type:'blob'});saveAs(blob,`Archivio_${new Date().toISOString().slice(0,10)}.zip`);
         toast(`📦 ZIP: ${cnt} immagini`,'success');vib('ok');
