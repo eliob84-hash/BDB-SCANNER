@@ -1,3 +1,11 @@
+Gestione carrier >>> C'è il personale per l'estrazione (altrimenti blocco linea)
+
+Avviso per quando uscira' il carrier (fasce orarie)
+
+Rimozione carrier dalla wis.
+
+
+
 
 <!DOCTYPE html>
 <html lang="it">
@@ -6,10 +14,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Scanner Seriali OCR</title>
 
-  <!-- ✅ Script CDN corretti -->
-  https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.jsscript>
-  https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.jsscript>
-  https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.jsscript>
+  <!-- ✅ TAG SCRIPT CORRETTI -->
+
+	<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
   <style>
     :root{
@@ -59,7 +68,7 @@
     }
 
     .controls{
-      display:grid;grid-template-columns:repeat(5,1fr);
+      display:grid;grid-template-columns:repeat(6,1fr);
       gap:8px;margin:10px 0
     }
     button{
@@ -70,6 +79,7 @@
     button.alt{background:#455a64;color:#fff}
     button.ok{background:var(--accent);color:#0b0f14}
     button.danger{background:var(--danger);color:#fff}
+    button.warn{background:var(--warn);color:#0b0f14}
 
     table{width:100%;background:#fff;color:#000;border-collapse:collapse}
     th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center}
@@ -132,6 +142,7 @@
       <button class="ok" id="btnExcel">📊 Excel</button>
       <button class="ok" id="btnZip">🗂 ZIP</button>
       <button class="ok" id="btnAll">⬇ Tutto</button>
+      <button class="warn" id="btnClear">🧹 Pulisci</button>
     </div>
 
     <table>
@@ -156,13 +167,10 @@
     'use strict';
 
     /* ================= CONFIG ================= */
-    // Se vuoi un pattern diverso dimmelo: cambio regex e whitelist di conseguenza.
-    const SERIAL_REGEX = /^BDBCF00[0-9A-F]{3}$/;
-
-    // Throttle OCR (ms). Aumenta per meno CPU, diminuisci per più reattività.
+    const SERIAL_REGEX = /^BDBCF00[0-9A-F]{3}$/;  // pattern fisso
     const OCR_INTERVAL_MS = 900;
 
-    /* ================= ELEMENTI DOM ================= */
+    /* ================= DOM ================= */
     const el = {
       operator: document.getElementById('operator'),
       lot: document.getElementById('lot'),
@@ -174,30 +182,24 @@
       toast: document.getElementById('toast'),
       zoomModal: document.getElementById('zoomModal'),
       zoomImg: document.getElementById('zoomImg'),
-
       btnCam: document.getElementById('btnCam'),
       btnFlash: document.getElementById('btnFlash'),
       btnExcel: document.getElementById('btnExcel'),
       btnZip: document.getElementById('btnZip'),
       btnAll: document.getElementById('btnAll'),
+      btnClear: document.getElementById('btnClear'),
       btnCloseZoom: document.getElementById('btnCloseZoom')
     };
 
     /* ================= STATO ================= */
-    let stream = null;
-    let track = null;
-    let worker = null;
-
-    let cameraOn = false;
-    let flashOn = false;
-    let freezeOCR = false;
-    let ocrInFlight = false;
-    let lastOcrTs = 0;
+    let stream = null, track = null, worker = null;
+    let cameraOn = false, flashOn = false, freezeOCR = false;
+    let ocrInFlight = false, lastOcrTs = 0;
 
     const found = new Set();
     const rows = [];
 
-    /* ================= PERSISTENZA INPUT ================= */
+    /* ================= INPUT PERSIST (localStorage) ================= */
     function restoreInputs(){
       el.operator.value = localStorage.getItem('scanner_operator') || '';
       el.lot.value = localStorage.getItem('scanner_lot') || '';
@@ -207,19 +209,12 @@
       el.lot.addEventListener('input', () => localStorage.setItem('scanner_lot', el.lot.value));
     }
 
-    /* ================= AUDIO + VIBRA (robusto) ================= */
+    /* ================= AUDIO + VIBRA ================= */
     let audioCtx = null;
-
     function ensureAudio(){
-      if(!audioCtx){
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if(audioCtx.state === 'suspended'){
-        // prova a riprendere (dipende dal browser/gesture)
-        audioCtx.resume().catch(()=>{});
-      }
+      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if(audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
     }
-
     function beep(freq, dur){
       try{
         if(!audioCtx) return;
@@ -233,20 +228,108 @@
         o.stop(audioCtx.currentTime + dur);
       }catch(_){}
     }
-
-    function vibrate(ms){
-      if(navigator.vibrate) navigator.vibrate(ms);
-    }
-
+    function vibrate(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
     function toast(msg){
       el.toast.textContent = msg;
       el.toast.classList.add('show');
       setTimeout(() => el.toast.classList.remove('show'), 1200);
     }
-
     function setCamStatus(on){
       el.camLed.classList.toggle('on', on);
       el.camStatus.textContent = on ? 'Camera ON' : 'Camera OFF';
+    }
+
+    /* ================= IndexedDB ================= */
+    const DB_NAME = 'scanner_seriali_db';
+    const DB_VERSION = 1;
+    const STORE = 'serials';
+
+    function openDB(){
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if(!db.objectStoreNames.contains(STORE)){
+            db.createObjectStore(STORE, { keyPath: 'seriale' });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbGetAll(){
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, 'readonly');
+        const store = tx.objectStore(STORE);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+        tx.oncomplete = () => db.close();
+      });
+    }
+
+    async function dbPut(row){
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, 'readwrite');
+        tx.objectStore(STORE).put(row);
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+      });
+    }
+
+    async function dbDelete(seriale){
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, 'readwrite');
+        tx.objectStore(STORE).delete(seriale);
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+      });
+    }
+
+    async function dbClear(){
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, 'readwrite');
+        tx.objectStore(STORE).clear();
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+      });
+    }
+
+    async function dbRename(oldSeriale, newRow){
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, 'readwrite');
+        const store = tx.objectStore(STORE);
+        store.delete(oldSeriale);
+        store.put(newRow);
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+      });
+    }
+
+    async function restoreFromDB(){
+      try{
+        const saved = await dbGetAll();
+        saved.sort((a,b) => (a._savedAt||0) - (b._savedAt||0));
+
+        rows.length = 0;
+        found.clear();
+
+        for(const r of saved){
+          if(r?.seriale && SERIAL_REGEX.test(r.seriale)){
+            rows.push(r);
+            found.add(r.seriale);
+          }
+        }
+        renderTable();
+      }catch(err){
+        console.error('Restore DB error:', err);
+      }
     }
 
     /* ================= CAMERA ================= */
@@ -258,9 +341,8 @@
         return;
       }
 
-      // controlli librerie
-      if(!window.Tesseract) {
-        alert('Tesseract.js non caricato. Controlla la connessione o i tag <script>.');
+      if(!window.Tesseract){
+        alert('Tesseract non caricato. Controlla i tag <script> o la rete.');
         return;
       }
 
@@ -275,21 +357,16 @@
         });
 
         el.video.srcObject = stream;
-
-        await new Promise(resolve => {
-          el.video.onloadedmetadata = () => resolve();
-        });
+        await new Promise(resolve => el.video.onloadedmetadata = () => resolve());
 
         track = stream.getVideoTracks()[0];
 
-        // init worker una sola volta
         if(!worker){
           worker = await Tesseract.createWorker();
           await worker.loadLanguage('eng');
           await worker.initialize('eng');
 
-          // migliora velocità/precisione per seriali esadecimali
-          // (se cambi regex dimmelo: adeguo whitelist)
+          // Ottimizzazione: solo caratteri utili al pattern
           await worker.setParameters({
             tessedit_char_whitelist: '0123456789ABCDEF',
             preserve_interword_spaces: '1'
@@ -298,11 +375,11 @@
 
         cameraOn = true;
         setCamStatus(true);
-        scanLoop(); // avvia loop
+        scanLoop();
 
       }catch(err){
         console.error(err);
-        alert('Impossibile accedere alla camera. Verifica permessi o HTTPS.');
+        alert('Impossibile accedere alla camera. Serve HTTPS o permessi.');
         cameraOn = false;
         setCamStatus(false);
       }
@@ -311,7 +388,6 @@
     async function stopCamera(){
       freezeOCR = true;
 
-      // prova a spegnere torch se attivo
       try{
         if(track?.getCapabilities?.().torch && flashOn){
           flashOn = false;
@@ -319,25 +395,18 @@
         }
       }catch(_){}
 
-      if(stream){
-        stream.getTracks().forEach(t => t.stop());
-      }
-
+      if(stream) stream.getTracks().forEach(t => t.stop());
       stream = null;
       track = null;
       cameraOn = false;
       freezeOCR = false;
-
       setCamStatus(false);
     }
 
     async function toggleFlash(){
       ensureAudio();
+      if(!track){ toast('Accendi prima la camera'); return; }
 
-      if(!track){
-        toast('Accendi prima la camera');
-        return;
-      }
       const caps = track.getCapabilities ? track.getCapabilities() : {};
       if(!caps.torch){
         alert('Flash/torch non supportato su questo dispositivo/browser.');
@@ -353,9 +422,9 @@
       }
     }
 
-    /* ================= OCR LOOP ================= */
+    /* ================= OCR ================= */
     function normalizeCandidate(text){
-      return text
+      return (text || '')
         .toUpperCase()
         .replace(/O/g, '0')
         .replace(/[^0-9A-F]/g, '')
@@ -377,14 +446,13 @@
       lastOcrTs = now;
 
       try{
-        const vw = el.video.videoWidth;
-        const vh = el.video.videoHeight;
-        if(!vw || !vh) { return; }
+        const vw = el.video.videoWidth, vh = el.video.videoHeight;
+        if(!vw || !vh) return;
 
         // ROI
         const rx = vw * 0.12, ry = vh * 0.18, rw = vw * 0.76, rh = vh * 0.64;
 
-        // riduci dimensione per OCR più veloce
+        // downscale per performance
         el.canvas.width = Math.max(1, Math.floor(rw / 2));
         el.canvas.height = Math.max(1, Math.floor(rh / 2));
 
@@ -394,8 +462,9 @@
 
         const { data } = await worker.recognize(el.canvas);
 
+        // multi-seriali per frame
         for(const w of (data.words || [])){
-          const s = normalizeCandidate(w.text || '');
+          const s = normalizeCandidate(w.text);
           if(!SERIAL_REGEX.test(s)) continue;
 
           if(found.has(s)){
@@ -407,36 +476,37 @@
           found.add(s);
           beep(900, 0.10); vibrate(200);
 
-          // Crop preview del bbox (bbox è relativo alla canvas passata a recognize)
+          // crop bbox (solo seriale)
           const bb = w.bbox;
           const cw = Math.max(1, Math.floor(bb.x1 - bb.x0));
           const ch = Math.max(1, Math.floor(bb.y1 - bb.y0));
 
           const c = document.createElement('canvas');
-          c.width = cw;
-          c.height = ch;
-
-          const cctx = c.getContext('2d');
-          cctx.drawImage(el.canvas, bb.x0, bb.y0, cw, ch, 0, 0, cw, ch);
+          c.width = cw; c.height = ch;
+          c.getContext('2d').drawImage(el.canvas, bb.x0, bb.y0, cw, ch, 0, 0, cw, ch);
 
           const img = c.toDataURL('image/jpeg', 0.85);
 
-          rows.push({
+          const row = {
             seriale: s,
             operatore: el.operator.value || '',
             lotto: el.lot.value || '',
             timestamp: new Date().toLocaleString(),
             fileName: `${s}.jpg`,
             img,
-            edited: false
-          });
+            edited: false,
+            _savedAt: Date.now()
+          };
 
+          rows.push(row);
           renderTable();
+
+          // salva su IndexedDB
+          dbPut(row).catch(err => console.error('DB put error:', err));
         }
 
       }catch(err){
         console.error('OCR error:', err);
-        // non faccio alert per non disturbare: basta log
       }finally{
         ocrInFlight = false;
         setTimeout(scanLoop, OCR_INTERVAL_MS);
@@ -457,33 +527,29 @@
       });
     }
 
-    // Event delegation (meno handler, più pulito)
     el.results.addEventListener('click', (e) => {
       const t = e.target;
 
       if(t.matches('td.serial')){
         const i = Number(t.getAttribute('data-i'));
         editSerial(i);
-      }
-
-      if(t.matches('img.thumb')){
-        const src = t.getAttribute('data-zoom');
-        zoom(src);
-      }
-
-      if(t.matches('button[data-del]')){
-        const i = Number(t.getAttribute('data-del'));
-        deleteRow(i);
+      } else if(t.matches('img.thumb')){
+        zoom(t.getAttribute('data-zoom'));
+      } else if(t.matches('button[data-del]')){
+        deleteRow(Number(t.getAttribute('data-del')));
       }
     });
 
-    function deleteRow(i){
+    async function deleteRow(i){
       const r = rows[i];
       if(!r) return;
       if(!confirm(`Confermi la cancellazione del seriale ${r.seriale}?`)) return;
+
       found.delete(r.seriale);
       rows.splice(i, 1);
       renderTable();
+
+      try{ await dbDelete(r.seriale); } catch(err){ console.error('DB delete error:', err); }
     }
 
     /* ================= ZOOM ================= */
@@ -499,7 +565,7 @@
     }
 
     /* ================= EDIT ================= */
-    function editSerial(i){
+    async function editSerial(i){
       const r = rows[i];
       if(!r) return;
 
@@ -519,12 +585,15 @@
       r.seriale = nuovo;
       r.fileName = `${nuovo}.jpg`;
       r.edited = true;
+
       renderTable();
+
+      try{ await dbRename(old, r); } catch(err){ console.error('DB rename error:', err); }
     }
 
     /* ================= EXPORT ================= */
     function exportExcel(){
-      if(!window.XLSX){ alert('XLSX non caricato'); return; }
+      if(!window.XLSX){ alert('XLSX non caricato.'); return; }
 
       const ws = XLSX.utils.json_to_sheet(
         rows.map(r => ({
@@ -542,24 +611,22 @@
     }
 
     async function exportZip(){
-      if(!window.JSZip){ alert('JSZip non caricato'); return; }
+      if(!window.JSZip){ alert('JSZip non caricato.'); return; }
 
       const zip = new JSZip();
       rows.forEach(r => {
-        // base64 dopo la virgola
         const base64 = (r.img || '').split(',')[1] || '';
         zip.file(r.fileName, base64, { base64: true });
       });
 
       const blob = await zip.generateAsync({ type: 'blob' });
-
       const a = document.createElement('a');
       const url = URL.createObjectURL(blob);
+
       a.href = url;
       a.download = 'anteprime_seriali.zip';
       a.click();
 
-      // cleanup
       setTimeout(() => URL.revokeObjectURL(url), 1500);
     }
 
@@ -568,22 +635,42 @@
       setTimeout(() => exportZip(), 300);
     }
 
+    /* ================= CLEAR ================= */
+    async function clearAll(){
+      if(!confirm('Vuoi cancellare TUTTI i dati salvati in locale?')) return;
+
+      freezeOCR = true;
+      try{
+        await dbClear();
+        rows.length = 0;
+        found.clear();
+        renderTable();
+        toast('Archivio locale pulito');
+      }catch(err){
+        console.error('DB clear error:', err);
+        alert('Errore durante la pulizia archivio.');
+      }finally{
+        freezeOCR = false;
+      }
+    }
+
     /* ================= INIT ================= */
-    restoreInputs();
-    bindInputPersistence();
+    window.addEventListener('DOMContentLoaded', async () => {
+      restoreInputs();
+      bindInputPersistence();
 
-    el.btnCam.addEventListener('click', toggleCamera);
-    el.btnFlash.addEventListener('click', toggleFlash);
-    el.btnExcel.addEventListener('click', exportExcel);
-    el.btnZip.addEventListener('click', exportZip);
-    el.btnAll.addEventListener('click', exportAll);
-    el.btnCloseZoom.addEventListener('click', closeZoom);
+      await restoreFromDB();
 
-    // chiudi zoom cliccando sullo sfondo
-    el.zoomModal.addEventListener('click', (e) => {
-      if(e.target === el.zoomModal) closeZoom();
+      el.btnCam.addEventListener('click', toggleCamera);
+      el.btnFlash.addEventListener('click', toggleFlash);
+      el.btnExcel.addEventListener('click', exportExcel);
+      el.btnZip.addEventListener('click', exportZip);
+      el.btnAll.addEventListener('click', exportAll);
+      el.btnClear.addEventListener('click', clearAll);
+
+      el.btnCloseZoom.addEventListener('click', closeZoom);
+      el.zoomModal.addEventListener('click', (e) => { if(e.target === el.zoomModal) closeZoom(); });
     });
-
   </script>
 </body>
-</html>
+</html>	
