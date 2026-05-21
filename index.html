@@ -1,278 +1,155 @@
+
 <!DOCTYPE html>
 <html lang="it">
+  <!-- Versione vecchia ma funzionante -->
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scanner Industriale PRO</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scanner BDBCF</title>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- ✅ SCRIPT CORRETTI -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.jsscript src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-<style>
-body{margin:0;background:#000;color:#0f0;font-family:Arial}
-header{padding:10px;background:#111}
-input{width:100%;margin:4px 0;padding:10px;font-weight:bold}
-video{width:100%;border-top:2px solid #0f0;border-bottom:2px solid #0f0}
-.controls{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:8px}
-button{padding:10px;font-size:16px;background:#000;color:#0f0;border:2px solid #0f0}
-.serial{font-size:20px;font-weight:bold}
-.edited{color:orange}
-.thumb{width:140px}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-background:red;color:#fff;padding:10px;border-radius:20px;display:none}
-</style>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui;
+      background: #111;
+      color: #fff;
+      text-align: center;
+    }
+
+    video {
+      width: 100%;
+      background: black;
+    }
+
+    .container {
+      position: relative;
+    }
+
+    .scan-box {
+      position: absolute;
+      left: 15%;
+      top: 30%;
+      width: 70%;
+      height: 25%;
+      border: 2px dashed #00d2ff;
+      border-radius: 10px;
+    }
+
+    /* ✅ linea rossa */
+    .scan-line {
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      background: red;
+      animation: scan 1.5s infinite;
+    }
+
+    @keyframes scan {
+      0% { top: 0; }
+      100% { top: 100%; }
+    }
+
+    button {
+      width: 90%;
+      padding: 12px;
+      margin: 6px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #00d2ff;
+    }
+
+    #status {
+      margin-top: 8px;
+    }
+  </style>
 </head>
 
 <body>
 
-<header>
-<input id="operator" placeholder="Operatore">
-<input id="lot" placeholder="Lotto / Posizione">
-<label><input type="checkbox" id="multi" checked> Multi-scan</label>
-<div>Totale: <span id="count">0</span></div>
-</header>
+<h2>📷 Scanner BDBCF</h2>
 
-<video id="video" autoplay playsinline muted></video>
-
-<div class="controls">
-<button onclick="toggleCamera()">📷</button>
-<button onclick="toggleFlash()">⚡</button>
-<button onclick="exportExcel()">📊</button>
-<button onclick="exportZip()">📦</button>
-<button onclick="clearAll()">🧹</button>
+<div class="container">
+  <video id="video" autoplay playsinline muted></video>
+  <div class="scan-box">
+    <div class="scan-line"></div>
+  </div>
 </div>
 
-<table id="table"></table>
-<div id="toast" class="toast"></div>
+<button onclick="toggleCamera()">📸 Camera</button>
+<button onclick="toggleFlash()">🔦 Flash</button>
+
+<p id="status">🟡 Pronto</p>
 
 <script>
+const video = document.getElementById("video");
 
-let video=document.getElementById("video");
-let stream=null, track=null, worker=null;
-let rows=[];
-let found=new Set();
-let debounce={};
+let stream = null;
+let track = null;
+let flashOn = false;
 
-const SERIAL_REGEX=/^BDBCF00[0-9A-F]{3}$/;
+// ================= CAMERA =================
+async function toggleCamera() {
+  try {
 
-// ================= UTIL
-function norm(s){
-  return s.toUpperCase()
-    .replace(/O/g,'0')
-    .replace(/I/g,'1')
-    .replace(/S/g,'5')
-    .replace(/[^0-9A-F]/g,'');
-}
-
-function toast(m){
-  let t=document.getElementById("toast");
-  t.innerText=m;
-  t.style.display="block";
-  setTimeout(()=>t.style.display="none",1500);
-}
-
-function beep(f=800){
-  let c=new AudioContext();
-  let o=c.createOscillator();
-  o.frequency.value=f;
-  o.connect(c.destination);
-  o.start();
-  setTimeout(()=>o.stop(),100);
-}
-
-function vib(v=100){ navigator.vibrate && navigator.vibrate(v); }
-
-// ================= CAMERA
-async function toggleCamera(){
-  if(stream){
-    stream.getTracks().forEach(t=>t.stop());
-    stream=null;
-    return;
-  }
-
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({video:true});
-    video.srcObject=stream;
-    track=stream.getVideoTracks()[0];
-
-    if(!worker){
-      worker=await Tesseract.createWorker();
-      await worker.loadLanguage("eng");
-      await worker.initialize("eng");
-      await worker.setParameters({
-        tessedit_char_whitelist:"0123456789ABCDEF"
-      });
-    }
-
-    loop();
-  }catch(e){
-    alert("Errore camera: "+e.message);
-  }
-}
-
-// ================= FLASH
-async function toggleFlash(){
-  if(!track) return;
-
-  let c=track.getCapabilities();
-  if(!c.torch){
-    alert("Flash non supportato");
-    return;
-  }
-
-  await track.applyConstraints({advanced:[{torch:true}]});
-}
-
-// ================= OCR LOOP
-async function loop(){
-  if(!stream) return;
-
-  let canvas=document.createElement("canvas");
-  canvas.width=video.videoWidth/2;
-  canvas.height=video.videoHeight/2;
-  let ctx=canvas.getContext("2d");
-
-  ctx.filter="grayscale(100%) contrast(180%)";
-  ctx.drawImage(video,0,0,canvas.width,canvas.height);
-
-  let r=await worker.recognize(canvas);
-
-  let words=r.data.words || [];
-  let multi=document.getElementById("multi").checked;
-
-  let list=multi ? words : words.slice(0,1);
-
-  list.forEach(w=>{
-    let s=norm(w.text);
-
-    if(!SERIAL_REGEX.test(s)) return;
-
-    if(!document.getElementById("operator").value ||
-       !document.getElementById("lot").value){
-      toast("Compila campi");
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+      setStatus("⏹️ Camera spenta");
       return;
     }
 
-    let now=Date.now();
-    if(debounce[s] && now-debounce[s]<2500) return;
-    debounce[s]=now;
-
-    if(found.has(s)){
-      vib([200,100,200]);
-      beep(200);
-      toast("Duplicato");
-      return;
-    }
-
-    found.add(s);
-    vib(150);
-    beep(900);
-
-    let img=canvas.toDataURL();
-
-    rows.push({
-      time:new Date().toLocaleString(),
-      serial:s,
-      operatore:operator.value,
-      lotto:lot.value,
-      edited:false,
-      img,
-      flag:"Good",
-      note:"",
-      file:s+".jpg"
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+      audio: false
     });
 
-    render();
-    save();
-  });
+    video.srcObject = stream;
+    await video.play();
 
-  setTimeout(loop,500);
-}
+    track = stream.getVideoTracks()[0];
 
-// ================= TABLE
-function render(){
-  let html="";
-  rows.forEach((r,i)=>{
-    html+=`
-    <tr>
-      <td class="serial ${r.edited?'edited':''}" onclick="edit(${i})">${r.serial}</td>
-      <td><img src="${r.img}" class="thumb" onclick="window.open('${ws.length;
-}
+    setStatus("✅ Camera attiva");
 
-// ================= EDIT
-function edit(i){
-  let v=prompt("Modifica seriale",rows[i].serial);
-  if(!v) return;
-
-  v=norm(v);
-  if(!SERIAL_REGEX.test(v)) return alert("Non valido");
-
-  if(confirm("Confermare")){
-    rows[i].serial=v;
-    rows[i].edited=true;
-    render(); save();
+  } catch (err) {
+    console.error(err);
+    alert("Errore camera: " + err.message);
   }
 }
 
-// ================= DELETE
-function del(i){
-  if(confirm("Eliminare?")){
-    found.delete(rows[i].serial);
-    rows.splice(i,1);
-    render(); save();
+// ================= FLASH =================
+async function toggleFlash() {
+
+  if (!track) return;
+
+  try {
+    const capabilities = track.getCapabilities();
+
+    if (!capabilities.torch) {
+      setStatus("⚠️ Flash non supportato");
+      return;
+    }
+
+    flashOn = !flashOn;
+
+    await track.applyConstraints({
+      advanced: [{ torch: flashOn }]
+    });
+
+    setStatus(flashOn ? "🔦 Flash ON" : "🔦 Flash OFF");
+
+  } catch (e) {
+    setStatus("❌ Errore flash");
   }
 }
 
-// ================= STORAGE
-function save(){
-  localStorage.setItem("data",JSON.stringify(rows));
+// ================= UI =================
+function setStatus(msg) {
+  document.getElementById("status").textContent = msg;
 }
-
-function load(){
-  let d=localStorage.getItem("data");
-  if(d){
-    rows=JSON.parse(d);
-    rows.forEach(r=>found.add(r.serial));
-  }
-}
-
-// ================= EXPORT
-function exportExcel(){
-  let ws=XLSX.utils.json_to_sheet(rows);
-  let wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,"Dati");
-  XLSX.writeFile(wb,"scansioni.xlsx");
-}
-
-async function exportZip(){
-  let zip=new JSZip();
-
-  rows.forEach(r=>{
-    let b64=r.img.split(",")[1];
-    zip.file(r.serial+".jpg",b64,{base64:true});
-  });
-
-  let blob=await zip.generateAsync({type:"blob"});
-  let a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="img.zip";
-  a.click();
-}
-
-// ================= CLEAR
-function clearAll(){
-  if(confirm("Pulire tutto?")){
-    rows=[]; found.clear();
-    localStorage.clear();
-    render();
-  }
-}
-
-// ================= INIT
-load();
-render();
-
 </script>
 
 </body>
