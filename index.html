@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -28,24 +29,17 @@ input{padding:10px;border-radius:10px;border:none;font-weight:600}
   display:flex;align-items:center;gap:8px;
   font-weight:700;margin-bottom:6px
 }
-.led{
-  width:12px;height:12px;border-radius:50%;
-  background:#f44336
-}
+.led{width:12px;height:12px;border-radius:50%;background:#f44336}
 .led.on{background:#00e676}
 
 .scanner{position:relative;border-radius:12px;overflow:hidden}
 video{width:100%;display:block}
 
 .overlay{
-  position:absolute;
-  inset:0;
-  pointer-events:none;
+  position:absolute;inset:0;pointer-events:none;
 }
 .overlay::before{
-  content:"";
-  position:absolute;
-  inset:18% 12%;
+  content:"";position:absolute;inset:18% 12%;
   border:2px dashed rgba(0,230,118,.7);
 }
 .scan-line{
@@ -58,9 +52,7 @@ video{width:100%;display:block}
   display:grid;grid-template-columns:repeat(5,1fr);
   gap:8px;margin:10px 0
 }
-button{
-  border:none;border-radius:12px;padding:10px;font-weight:700
-}
+button{border:none;border-radius:12px;padding:10px;font-weight:700}
 button.alt{background:#455a64;color:#fff}
 button.ok{background:var(--accent);color:#0b0f14}
 button.danger{background:var(--danger);color:#fff}
@@ -68,25 +60,22 @@ button.danger{background:var(--danger);color:#fff}
 table{width:100%;background:#fff;color:#000;border-collapse:collapse}
 th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center}
 
-/* ✅ ANTEPRIMA MIGLIORATA */
 .thumb{
-  width:140px;
-  background:#fff;
-  padding:6px 14px;        /* più spazio a SX/DX */
-  border:2px solid #eee;
-  border-radius:0;         /* NO arrotondamenti */
-  cursor:zoom-in;
+  width:140px;background:#fff;padding:6px 14px;
+  border:2px solid #eee;border-radius:0;cursor:zoom-in
 }
-
-.serial{
-  cursor:pointer;
-  font-weight:700;
-}
+.serial{cursor:pointer;font-weight:700}
 .serial.edited{color:var(--warn)}
 
-.action{
-  font-size:14px;
+.toast{
+  position:fixed;bottom:20px;left:50%;
+  transform:translateX(-50%);
+  background:var(--danger);color:#fff;
+  padding:10px 16px;border-radius:20px;
+  font-weight:700;opacity:0;
+  transition:opacity .25s ease;z-index:1000
 }
+.toast.show{opacity:1}
 
 #zoomModal{
   position:fixed;inset:0;background:rgba(0,0,0,.9);
@@ -131,15 +120,13 @@ th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center}
 
   <table>
     <thead>
-      <tr>
-        <th>Seriale</th>
-        <th>Anteprima</th>
-        <th>Azione</th>
-      </tr>
+      <tr><th>Seriale</th><th>Anteprima</th><th>Azione</th></tr>
     </thead>
     <tbody id="results"></tbody>
   </table>
 </div>
+
+<div id="toast" class="toast">Seriale già presente</div>
 
 <div id="zoomModal">
   <button onclick="closeZoom()">Chiudi</button>
@@ -149,6 +136,7 @@ th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center}
 <canvas id="canvas" hidden></canvas>
 
 <script>
+/* ================= CONFIG ================= */
 const SERIAL_REGEX=/^BDBCF00[0-9A-F]{3}$/;
 let stream,track,worker;
 let cameraOn=false,flashOn=false,freezeOCR=false;
@@ -156,12 +144,36 @@ let cameraOn=false,flashOn=false,freezeOCR=false;
 const found=new Set();
 const rows=[];
 
+/* ================= FEEDBACK (AUDIO + VIBRA) ================= */
+const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+
+function beep(freq=800,dur=0.08){
+  const o=audioCtx.createOscillator();
+  const g=audioCtx.createGain();
+  o.frequency.value=freq;
+  o.connect(g);g.connect(audioCtx.destination);
+  o.start();
+  g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+dur);
+  o.stop(audioCtx.currentTime+dur);
+}
+
+function vibrate(ms){
+  if(navigator.vibrate) navigator.vibrate(ms);
+}
+
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),1200);
+}
+
 function setCamStatus(on){
   camLed.classList.toggle("on",on);
   camStatus.textContent=on?"Camera ON":"Camera OFF";
 }
 
-/* CAMERA */
+/* ================= CAMERA ================= */
 async function toggleCamera(){
   if(cameraOn){
     stream.getTracks().forEach(t=>t.stop());
@@ -187,7 +199,7 @@ async function toggleFlash(){
   await track.applyConstraints({advanced:[{torch:flashOn}]});
 }
 
-/* OCR LOOP */
+/* ================= OCR LOOP ================= */
 async function scanLoop(){
   if(!cameraOn||freezeOCR)return;
 
@@ -201,9 +213,19 @@ async function scanLoop(){
   const {data}=await worker.recognize(canvas);
   for(const w of data.words){
     const s=w.text.replace(/O/g,"0").trim();
-    if(!SERIAL_REGEX.test(s)||found.has(s))continue;
+    if(!SERIAL_REGEX.test(s)) continue;
+
+    if(found.has(s)){
+      beep(300,0.05);
+      vibrate(80);
+      toast("Seriale già presente");
+      continue;
+    }
 
     found.add(s);
+    beep(900,0.1);
+    vibrate(200);
+
     const c=document.createElement("canvas");
     c.width=w.bbox.x1-w.bbox.x0;
     c.height=w.bbox.y1-w.bbox.y0;
@@ -224,36 +246,31 @@ async function scanLoop(){
   setTimeout(scanLoop,1200);
 }
 
-/* UI */
+/* ================= UI ================= */
 function addRow(i){
   const r=rows[i];
   const tr=document.createElement("tr");
   tr.innerHTML=`
     <td class="serial ${r.edited?'edited':''}" onclick="editSerial(${i})">${r.seriale}</td>
     <td><img class="thumb" src="${r.img}" onclick="zoom('${r.img}')"></td>
-    <td class="action">
-      <button class="danger" onclick="deleteRow(${i})">🗑</button>
-    </td>`;
+    <td><button class="danger" onclick="deleteRow(${i})">🗑</button></td>`;
   results.appendChild(tr);
 }
 
-/* DELETE */
 function deleteRow(i){
   const r=rows[i];
-  if(!confirm(`Confermi la cancellazione del seriale ${r.seriale}?`))return;
-
+  if(!confirm(\`Confermi la cancellazione del seriale \${r.seriale}?\`))return;
   found.delete(r.seriale);
   rows.splice(i,1);
   renderTable();
 }
 
-/* RE-RENDER TABLE */
 function renderTable(){
   results.innerHTML="";
   rows.forEach((_,i)=>addRow(i));
 }
 
-/* ZOOM */
+/* ================= ZOOM ================= */
 function zoom(src){
   freezeOCR=true;
   zoomImg.src=src;
@@ -264,23 +281,23 @@ function closeZoom(){
   freezeOCR=false;
 }
 
-/* EDIT SERIAL */
+/* ================= EDIT ================= */
 function editSerial(i){
   const old=rows[i].seriale;
   const nuovo=prompt("Correggi seriale:",old);
   if(!nuovo||nuovo===old)return;
   if(!SERIAL_REGEX.test(nuovo)){alert("Formato non valido");return}
   if(found.has(nuovo)){alert("Seriale già presente");return}
-  if(!confirm(`Confermi modifica ${old} → ${nuovo}?`))return;
+  if(!confirm(\`Confermi modifica \${old} → \${nuovo}?\`))return;
 
   found.delete(old);found.add(nuovo);
   rows[i].seriale=nuovo;
-  rows[i].fileName=`${nuovo}.jpg`;
+  rows[i].fileName=\`\${nuovo}.jpg\`;
   rows[i].edited=true;
   renderTable();
 }
 
-/* EXPORT */
+/* ================= EXPORT ================= */
 function exportExcel(){
   const ws=XLSX.utils.json_to_sheet(
     rows.map(r=>({
