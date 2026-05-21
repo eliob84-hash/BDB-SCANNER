@@ -5,11 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scanner Seriali OCR</title>
 
-<!-- ✅ SCRIPT CORRETTI (QUESTO È IL PUNTO CRITICO) -->
+<!-- ✅ SCRIPT CORRETTI – NON TOCCATI -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
 <style>
 :root{
@@ -41,12 +40,17 @@ input{
 .led{width:12px;height:12px;border-radius:50%;background:#f44336}
 .led.on{background:#00e676}
 
+.counter{
+  text-align:center;
+  color:var(--accent);
+  font-weight:700;
+  margin-bottom:6px;
+}
+
 .scanner{position:relative;border-radius:12px;overflow:hidden}
 video{width:100%;display:block}
 
-.overlay{
-  position:absolute;inset:0;pointer-events:none
-}
+.overlay{position:absolute;inset:0;pointer-events:none}
 .overlay::before{
   content:"";position:absolute;inset:18% 12%;
   border:2px dashed rgba(0,230,118,.7)
@@ -72,7 +76,6 @@ button{
 button.alt{background:#455a64;color:#fff}
 button.ok{background:var(--accent);color:#0b0f14}
 button.danger{background:var(--danger);color:#fff}
-button svg{width:18px;height:18px;fill:currentColor}
 
 table{width:100%;background:#fff;color:#000;border-collapse:collapse}
 th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center}
@@ -130,6 +133,10 @@ th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center}
     <span id="camStatus">Camera OFF</span>
   </div>
 
+  <div class="counter">
+    Seriali acquisiti: <span id="count">0</span>
+  </div>
+
   <div class="scanner">
     <video id="video" autoplay playsinline></video>
     <div class="overlay"><div class="scan-line"></div></div>
@@ -152,7 +159,7 @@ th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center}
 
 </div>
 
-<div id="toast" class="toast">Seriale già presente</div>
+<div id="toast" class="toast">Errore</div>
 
 <div id="zoomModal">
   <button onclick="closeZoom()">Chiudi</button>
@@ -162,7 +169,7 @@ th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center}
 <canvas id="canvas" hidden></canvas>
 
 <script>
-/* ================= LOGICA JS (COLLAUDATA) ================= */
+/* ================= LOGICA JS ================= */
 const SERIAL_REGEX=/^BDBCF00[0-9A-F]{3}$/;
 let stream,track,worker;
 let cameraOn=false,flashOn=false,freezeOCR=false;
@@ -170,7 +177,6 @@ let cameraOn=false,flashOn=false,freezeOCR=false;
 const found=new Set();
 const rows=[];
 
-/* AUDIO + VIBRA */
 const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
 function beep(freq,dur){
   const o=audioCtx.createOscillator();
@@ -195,28 +201,50 @@ function setCamStatus(on){
   camStatus.textContent=on?"Camera ON":"Camera OFF";
 }
 
+function updateCounter(){
+  count.textContent = found.size;
+}
+
 /* CAMERA */
 async function toggleCamera(){
-  if(cameraOn){
-    stream.getTracks().forEach(t=>t.stop());
-    cameraOn=false;setCamStatus(false);return;
-  }
-  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-  video.srcObject=stream;
-  await new Promise(r=>video.onloadedmetadata=r);
-  track=stream.getVideoTracks()[0];
+  try{
+    if(cameraOn){
+      stream.getTracks().forEach(t=>t.stop());
+      cameraOn=false;setCamStatus(false);
+      return;
+    }
 
-  if(!worker){
-    worker=await Tesseract.createWorker();
-    await worker.loadLanguage("eng");
-    await worker.initialize("eng");
+    stream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:"environment"}
+    });
+
+    video.srcObject = stream;
+    video.muted = true;              // ✅ FIX iOS
+    await video.play();              // ✅ FIX mobile
+
+    track = stream.getVideoTracks()[0];
+
+    if(!worker){
+      worker = await Tesseract.createWorker();
+      await worker.loadLanguage("eng");
+      await worker.initialize("eng");
+    }
+
+    cameraOn = true;
+    setCamStatus(true);
+    scanLoop();
+
+  }catch(e){
+    toast("Errore accesso fotocamera");
+    console.error(e);
   }
-  cameraOn=true;setCamStatus(true);
-  scanLoop();
 }
 
 async function toggleFlash(){
-  if(!track?.getCapabilities().torch){alert("Flash non supportato");return}
+  if(!track?.getCapabilities().torch){
+    toast("Flash non supportato");
+    return;
+  }
   flashOn=!flashOn;
   await track.applyConstraints({advanced:[{torch:flashOn}]});
 }
@@ -244,6 +272,7 @@ async function scanLoop(){
     }
 
     found.add(s);
+    updateCounter();
     beep(900,0.1);vibrate(200);
 
     const c=document.createElement("canvas");
@@ -283,6 +312,7 @@ function deleteRow(i){
   const r=rows[i];
   if(!confirm(\`Confermi la cancellazione del seriale \${r.seriale}?\`))return;
   found.delete(r.seriale);
+  updateCounter();
   rows.splice(i,1);
   renderTable();
 }
@@ -303,8 +333,8 @@ function editSerial(i){
   const old=rows[i].seriale;
   const nuovo=prompt("Correggi seriale:",old);
   if(!nuovo||nuovo===old)return;
-  if(!SERIAL_REGEX.test(nuovo)){alert("Formato non valido");return}
-  if(found.has(nuovo)){alert("Seriale già presente");return}
+  if(!SERIAL_REGEX.test(nuovo)){toast("Formato non valido");return}
+  if(found.has(nuovo)){toast("Seriale già presente");return}
   if(!confirm(\`Confermi modifica \${old} → \${nuovo}?\`))return;
 
   found.delete(old);found.add(nuovo);
