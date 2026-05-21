@@ -1,375 +1,351 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scanner Seriali OCR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scanner Industriale</title>
 
-<!-- ✅ SCRIPT CORRETTI – NON TOCCATI -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <style>
-:root{
-  --bg:#0b0f14; --card:#121821; --accent:#00e676;
-  --warn:#ff9800; --danger:#ff5252;
-}
-*{box-sizing:border-box}
-body{
-  margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto;
-  background:linear-gradient(180deg,#0b0f14,#0e1420);
-  color:#fff;padding:12px
-}
-h1{margin:0 0 6px 0;font-size:20px}
-
-.card{background:var(--card);border-radius:14px;padding:10px}
-
-.inputs{
-  display:grid;grid-template-columns:1fr 1fr;
-  gap:8px;margin-bottom:8px
-}
-input{
-  padding:10px;border-radius:10px;border:none;font-weight:600
+body {
+  margin:0;
+  font-family: Arial;
+  background:#000;
+  color:#0f0;
 }
 
-.status{
-  display:flex;align-items:center;gap:8px;
-  font-weight:700;margin-bottom:6px
-}
-.led{width:12px;height:12px;border-radius:50%;background:#f44336}
-.led.on{background:#00e676}
-
-.counter{
-  text-align:center;
-  color:var(--accent);
-  font-weight:700;
-  margin-bottom:6px;
+header {
+  background:#111;
+  padding:8px;
+  display:flex;
+  flex-direction:column;
 }
 
-.scanner{position:relative;border-radius:12px;overflow:hidden}
-video{width:100%;display:block}
-
-.overlay{position:absolute;inset:0;pointer-events:none}
-.overlay::before{
-  content:"";position:absolute;inset:18% 12%;
-  border:2px dashed rgba(0,230,118,.7)
-}
-.scan-line{
-  position:absolute;left:12%;right:12%;
-  height:3px;background:#ff3b3b;
-  animation:scan 2.2s linear infinite
-}
-@keyframes scan{
-  0%{top:18%}50%{top:82%}100%{top:18%}
+input {
+  background:#000;
+  color:#0f0;
+  border:1px solid #0f0;
+  padding:8px;
+  margin:3px 0;
 }
 
-.controls{
-  display:grid;grid-template-columns:repeat(5,1fr);
-  gap:8px;margin:10px 0
+#reader {
+  width:100%;
+  border-top:2px solid #0f0;
+  border-bottom:2px solid #0f0;
 }
-button{
-  border:none;border-radius:12px;
-  padding:10px;font-weight:700;
-  display:flex;gap:6px;align-items:center;justify-content:center
+
+.toolbar {
+  display:flex;
+  justify-content:space-around;
+  padding:10px;
 }
-button.alt{background:#455a64;color:#fff}
-button.ok{background:var(--accent);color:#0b0f14}
-button.danger{background:var(--danger);color:#fff}
 
-table{width:100%;background:#fff;color:#000;border-collapse:collapse}
-th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center}
-
-.thumb{
-  width:140px;
-  background:#fff;
-  padding:6px 16px;
-  border:2px solid #eee;
-  border-radius:0;
-  cursor:zoom-in
+button {
+  background:#000;
+  color:#0f0;
+  border:2px solid #0f0;
+  padding:12px;
+  font-size:18px;
 }
-.serial{cursor:pointer;font-weight:700}
-.serial.edited{color:var(--warn)}
 
-.toast{
-  position:fixed;bottom:20px;left:50%;
+table {
+  width:100%;
+  font-size:12px;
+}
+
+.serial {
+  font-size:16px;
+}
+
+.edited {
+  color:orange;
+}
+
+.preview {
+  width:90px;
+  border:2px solid #0f0;
+}
+
+.toast {
+  position:fixed;
+  bottom:10px;
+  left:50%;
   transform:translateX(-50%);
-  background:var(--danger);color:#fff;
-  padding:10px 16px;border-radius:20px;
-  font-weight:700;opacity:0;
-  transition:opacity .25s ease;
-  z-index:1000
-}
-.toast.show{opacity:1}
-
-#zoomModal{
-  position:fixed;inset:0;
-  background:rgba(0,0,0,.9);
-  display:none;align-items:center;justify-content:center;
-  z-index:999
-}
-#zoomModal img{max-width:95%;max-height:95%}
-#zoomModal button{
-  position:absolute;top:20px;right:20px;
-  background:#ff5252;color:#fff;
-  border:none;padding:10px;border-radius:20px;font-weight:700
+  background:red;
+  color:white;
+  padding:10px;
+  display:none;
 }
 </style>
 </head>
 
 <body>
 
-<h1>Scanner Seriali</h1>
+<header>
+<input id="operatore" placeholder="Operatore (obbligatorio)">
+<input id="posizione" placeholder="Lotto/Posizione (obbligatorio)">
+<div>SCANSIONI: <span id="count">0</span></div>
+<label><input type="checkbox" id="multi"> MULTI-SCAN</label>
+</header>
 
-<div class="card">
+<video id="reader" autoplay playsinline></video>
 
-  <div class="inputs">
-    <input id="operator" placeholder="Operatore">
-    <input id="lot" placeholder="Lotto / Posizione">
-  </div>
-
-  <div class="status">
-    <div id="camLed" class="led"></div>
-    <span id="camStatus">Camera OFF</span>
-  </div>
-
-  <div class="counter">
-    Seriali acquisiti: <span id="count">0</span>
-  </div>
-
-  <div class="scanner">
-    <video id="video" autoplay playsinline></video>
-    <div class="overlay"><div class="scan-line"></div></div>
-  </div>
-
-  <div class="controls">
-    <button class="alt" onclick="toggleCamera()">📷 Camera</button>
-    <button class="alt" onclick="toggleFlash()">⚡ Flash</button>
-    <button class="ok" onclick="exportExcel()">📊 Excel</button>
-    <button class="ok" onclick="exportZip()">🗂 ZIP</button>
-    <button class="ok" onclick="exportAll()">⬇ Tutto</button>
-  </div>
-
-  <table>
-    <thead>
-      <tr><th>Seriale</th><th>Anteprima</th><th>Azione</th></tr>
-    </thead>
-    <tbody id="results"></tbody>
-  </table>
-
+<div class="toolbar">
+<button onclick="toggleCamera()">📷</button>
+<button onclick="toggleFlash()">⚡</button>
+<button onclick="exportExcel()">📊</button>
+<button onclick="exportZip()">📦</button>
 </div>
 
-<div id="toast" class="toast">Errore</div>
+<table id="table"></table>
 
-<div id="zoomModal">
-  <button onclick="closeZoom()">Chiudi</button>
-  <img id="zoomImg">
-</div>
-
-<canvas id="canvas" hidden></canvas>
+<div id="toast" class="toast"></div>
 
 <script>
-/* ================= LOGICA JS ================= */
-const SERIAL_REGEX=/^BDBCF00[0-9A-F]{3}$/;
-let stream,track,worker;
-let cameraOn=false,flashOn=false,freezeOCR=false;
 
-const found=new Set();
-const rows=[];
+let data=[];
+let images={};
+let lastScanTimes={};
+let video=document.getElementById("reader");
+let stream=null;
+let flashTrack=null;
 
-const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-function beep(freq,dur){
-  const o=audioCtx.createOscillator();
-  const g=audioCtx.createGain();
-  o.frequency.value=freq;
-  o.connect(g);g.connect(audioCtx.destination);
-  o.start();
-  g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+dur);
-  o.stop(audioCtx.currentTime+dur);
+// ======================
+// STORAGE (OFFLINE)
+function saveData(){
+  localStorage.setItem("scanData", JSON.stringify(data));
 }
-function vibrate(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
+
+function loadData(){
+  let d=localStorage.getItem("scanData");
+  if(d) data=JSON.parse(d);
+}
+
+// ======================
+// UTIL
+function beep(freq){
+  let ctx=new AudioContext();
+  let o=ctx.createOscillator();
+  o.frequency.value=freq;
+  o.connect(ctx.destination);
+  o.start();
+  setTimeout(()=>o.stop(),100);
+}
+
+function vibrate(p=[50]){
+  if(navigator.vibrate) navigator.vibrate(p);
+}
 
 function toast(msg){
-  const t=document.getElementById("toast");
-  t.textContent=msg;
-  t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),1200);
+  let t=document.getElementById("toast");
+  t.innerText=msg;
+  t.style.display="block";
+  setTimeout(()=>t.style.display="none",2000);
 }
 
-function setCamStatus(on){
-  camLed.classList.toggle("on",on);
-  camStatus.textContent=on?"Camera ON":"Camera OFF";
+// ======================
+// VALIDAZIONE
+function normalize(s){
+  return s.toUpperCase().replace(/O/g,"0");
 }
 
-function updateCounter(){
-  count.textContent = found.size;
+function valid(s){
+  return /^BDBCF00[A-F0-9]{3}$/.test(s);
 }
 
-/* CAMERA */
+// ======================
+// CAMERA
 async function toggleCamera(){
-  try{
-    if(cameraOn){
-      stream.getTracks().forEach(t=>t.stop());
-      cameraOn=false;setCamStatus(false);
-      return;
-    }
-
-    stream = await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:"environment"}
-    });
-
-    video.srcObject = stream;
-    video.muted = true;              // ✅ FIX iOS
-    await video.play();              // ✅ FIX mobile
-
-    track = stream.getVideoTracks()[0];
-
-    if(!worker){
-      worker = await Tesseract.createWorker();
-      await worker.loadLanguage("eng");
-      await worker.initialize("eng");
-    }
-
-    cameraOn = true;
-    setCamStatus(true);
-    scanLoop();
-
-  }catch(e){
-    toast("Errore accesso fotocamera");
-    console.error(e);
-  }
-}
-
-async function toggleFlash(){
-  if(!track?.getCapabilities().torch){
-    toast("Flash non supportato");
+  if(stream){
+    stream.getTracks().forEach(t=>t.stop());
+    stream=null;
     return;
   }
-  flashOn=!flashOn;
-  await track.applyConstraints({advanced:[{torch:flashOn}]});
-}
 
-/* OCR LOOP */
-async function scanLoop(){
-  if(!cameraOn||freezeOCR)return;
-
-  const vw=video.videoWidth,vh=video.videoHeight;
-  const rx=vw*0.12,ry=vh*0.18,rw=vw*0.76,rh=vh*0.64;
-  canvas.width=rw/2;canvas.height=rh/2;
-  const ctx=canvas.getContext("2d");
-  ctx.filter="grayscale(100%) contrast(180%) brightness(110%)";
-  ctx.drawImage(video,rx,ry,rw,rh,0,0,canvas.width,canvas.height);
-
-  const {data}=await worker.recognize(canvas);
-  for(const w of data.words){
-    const s=w.text.replace(/O/g,"0").trim();
-    if(!SERIAL_REGEX.test(s))continue;
-
-    if(found.has(s)){
-      beep(300,0.05);vibrate(80);
-      toast("Seriale già presente");
-      continue;
-    }
-
-    found.add(s);
-    updateCounter();
-    beep(900,0.1);vibrate(200);
-
-    const c=document.createElement("canvas");
-    c.width=w.bbox.x1-w.bbox.x0;
-    c.height=w.bbox.y1-w.bbox.y0;
-    c.getContext("2d").drawImage(canvas,w.bbox.x0,w.bbox.y0,c.width,c.height,0,0,c.width,c.height);
-    const img=c.toDataURL("image/jpeg");
-
-    rows.push({
-      seriale:s,
-      operatore:operator.value||"",
-      lotto:lot.value||"",
-      timestamp:new Date().toLocaleString(),
-      fileName:`${s}.jpg`,
-      img,
-      edited:false
-    });
-    renderTable();
-  }
-  setTimeout(scanLoop,1200);
-}
-
-/* TABLE */
-function renderTable(){
-  results.innerHTML="";
-  rows.forEach((r,i)=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
-      <td class="serial ${r.edited?'edited':''}" onclick="editSerial(${i})">${r.seriale}</td>
-      <td><img class="thumb" src="${r.img}" onclick="zoom('${r.img}')"></td>
-      <td><button class="danger" onclick="deleteRow(${i})">🗑</button></td>`;
-    results.appendChild(tr);
+  stream=await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:"environment"}
   });
+
+  video.srcObject=stream;
+
+  flashTrack=stream.getVideoTracks()[0];
+  scanLoop();
 }
 
-function deleteRow(i){
-  const r=rows[i];
-  if(!confirm(\`Confermi la cancellazione del seriale \${r.seriale}?\`))return;
-  found.delete(r.seriale);
-  updateCounter();
-  rows.splice(i,1);
-  renderTable();
+function toggleFlash(){
+  if(!flashTrack) return;
+  const cap=flashTrack.getCapabilities();
+  if(cap.torch){
+    flashTrack.applyConstraints({advanced:[{torch:true}]});
+  }
 }
 
-/* ZOOM */
-function zoom(src){
-  freezeOCR=true;
-  zoomImg.src=src;
-  zoomModal.style.display="flex";
-}
-function closeZoom(){
-  zoomModal.style.display="none";
-  freezeOCR=false;
-}
+// ======================
+// OCR MULTI-SCAN
+async function scanLoop(){
+  if(!stream) return;
 
-/* EDIT */
-function editSerial(i){
-  const old=rows[i].seriale;
-  const nuovo=prompt("Correggi seriale:",old);
-  if(!nuovo||nuovo===old)return;
-  if(!SERIAL_REGEX.test(nuovo)){toast("Formato non valido");return}
-  if(found.has(nuovo)){toast("Seriale già presente");return}
-  if(!confirm(\`Confermi modifica \${old} → \${nuovo}?\`))return;
+  let canvas=document.createElement("canvas");
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
+  let ctx=canvas.getContext("2d");
+  ctx.drawImage(video,0,0);
 
-  found.delete(old);found.add(nuovo);
-  rows[i].seriale=nuovo;
-  rows[i].fileName=\`\${nuovo}.jpg\`;
-  rows[i].edited=true;
-  renderTable();
+  let result=await Tesseract.recognize(canvas,"eng");
+
+  let matches = result.data.text.match(/BDBCF0{2}[A-Z0-9]{3}/g);
+
+  if(matches){
+    matches.forEach(m=>{
+      processScan(m, canvas.toDataURL());
+    });
+  }
+
+  requestAnimationFrame(scanLoop);
 }
 
-/* EXPORT */
+// ======================
+// SCAN LOGIC
+function processScan(txt,img){
+  if(!document.getElementById("operatore").value ||
+     !document.getElementById("posizione").value){
+    toast("Compila operatore e lotto!");
+    return;
+  }
+
+  txt=normalize(txt);
+
+  if(!valid(txt)) return;
+
+  let now=Date.now();
+
+  if(lastScanTimes[txt] && now-lastScanTimes[txt]<2000){
+    return;
+  }
+
+  lastScanTimes[txt]=now;
+
+  if(data.some(d=>d.serial===txt)){
+    vibrate([200,100,200]);
+    beep(200);
+    toast("Duplicato!");
+    return;
+  }
+
+  data.push({
+    time:new Date().toLocaleString(),
+    serial:txt,
+    edited:false,
+    lotto:document.getElementById("posizione").value,
+    operatore:document.getElementById("operatore").value,
+    flag:"Good",
+    note:"",
+    img:img
+  });
+
+  images[txt]=img;
+
+  saveData();
+  updateTable();
+
+  vibrate();
+  beep(800);
+}
+
+// ======================
+// UI
+function updateTable(){
+  let html="";
+
+  data.forEach((r,i)=>{
+    html+=`
+    <tr>
+      <td>
+        <div class="serial ${r.edited?'edited':''}" onclick="edit(${i})">${r.serial}</div>
+        <img src="${r.img}" class="preview" onclick="window.open('${r          <option>Rotto</option>
+          <option>Sporco</option>
+          <option>RF-ID</option>
+          <option>Barra Mancante</option>
+          <option>Dubbio</option>
+        </select>
+      </td>
+      <td>
+        <button onclick="del(${i})">🗑</button>
+      </td>
+    </tr>`;
+  });
+
+  document.getElementById("table").innerHTML=html;
+  document.getElementById("count").innerText=data.length;
+}
+
+function edit(i){
+  let v=prompt("Modifica seriale",data[i].serial);
+  if(!v) return;
+
+  v=normalize(v);
+
+  if(!valid(v)) return alert("Non valido");
+
+  if(confirm("Confermare modifica?")){
+    data[i].serial=v;
+    data[i].edited=true;
+    saveData();
+    updateTable();
+  }
+}
+
+function del(i){
+  if(confirm("Cancellare record?")){
+    data.splice(i,1);
+    saveData();
+    updateTable();
+  }
+}
+
+// ======================
+// EXPORT
 function exportExcel(){
-  const ws=XLSX.utils.json_to_sheet(
-    rows.map(r=>({
-      Seriale:r.seriale,
-      Operatore:r.operatore,
-      Lotto:r.lotto,
-      Timestamp:r.timestamp,
-      Modificato:r.edited?"SI":"NO",
-      "Nome immagine":r.fileName
-    }))
-  );
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,"Seriali");
-  XLSX.writeFile(wb,"seriali.xlsx");
+  let ws = XLSX.utils.json_to_sheet(data);
+
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+    const cell = ws['B'+(R+1)];
+    if(cell && data[R].edited){
+      cell.s = { fill: { fgColor: { rgb: "FFFF00" } } };
+    }
+  }
+
+  let wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Dati");
+
+  XLSX.writeFile(wb, "scansioni.xlsx");
 }
+
 async function exportZip(){
-  const zip=new JSZip();
-  rows.forEach(r=>zip.file(r.fileName,r.img.split(",")[1],{base64:true}));
-  const blob=await zip.generateAsync({type:"blob"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="anteprime_seriali.zip";
+  let zip = new JSZip();
+
+  data.forEach(d=>{
+    let b64=d.img.split(",")[1];
+    zip.file(d.serial+".png", b64, {base64:true});
+  });
+
+  let content = await zip.generateAsync({type:"blob"});
+  let a=document.createElement("a");
+  a.href=URL.createObjectURL(content);
+  a.download="immagini.zip";
   a.click();
 }
-function exportAll(){exportExcel();setTimeout(exportZip,300)}
+
+// ======================
+loadData();
+updateTable();
+
 </script>
 
 </body>
