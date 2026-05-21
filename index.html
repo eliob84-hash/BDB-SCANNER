@@ -1,100 +1,40 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Serial Number Scanner</title>
+<title>Scanner Industriale</title>
 
+<!-- LIBRERIE CORRETTE -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-
 <style>
-body {
-  margin:0;
-  font-family: Arial;
-  background:#000;
-  color:#0f0;
-}
-
-header {
-  background:#111;
-  padding:8px;
-  display:flex;
-  flex-direction:column;
-}
-
-input {
-  background:#000;
-  color:#0f0;
-  border:1px solid #0f0;
-  padding:8px;
-  margin:3px 0;
-}
-
-#reader {
-  width:100%;
-  border-top:2px solid #0f0;
-  border-bottom:2px solid #0f0;
-}
-
-.toolbar {
-  display:flex;
-  justify-content:space-around;
-  padding:10px;
-}
-
-button {
-  background:#000;
-  color:#0f0;
-  border:2px solid #0f0;
-  padding:12px;
-  font-size:18px;
-}
-
-table {
-  width:100%;
-  font-size:12px;
-}
-
-.serial {
-  font-size:16px;
-}
-
-.edited {
-  color:orange;
-}
-
-.preview {
-  width:90px;
-  border:2px solid #0f0;
-}
-
-.toast {
-  position:fixed;
-  bottom:10px;
-  left:50%;
-  transform:translateX(-50%);
-  background:red;
-  color:white;
-  padding:10px;
-  display:none;
-}
+body { margin:0; font-family:Arial; background:#000; color:#0f0; }
+header { padding:8px; background:#111; }
+input { width:100%; margin:4px 0; padding:8px; background:black; color:#0f0; border:1px solid #0f0; }
+video { width:100%; border-top:2px solid #0f0; border-bottom:2px solid #0f0; }
+.toolbar { display:flex; justify-content:space-around; padding:10px; }
+button { background:#000; color:#0f0; border:2px solid #0f0; padding:10px; font-size:18px; }
+.serial { font-size:16px; }
+.edited { color:orange; }
+.preview { width:90px; border:2px solid #0f0; }
+.toast { position:fixed; bottom:10px; left:50%; transform:translateX(-50%);
+background:red; color:white; padding:10px; display:none; }
 </style>
 </head>
 
 <body>
 
 <header>
-<input id="operatore" placeholder="Operatore (obbligatorio)">
-<input id="posizione" placeholder="Lotto/Posizione (obbligatorio)">
+<input id="operatore" placeholder="Operatore">
+<input id="posizione" placeholder="Lotto / Posizione">
 <div>SCANSIONI: <span id="count">0</span></div>
 <label><input type="checkbox" id="multi"> MULTI-SCAN</label>
 </header>
 
-<video id="reader" autoplay playsinline></video>
+<video id="reader" autoplay playsinline muted></video>
 
 <div class="toolbar">
 <button onclick="toggleCamera()">📷</button>
@@ -104,250 +44,38 @@ table {
 </div>
 
 <table id="table"></table>
-
 <div id="toast" class="toast"></div>
 
 <script>
 
-let data=[];
-let images={};
-let lastScanTimes={};
 let video=document.getElementById("reader");
 let stream=null;
 let flashTrack=null;
 
-// ======================
-// STORAGE (OFFLINE)
-function saveData(){
-  localStorage.setItem("scanData", JSON.stringify(data));
-}
+let data=[];
+let lastScanTimes={};
 
-function loadData(){
-  let d=localStorage.getItem("scanData");
-  if(d) data=JSON.parse(d);
-}
+// ================= STORAGE =================
+function save(){ localStorage.setItem("data",JSON.stringify(data)); }
+function load(){ let d=localStorage.getItem("data"); if(d) data=JSON.parse(d); }
 
-// ======================
-// UTIL
-function beep(freq){
+// ================= FEEDBACK =================
+function beep(f=800){
   let ctx=new AudioContext();
   let o=ctx.createOscillator();
-  o.frequency.value=freq;
+  o.frequency.value=f;
   o.connect(ctx.destination);
   o.start();
   setTimeout(()=>o.stop(),100);
 }
+function vib(p=[50]){ if(navigator.vibrate) navigator.vibrate(p); }
 
-function vibrate(p=[50]){
-  if(navigator.vibrate) navigator.vibrate(p);
-}
-
-function toast(msg){
+function toast(m){
   let t=document.getElementById("toast");
-  t.innerText=msg;
+  t.innerText=m;
   t.style.display="block";
   setTimeout(()=>t.style.display="none",2000);
 }
 
-// ======================
-// VALIDAZIONE
-function normalize(s){
-  return s.toUpperCase().replace(/O/g,"0");
-}
-
-function valid(s){
-  return /^BDBCF00[A-F0-9]{3}$/.test(s);
-}
-
-// ======================
-// CAMERA
-async function toggleCamera(){
-  if(stream){
-    stream.getTracks().forEach(t=>t.stop());
-    stream=null;
-    return;
-  }
-
-  stream=await navigator.mediaDevices.getUserMedia({
-    video:{facingMode:"environment"}
-  });
-
-  video.srcObject=stream;
-
-  flashTrack=stream.getVideoTracks()[0];
-  scanLoop();
-}
-
-function toggleFlash(){
-  if(!flashTrack) return;
-  const cap=flashTrack.getCapabilities();
-  if(cap.torch){
-    flashTrack.applyConstraints({advanced:[{torch:true}]});
-  }
-}
-
-// ======================
-// OCR MULTI-SCAN
-async function scanLoop(){
-  if(!stream) return;
-
-  let canvas=document.createElement("canvas");
-  canvas.width=video.videoWidth;
-  canvas.height=video.videoHeight;
-  let ctx=canvas.getContext("2d");
-  ctx.drawImage(video,0,0);
-
-  let result=await Tesseract.recognize(canvas,"eng");
-
-  let matches = result.data.text.match(/BDBCF0{2}[A-Z0-9]{3}/g);
-
-  if(matches){
-    matches.forEach(m=>{
-      processScan(m, canvas.toDataURL());
-    });
-  }
-
-  requestAnimationFrame(scanLoop);
-}
-
-// ======================
-// SCAN LOGIC
-function processScan(txt,img){
-  if(!document.getElementById("operatore").value ||
-     !document.getElementById("posizione").value){
-    toast("Compila operatore e lotto!");
-    return;
-  }
-
-  txt=normalize(txt);
-
-  if(!valid(txt)) return;
-
-  let now=Date.now();
-
-  if(lastScanTimes[txt] && now-lastScanTimes[txt]<2000){
-    return;
-  }
-
-  lastScanTimes[txt]=now;
-
-  if(data.some(d=>d.serial===txt)){
-    vibrate([200,100,200]);
-    beep(200);
-    toast("Duplicato!");
-    return;
-  }
-
-  data.push({
-    time:new Date().toLocaleString(),
-    serial:txt,
-    edited:false,
-    lotto:document.getElementById("posizione").value,
-    operatore:document.getElementById("operatore").value,
-    flag:"Good",
-    note:"",
-    img:img
-  });
-
-  images[txt]=img;
-
-  saveData();
-  updateTable();
-
-  vibrate();
-  beep(800);
-}
-
-// ======================
-// UI
-function updateTable(){
-  let html="";
-
-  data.forEach((r,i)=>{
-    html+=`
-    <tr>
-      <td>
-        <div class="serial ${r.edited?'edited':''}" onclick="edit(${i})">${r.serial}</div>
-        <img src="${r.img}" class="preview" onclick="window.open('${r          <option>Rotto</option>
-          <option>Sporco</option>
-          <option>RF-ID</option>
-          <option>Barra Mancante</option>
-          <option>Dubbio</option>
-        </select>
-      </td>
-      <td>
-        <button onclick="del(${i})">🗑</button>
-      </td>
-    </tr>`;
-  });
-
-  document.getElementById("table").innerHTML=html;
-  document.getElementById("count").innerText=data.length;
-}
-
-function edit(i){
-  let v=prompt("Modifica seriale",data[i].serial);
-  if(!v) return;
-
-  v=normalize(v);
-
-  if(!valid(v)) return alert("Non valido");
-
-  if(confirm("Confermare modifica?")){
-    data[i].serial=v;
-    data[i].edited=true;
-    saveData();
-    updateTable();
-  }
-}
-
-function del(i){
-  if(confirm("Cancellare record?")){
-    data.splice(i,1);
-    saveData();
-    updateTable();
-  }
-}
-
-// ======================
-// EXPORT
-function exportExcel(){
-  let ws = XLSX.utils.json_to_sheet(data);
-
-  const range = XLSX.utils.decode_range(ws['!ref']);
-  for (let R = range.s.r + 1; R <= range.e.r; ++R) {
-    const cell = ws['B'+(R+1)];
-    if(cell && data[R].edited){
-      cell.s = { fill: { fgColor: { rgb: "FFFF00" } } };
-    }
-  }
-
-  let wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Dati");
-
-  XLSX.writeFile(wb, "scansioni.xlsx");
-}
-
-async function exportZip(){
-  let zip = new JSZip();
-
-  data.forEach(d=>{
-    let b64=d.img.split(",")[1];
-    zip.file(d.serial+".png", b64, {base64:true});
-  });
-
-  let content = await zip.generateAsync({type:"blob"});
-  let a=document.createElement("a");
-  a.href=URL.createObjectURL(content);
-  a.download="immagini.zip";
-  a.click();
-}
-
-// ======================
-loadData();
-updateTable();
-
-</script>
-
-</body>
-</html>
+// ================= VALIDAZIONE =================
+function normalize(s){ return s.toUpperCase().replace(/O/g,"0"); }
