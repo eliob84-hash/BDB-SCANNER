@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scanner Seriali OCR</title>
 
-<!-- ✅ LIBRERIE (VERIFICATE UNA PER UNA) -->
+<!-- ✅ LIBRERIE -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -14,121 +14,48 @@
 <style>
 :root{
   --bg:#0b0f14; --card:#121821; --accent:#00e676;
-  --danger:#ff5252; --muted:#9aa4b2;
+  --danger:#ff5252;
 }
-*{box-sizing:border-box}
 body{
-  margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  margin:0;font-family:system-ui;
   background:linear-gradient(180deg,#0b0f14,#0e1420);
-  color:#fff;
-  padding:12px;
+  color:#fff;padding:12px
 }
-h1{margin:0;font-size:20px}
-
-.card{
-  background:var(--card);
-  border-radius:14px;
-  padding:10px;
-  box-shadow:0 10px 30px rgba(0,0,0,.35);
-}
-
-.inputs{
-  display:grid;
-  grid-template-columns:1fr 1fr auto;
-  gap:8px;
-  margin-bottom:8px;
-}
-
-input{
-  padding:10px;
-  border-radius:10px;
-  border:none;
-  font-weight:600;
-}
-
-.counter{
-  text-align:center;
-  color:var(--accent);
-  font-weight:700;
-  margin-bottom:6px;
-}
-
-.scanner{
-  position:relative;
-  border-radius:12px;
-  overflow:hidden;
-}
-video{width:100%;display:block}
-
-.overlay{
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-}
+.card{background:var(--card);border-radius:14px;padding:10px}
+.inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+input{padding:10px;border-radius:10px;border:none;font-weight:600}
+.counter{text-align:center;color:var(--accent);font-weight:700;margin-bottom:6px}
+.scanner{position:relative;border-radius:12px;overflow:hidden}
+video{width:100%}
 .overlay::before{
-  content:"";
-  position:absolute;
-  inset:18% 12%;
-  border:2px dashed rgba(0,230,118,.7);
-  border-radius:10px;
+  content:"";position:absolute;inset:18% 12%;
+  border:2px dashed rgba(0,230,118,.7);border-radius:10px
 }
 .scan-line{
-  position:absolute;
-  left:12%; right:12%;
-  height:3px;
-  background:#ff3b3b;
-  animation:scan 2.2s linear infinite;
+  position:absolute;left:12%;right:12%;height:3px;
+  background:#ff3b3b;animation:scan 2.2s linear infinite
 }
-@keyframes scan{
-  0%{top:18%}50%{top:82%}100%{top:18%}
-}
-
-.controls{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:8px;
-  margin:10px 0;
-}
-button{
-  border:none;
-  border-radius:12px;
-  padding:10px;
-  font-weight:700;
-}
+@keyframes scan{0%{top:18%}50%{top:82%}100%{top:18%}}
+.controls{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0}
+button{border:none;border-radius:12px;padding:10px;font-weight:700}
 button.alt{background:#455a64;color:#fff}
 button.ok{background:var(--accent);color:#0b0f14}
+table{width:100%;background:#fff;color:#000;border-collapse:collapse;border-radius:12px}
+th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center}
+.thumb{width:110px;border-radius:10px;cursor:zoom-in}
+.serial{cursor:pointer;color:#0b5fff;font-weight:700}
 
-table{
-  width:100%;
-  border-collapse:collapse;
-  background:#fff;
-  color:#000;
-  border-radius:12px;
-  overflow:hidden;
+/* ZOOM MODAL */
+#zoomModal{
+  position:fixed;inset:0;background:rgba(0,0,0,.9);
+  display:none;align-items:center;justify-content:center;z-index:999
 }
-th,td{
-  padding:8px;
-  border-bottom:1px solid #e6e6e6;
-  text-align:center;
+#zoomModal img{max-width:90%;max-height:90%;border-radius:12px}
+#zoomModal button{
+  position:absolute;top:20px;right:20px;
+  background:#ff5252;color:#fff;border:none;
+  padding:10px;border-radius:20px;font-weight:700
 }
-th{background:#f2f4f7}
-.thumb{width:72px;border-radius:8px}
-
-.toast{
-  position:fixed;
-  bottom:20px;
-  left:50%;
-  transform:translateX(-50%);
-  background:var(--danger);
-  color:#fff;
-  padding:10px 16px;
-  border-radius:20px;
-  font-weight:700;
-  opacity:0;
-  transition:opacity .25s ease;
-}
-.toast.show{opacity:1}
 </style>
 </head>
 
@@ -137,16 +64,12 @@ th{background:#f2f4f7}
 <h1>Scanner Seriali</h1>
 
 <div class="card">
-
   <div class="inputs">
     <input id="operator" placeholder="Operatore">
-    <input id="lot" placeholder="Lotto / Pedana / Posizione">
-    <button class="alt" onclick="lockOperator()">Blocca operatore</button>
+    <input id="lot" placeholder="Lotto / Posizione">
   </div>
 
-  <div class="counter">
-    Seriali acquisiti: <span id="count">0</span>
-  </div>
+  <div class="counter">Seriali acquisiti: <span id="count">0</span></div>
 
   <div class="scanner">
     <video id="video" autoplay playsinline></video>
@@ -162,187 +85,105 @@ th{background:#f2f4f7}
   </div>
 
   <table>
-    <thead>
-      <tr>
-        <th>Seriale</th>
-        <th>Anteprima</th>
-      </tr>
-    </thead>
+    <thead><tr><th>Seriale (tap per modifica)</th><th>Anteprima (tap per zoom)</th></tr></thead>
     <tbody id="results"></tbody>
   </table>
-
 </div>
 
-<div id="toast" class="toast">Seriale già scansionato</div>
+<div id="zoomModal">
+  <button onclick="closeZoom()">Chiudi</button>
+  <img id="zoomImg">
+</div>
+
 <canvas id="canvas" hidden></canvas>
 
 <script>
-/* ================= CONFIG ================= */
-const SERIAL_REGEX = /^BDBCF00[0-9A-F]{3}$/;
-const SCAN_DELAY_MS = 1200;
+const SERIAL_REGEX=/^BDBCF00[0-9A-F]{3}$/;
+let stream,track,worker,cameraOn=false,flashOn=false;
+const found=new Set(),rows=[];
 
-/* ================= STATO ================= */
-let stream=null, track=null, worker=null;
-let cameraOn=false, flashOn=false;
-let operatorLocked=false;
+function updateCounter(){count.textContent=found.size}
 
-const found = new Set();
-const rows = [];
-
-/* ================= FEEDBACK ================= */
-const beepOK = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
-const beepDup = new Audio("data:audio/wav;base64,UklGRhIAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
-
-function showToast(){
-  const t=document.getElementById("toast");
-  t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),1200);
-}
-
-function updateCounter(){
-  document.getElementById("count").textContent = found.size;
-}
-
-function lockOperator(){
-  if(!operator.value){
-    alert("Inserire operatore");
-    return;
-  }
-  operator.disabled = true;
-  operatorLocked = true;
-}
-
-/* ================= CAMERA ================= */
+/* CAMERA */
 async function toggleCamera(){
-  if(!operatorLocked){
-    alert("Blocca l’operatore prima di scansionare");
-    return;
-  }
-  if(cameraOn){
-    stream.getTracks().forEach(t=>t.stop());
-    cameraOn=false;
-    return;
-  }
-  stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-  video.srcObject = stream;
-  await new Promise(r=>video.onloadedmetadata=r);
-  track = stream.getVideoTracks()[0];
-
+  if(cameraOn){stream.getTracks().forEach(t=>t.stop());cameraOn=false;return}
+  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+  video.srcObject=stream;await new Promise(r=>video.onloadedmetadata=r);
+  track=stream.getVideoTracks()[0];
   if(!worker){
-    worker = await Tesseract.createWorker();
-    await worker.loadLanguage("eng");
-    await worker.initialize("eng");
+    worker=await Tesseract.createWorker();
+    await worker.loadLanguage("eng");await worker.initialize("eng");
   }
-  cameraOn = true;
-  scanLoop();
+  cameraOn=true;scanLoop();
 }
-
 async function toggleFlash(){
-  if(!track || !track.getCapabilities().torch){
-    alert("Flash non supportato");
-    return;
-  }
-  flashOn = !flashOn;
+  if(!track?.getCapabilities().torch){alert("Flash non supportato");return}
+  flashOn=!flashOn;
   await track.applyConstraints({advanced:[{torch:flashOn}]});
 }
 
-/* ================= OCR LOOP (ROI) ================= */
+/* OCR LOOP */
 async function scanLoop(){
-  if(!cameraOn) return;
-
-  const vw=video.videoWidth, vh=video.videoHeight;
-  const rx=vw*0.12, ry=vh*0.18;
-  const rw=vw*0.76, rh=vh*0.64;
-
-  canvas.width = rw/2;
-  canvas.height = rh/2;
-  const ctx = canvas.getContext("2d");
-
+  if(!cameraOn)return;
+  const vw=video.videoWidth,vh=video.videoHeight;
+  const rx=vw*0.12,ry=vh*0.18,rw=vw*0.76,rh=vh*0.64;
+  canvas.width=rw/2;canvas.height=rh/2;
+  const ctx=canvas.getContext("2d");
   ctx.filter="grayscale(100%) contrast(180%) brightness(110%)";
-  ctx.drawImage(video, rx, ry, rw, rh, 0, 0, canvas.width, canvas.height);
-
-  const {data} = await worker.recognize(canvas);
-
+  ctx.drawImage(video,rx,ry,rw,rh,0,0,canvas.width,canvas.height);
+  const {data}=await worker.recognize(canvas);
   for(const w of data.words){
-    const seriale = w.text.replace(/O/g,"0").trim();
-    if(!SERIAL_REGEX.test(seriale)) continue;
-
-    if(found.has(seriale)){
-      beepDup.play();
-      navigator.vibrate(80);
-      showToast();
-      continue;
-    }
-
-    found.add(seriale);
-    updateCounter();
-
-    const {x0,y0,x1,y1} = w.bbox;
+    const s=w.text.replace(/O/g,"0").trim();
+    if(!SERIAL_REGEX.test(s)||found.has(s))continue;
+    found.add(s);updateCounter();
     const c=document.createElement("canvas");
-    c.width=x1-x0; c.height=y1-y0;
-    c.getContext("2d").drawImage(canvas,x0,y0,c.width,c.height,0,0,c.width,c.height);
-
-    const img = c.toDataURL("image/jpeg");
-    const timestamp = new Date().toLocaleString();
-
-    rows.push({
-      seriale,
-      operatore: operator.value,
-      lotto: lot.value || "",
-      timestamp,
-      fileName: `${seriale}.jpg`,
-      img
-    });
-
-    addRow(seriale, img);
-    beepOK.play();
-    navigator.vibrate(200);
+    c.width=w.bbox.x1-w.bbox.x0;c.height=w.bbox.y1-w.bbox.y0;
+    c.getContext("2d").drawImage(canvas,w.bbox.x0,w.bbox.y0,c.width,c.height,0,0,c.width,c.height);
+    const img=c.toDataURL("image/jpeg");
+    rows.push({seriale:s,operatore:operator.value||"",lotto:lot.value||"",timestamp:new Date().toLocaleString(),fileName:`${s}.jpg`,img});
+    addRow(rows.length-1);
   }
-
-  setTimeout(scanLoop, SCAN_DELAY_MS);
+  setTimeout(scanLoop,1200);
 }
 
-/* ================= UI ================= */
-function addRow(s,img){
+/* UI */
+function addRow(i){
+  const r=rows[i];
   const tr=document.createElement("tr");
-  tr.innerHTML=`<td>${s}</td><td><img class="thumb" src="${img}"></td>`;
+  tr.innerHTML=`
+    <td class="serial" onclick="editSerial(${i})">${r.seriale}</td>
+    <td><img class="thumb" src="${r.img}" onclick="zoom('${r.img}')"></td>`;
   results.appendChild(tr);
 }
 
-/* ================= EXPORT ================= */
+/* ZOOM */
+function zoom(src){zoomImg.src=src;zoomModal.style.display="flex"}
+function closeZoom(){zoomModal.style.display="none"}
+
+/* EDIT SERIAL */
+function editSerial(i){
+  const old=rows[i].seriale;
+  const nuovo=prompt("Correggi seriale:",old);
+  if(!nuovo||nuovo===old)return;
+  if(!SERIAL_REGEX.test(nuovo)){alert("Formato non valido");return}
+  if(found.has(nuovo)){alert("Seriale già presente");return}
+  if(!confirm(`Confermi modifica ${old} → ${nuovo}?`))return;
+
+  found.delete(old);found.add(nuovo);
+  rows[i].seriale=nuovo;
+  rows[i].fileName=`${nuovo}.jpg`;
+  results.rows[i].cells[0].textContent=nuovo;
+}
+
+/* EXPORT */
 function exportExcel(){
-  const ws = XLSX.utils.json_to_sheet(
-    rows.map(r=>({
-      Seriale: r.seriale,
-      Operatore: r.operatore,
-      Lotto: r.lotto,
-      Timestamp: r.timestamp,
-      "Nome immagine": r.fileName
-    }))
-  );
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Seriali");
-  XLSX.writeFile(wb, "seriali.xlsx");
+  const ws=XLSX.utils.json_to_sheet(rows.map(r=>({
+    Seriale:r.seriale,Operatore:r.operatore,Lotto:r.lotto,
+    Timestamp:r.timestamp,"Nome immagine":r.fileName
+  })));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Seriali");
+  XLSX.writeFile(wb,"seriali.xlsx");
 }
-
 async function exportZip(){
-  const zip = new JSZip();
-  rows.forEach(r=>{
-    zip.file(r.fileName, r.img.split(",")[1], {base64:true});
-  });
-  const blob = await zip.generateAsync({type:"blob"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "anteprime_seriali.zip";
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-function exportAll(){
-  exportExcel();
-  setTimeout(exportZip,300);
-}
-</script>
-
-</body>
-</html>
+  const zip=new JSZip();
