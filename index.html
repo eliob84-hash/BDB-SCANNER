@@ -1,318 +1,1234 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scanner BDBCF</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Scanner Seriali</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #3b82f6;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --border: #475569;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.3);
+        }
 
-<!-- ✅ SCRIPT CORRETTI -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-<style>
-body {
-  margin:0;
-  font-family:system-ui;
-  background:#0f0f1a;
-  color:#fff;
-}
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 100px;
+        }
 
-h3 { text-align:center; }
+        .header {
+            background: linear-gradient(135deg, var(--bg-card), #1a2332);
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+        }
 
-video { width:100%; background:black; }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-light), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-.controls { text-align:center; }
+        .scan-counter {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
 
-input {
-  width:90%;
-  padding:10px;
-  margin:5px;
-  border:none;
-  border-radius:8px;
-}
+        .scan-counter .count {
+            background: var(--primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 12px;
+        }
 
-button {
-  width:90%;
-  padding:12px;
-  margin:5px;
-  border:none;
-  border-radius:10px;
-  background:#00d2ff;
-}
+        .config-panel {
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
 
-table {
-  width:100%;
-  font-size:0.85rem;
-}
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
 
-td {
-  padding:6px;
-  border-bottom:1px solid #333;
-}
+        .input-group label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-dim);
+        }
 
-.thumb {
-  width:70px;
-  border-radius:6px;
-}
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
 
-.modified {
-  color:#ff9800;
-  font-weight:bold;
-}
+        .input-field {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 10px 14px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
 
-#version {
-  font-size:0.7rem;
-  opacity:0.7;
-  text-align:center;
-  margin-top:5px;
-}
-</style>
+        .input-field:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+
+        .input-field::placeholder { color: var(--text-dim); }
+
+        .controls-bar {
+            display: flex;
+            gap: 8px;
+            padding: 0 20px 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+        }
+
+        .btn:active { transform: scale(0.96); }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover { background: var(--primary-dark); }
+
+        .btn-accent {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: #1e293b;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-outline {
+            background: var(--bg-input);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+        .btn-icon {
+            padding: 10px;
+            min-width: 44px;
+            flex: 0;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 20px;
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-label svg { width: 16px; height: 16px; color: var(--text-dim); }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: var(--bg-input);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+            border: 1px solid var(--border);
+        }
+
+        .toggle-switch.active { background: var(--primary); border-color: var(--primary); }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after { transform: translateX(20px); }
+
+        .scanner-section {
+            padding: 0 20px;
+        }
+
+        #reader-container {
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: #000;
+            position: relative;
+            display: none;
+        }
+
+        #reader { width: 100%; }
+
+        #reader video {
+            border-radius: var(--radius);
+            object-fit: cover;
+            width: 100% !important;
+        }
+
+        .scan-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            animation: scanPulse 2s ease-in-out infinite;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        @keyframes scanPulse {
+            0%, 100% { opacity: 0.3; transform: translateY(-20px); }
+            50% { opacity: 1; transform: translateY(20px); }
+        }
+
+        .results-section {
+            padding: 16px 20px;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .results-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .record-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px;
+            margin-bottom: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .record-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .record-image-wrap {
+            width: 64px;
+            height: 48px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+            flex-shrink: 0;
+            cursor: pointer;
+            position: relative;
+            border: 1px solid var(--border);
+        }
+
+        .record-image-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .record-image-wrap .zoom-icon {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 4px;
+            padding: 2px;
+        }
+
+        .record-image-wrap .zoom-icon svg { width: 12px; height: 12px; color: white; }
+
+        .record-info { flex: 1; min-width: 0; }
+
+        .serial-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 15px;
+            font-weight: 500;
+            padding: 6px 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            width: 100%;
+            color: var(--text);
+            transition: all 0.2s;
+        }
+
+        .serial-display.modified {
+            color: var(--warning);
+            border-color: var(--warning);
+        }
+
+        .serial-display:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .record-meta {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .record-meta .mod-badge {
+            background: var(--warning);
+            color: #1e293b;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .record-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .delete-btn svg { width: 18px; height: 18px; }
+
+        .status-selector {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .status-btn {
+            padding: 5px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-input);
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .status-btn:hover { border-color: var(--primary-light); }
+
+        .status-btn.active-good { background: var(--accent); color: white; border-color: var(--accent); }
+        .status-btn.active-broken { background: var(--danger); color: white; border-color: var(--danger); }
+        .status-btn.active-dirty { background: var(--warning); color: #1e293b; border-color: var(--warning); }
+        .status-btn.active-rfid { background: #8b5cf6; color: white; border-color: #8b5cf6; }
+        .status-btn.active-bar { background: #06b6d4; color: white; border-color: #06b6d4; }
+        .status-btn.active-doubt { background: var(--text-dim); color: white; border-color: var(--text-dim); }
+        .status-btn.active-note { background: #ec4899; color: white; border-color: #ec4899; }
+
+        .note-input {
+            margin-top: 6px;
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: var(--text);
+            font-size: 12px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            display: none;
+        }
+
+        .note-input.visible { display: block; }
+        .note-input:focus { border-color: #ec4899; }
+
+        .image-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .image-modal.visible { display: flex; }
+
+        .image-modal img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .image-modal .close-modal {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 2000;
+            transition: transform 0.3s ease-out;
+            box-shadow: var(--shadow);
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .toast.visible { transform: translateX(-50%) translateY(0); }
+        .toast.success { border-color: var(--accent); }
+        .toast.warning { border-color: var(--warning); }
+        .toast.error { border-color: var(--danger); }
+
+        .confirm-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1500;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .confirm-modal.visible { display: flex; }
+
+        .confirm-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 320px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .confirm-box h3 { font-size: 16px; margin-bottom: 8px; }
+        .confirm-box p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+
+        .confirm-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .confirm-actions .btn { flex: 1; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-dim);
+        }
+
+        .empty-state svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.4; }
+        .empty-state p { font-size: 14px; }
+
+        .scanning-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--accent);
+            padding: 4px 10px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 20px;
+        }
+
+        .scanning-indicator .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+        }
+
+        .bottom-bar .btn { font-size: 12px; padding: 10px 12px; }
+
+        @media (max-width: 380px) {
+            .controls-bar { gap: 6px; }
+            .btn { padding: 8px 10px; font-size: 12px; }
+        }
+    </style>
 </head>
-
 <body>
 
-<h3>📷 Scanner BDBCF</h3>
-
-<div class="controls">
-  <input id="operator" placeholder="👤 Operatore">
-  <input id="batch" placeholder="📦 Posizione (obbligatoria)">
+<div class="header">
+    <h1>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+        Scanner Seriali
+    </h1>
+    <div class="scan-counter">
+        <span>Seriali scansionati:</span>
+        <span class="count" id="scanCount">0</span>
+        <span id="scanIndicator" style="display:none">
+            <span class="scanning-indicator"><span class="dot"></span> Scansione attiva</span>
+        </span>
+    </div>
 </div>
 
-<video id="video" playsinline muted></video>
-
-<div class="controls">
-  <button onclick="startCamera()">📸 Avvia</button>
-  <button onclick="stopCamera()">⏹️ Stop</button>
+<div class="config-panel">
+    <div class="input-row">
+        <div class="input-group">
+            <label>Operatore</label>
+            <input type="text" class="input-field" id="operatorName" placeholder="Nome operatore">
+        </div>
+        <div class="input-group">
+            <label>N° Pedana / Posizione</label>
+            <input type="text" class="input-field" id="pedana" placeholder="Es: P01">
+        </div>
+    </div>
 </div>
 
-<p id="status" style="text-align:center">Pronto</p>
-<p style="text-align:center">Totale: <span id="count">0</span></p>
+<div class="controls-bar">
+    <button class="btn btn-primary" id="btnCamera" onclick="toggleCamera()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span>Avvia</span>
+    </button>
+    <button class="btn btn-warning" id="btnFlash" onclick="toggleFlash()" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span>Flash</span>
+    </button>
+</div>
 
-<table id="table"></table>
+<div class="toggle-row">
+    <span class="toggle-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 7h3v3H7z"/><path d="M14 7h3v3h-3z"/><path d="M7 14h3v3H7z"/><path d="M14 14h3v3h-3z"/></svg>
+        Rilevamento multiplo per frame
+    </span>
+    <div class="toggle-switch" id="toggleMulti" onclick="toggleMultiDetect()"></div>
+</div>
 
-<div id="version"></div>
+<div class="scanner-section">
+    <div id="reader-container">
+        <div id="reader"></div>
+        <div class="scan-overlay">
+            <div class="scan-line"></div>
+        </div>
+    </div>
+</div>
+
+<div class="results-section">
+    <div class="results-header">
+        <h2>📋 Risultati Scansione</h2>
+    </div>
+    <div id="recordsList">
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h.01M12 7h.01M17 7h.01M7 12h10M7 17h6"/></svg>
+            <p>Nessun seriale scansionato.<br>Avvia la fotocamera per iniziare.</p>
+        </div>
+    </div>
+</div>
+
+<div class="image-modal" id="imageModal" onclick="closeModal()">
+    <button class="close-modal" onclick="closeModal()">✕</button>
+    <img id="modalImage" src="" alt="Zoom immagine">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="confirm-modal" id="confirmModal">
+    <div class="confirm-box">
+        <h3 id="confirmTitle">Conferma</h3>
+        <p id="confirmMsg">Sei sicuro?</p>
+        <div class="confirm-actions">
+            <button class="btn btn-outline" onclick="closeConfirm()">Annulla</button>
+            <button class="btn btn-danger" id="confirmBtn" onclick="executeConfirm()">Conferma</button>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-bar">
+    <button class="btn btn-accent" onclick="exportExcel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+        Excel
+    </button>
+    <button class="btn btn-primary" onclick="exportZip()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+        ZIP Immagini
+    </button>
+</div>
 
 <script>
-const video = document.getElementById("video");
+// === STATE ===
+let isCameraActive = false;
+let isFlashOn = false;
+let isMultiDetect = false;
+let html5QrCode = null;
+let records = [];
+let scanCountVal = 0;
+let confirmCallback = null;
+let audioCtx = null;
 
-let stream = null;
-let worker = null;
-let running = false;
+const SERIAL_PATTERN = /^[A-Z]{2}BCF00[A-Fa-f0-9]{3}$/;
 
-let data = [];
-let lastCode = "";
-
-// ✅ VERSIONE TIMESTAMP
-const VERSION = new Date().toISOString();
-document.getElementById("version").textContent = "Versione: " + VERSION;
-
-const REGEX = /^BDBCF00[0-9A-F]{3}$/;
-
-// ================= CAMERA =================
-async function startCamera(){
-
-  try{
-    stream = await navigator.mediaDevices.getUserMedia({
-      video:{ facingMode:"environment" }
-    });
-
-    video.srcObject = stream;
-    await video.play();
-
-    setStatus("✅ Camera attiva");
-
-    startScanner();
-
-  } catch(e){
-    alert("Errore camera: " + e.message);
-  }
+// === AUDIO ===
+function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
 }
 
-function stopCamera(){
-  if(stream){
-    stream.getTracks().forEach(t => t.stop());
-    running = false;
-    setStatus("⏹️ Stop");
-  }
+function playBeep(freq = 1200, duration = 80, type = 'square') {
+    try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.value = 0.15;
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration / 1000);
+    } catch(e) {}
 }
 
-// ================= OCR =================
-async function startScanner(){
-
-  running = true;
-
-  if(!worker){
-    worker = await Tesseract.createWorker("eng");
-  }
-
-  scanLoop();
+function playSuccessBeep() {
+    playBeep(1200, 60, 'sine');
+    setTimeout(() => playBeep(1600, 60, 'sine'), 80);
 }
 
-// ================= LOOP =================
-async function scanLoop(){
-
-  if(!running) return;
-
-  try{
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-
-    const w = video.videoWidth;
-    const h = video.videoHeight;
-
-    const cw = w * 0.6;
-    const ch = h * 0.3;
-
-    const x = (w - cw)/2;
-    const y = (h - ch)/2;
-
-    canvas.width = 600;
-    canvas.height = 300;
-
-    ctx.drawImage(video, x, y, cw, ch, 0, 0, 600, 300);
-
-    const { data:{ text } } = await worker.recognize(canvas);
-
-    processText(text, canvas);
-
-  } catch(e){
-    console.log(e);
-  }
-
-  setTimeout(scanLoop, 1200);
+function playDuplicateBeep() {
+    playBeep(400, 150, 'sawtooth');
+    setTimeout(() => playBeep(300, 150, 'sawtooth'), 200);
 }
 
-// ================= PARSE =================
-function processText(text, canvas){
+function playErrorBeep() {
+    playBeep(200, 300, 'sawtooth');
+}
 
-  // ✅ FIX OCR ERRORI
-  let clean = text.toUpperCase()
-    .replace(/O/g,"0")
-    .replace(/I/g,"1")
-    .replace(/[^A-Z0-9]/g,"");
+// === HAPTIC ===
+function haptic(pattern = 'success') {
+    if (navigator.vibrate) {
+        if (pattern === 'success') navigator.vibrate([50, 30, 50]);
+        else if (pattern === 'duplicate') navigator.vibrate([200]);
+        else if (pattern === 'error') navigator.vibrate([100, 50, 100, 50, 100]);
+    }
+}
 
-  const matches = clean.match(/BDBCF00[0-9A-F]{3}/g) || [];
+// === TOAST ===
+function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type;
+    setTimeout(() => t.classList.add('visible'), 10);
+    setTimeout(() => t.classList.remove('visible'), 2500);
+}
 
-  matches.forEach(code=>{
+// === CONFIRM ===
+function showConfirm(title, msg, callback) {
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMsg').textContent = msg;
+    confirmCallback = callback;
+    document.getElementById('confirmModal').classList.add('visible');
+}
 
-    if(!REGEX.test(code)) return;
+function closeConfirm() {
+    document.getElementById('confirmModal').classList.remove('visible');
+    confirmCallback = null;
+}
 
-    if(code === lastCode) return;
-    lastCode = code;
+function executeConfirm() {
+    if (confirmCallback) confirmCallback();
+    closeConfirm();
+}
 
-    if(data.some(d=>d.code === code)){
-      feedbackError();
-      setStatus("⚠️ Duplicato");
-      return;
+// === OCR CORRECTION ===
+function fixSerialOCR(raw) {
+    let fixed = raw.replace(/O/g, '0').replace(/o/g, '0').replace(/I/g, '1').replace(/l/g, '1');
+    return fixed.toUpperCase();
+}
+
+function validateSerial(serial) {
+    return SERIAL_PATTERN.test(serial);
+}
+
+// === CAMERA ===
+async function toggleCamera() {
+    if (isCameraActive) {
+        stopCamera();
+    } else {
+        startCamera();
+    }
+}
+
+async function startCamera() {
+    try {
+        const btn = document.getElementById('btnCamera');
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="18" y1="6" x2="6" y2="18"/></svg><span>Ferma</span>`;
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-danger');
+
+        document.getElementById('reader-container').style.display = 'block';
+        document.getElementById('btnFlash').disabled = false;
+        document.getElementById('scanIndicator').style.display = 'inline';
+
+        html5QrCode = new Html5Qrcode("reader");
+
+        const config = {
+            fps: 15,
+            qrbox: { width: 280, height: 120 },
+            aspectRatio: 1.0,
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.QR_CODE,
+                Html5QrcodeSupportedFormats.CODABAR,
+                Html5QrcodeSupportedFormats.ITF,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E
+            ]
+        };
+
+        await html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            onScanSuccess,
+            onScanFailure
+        );
+
+        isCameraActive = true;
+        showToast('📷 Fotocamera avviata', 'success');
+    } catch(err) {
+        console.error(err);
+        showToast('Errore fotocamera: ' + err.message, 'error');
+        playErrorBeep();
+        haptic('error');
+        resetCameraBtn();
+    }
+}
+
+async function stopCamera() {
+    try {
+        if (html5QrCode && isCameraActive) {
+            await html5QrCode.stop();
+            html5QrCode.clear();
+        }
+        resetCameraBtn();
+        isCameraActive = false;
+        isFlashOn = false;
+        document.getElementById('btnFlash').classList.remove('btn-accent');
+        document.getElementById('btnFlash').classList.add('btn-warning');
+        document.getElementById('btnFlash').disabled = true;
+        document.getElementById('reader-container').style.display = 'none';
+        document.getElementById('scanIndicator').style.display = 'none';
+        showToast('📷 Fotocamera disattivata', 'warning');
+    } catch(err) {
+        console.error(err);
+    }
+}
+
+function resetCameraBtn() {
+    const btn = document.getElementById('btnCamera');
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Avvia</span>`;
+    btn.classList.add('btn-primary');
+    btn.classList.remove('btn-danger');
+}
+
+// === FLASH ===
+async function toggleFlash() {
+    if (!html5QrCode) return;
+    try {
+        const track = html5QrCode.getRunningTrackSettings()?.stream?.getVideoTracks?.()?.[0];
+        if (track) {
+            const capabilities = track.getCapabilities?.();
+            if (capabilities && capabilities.torch) {
+                isFlashOn = !isFlashOn;
+                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+                const btn = document.getElementById('btnFlash');
+                if (isFlashOn) {
+                    btn.classList.remove('btn-warning');
+                    btn.classList.add('btn-accent');
+                    showToast('🔦 Flash attivo', 'success');
+                } else {
+                    btn.classList.remove('btn-accent');
+                    btn.classList.add('btn-warning');
+                    showToast('🔦 Flash disattivato', 'warning');
+                }
+            } else {
+                showToast('Flash non supportato su questo dispositivo', 'error');
+            }
+        }
+    } catch(e) {
+        showToast('Errore flash', 'error');
+    }
+}
+
+// === MULTI DETECT ===
+function toggleMultiDetect() {
+    isMultiDetect = !isMultiDetect;
+    document.getElementById('toggleMulti').classList.toggle('active', isMultiDetect);
+}
+
+// === SCAN HANDLER ===
+let lastScanTime = 0;
+const SCAN_COOLDOWN = 500;
+
+function onScanSuccess(decodedText, result) {
+    const now = Date.now();
+    if (now - lastScanTime < SCAN_COOLDOWN) return;
+    lastScanTime = now;
+
+    let serial = fixSerialOCR(decodedText.trim());
+
+    if (!validateSerial(serial)) {
+        return; // silently ignore invalid
     }
 
-    addRecord(code, canvas);
-  });
+    if (isMultiDetect) {
+        processScan(serial, result);
+    } else {
+        processScan(serial, result);
+    }
 }
 
-// ================= ADD =================
-function addRecord(code, canvas){
+function processScan(serial, result) {
+    const isDuplicate = records.some(r => r.serial === serial);
 
-  // ✅ POSIZIONE OBBLIGATORIA
-  const batch = document.getElementById("batch").value;
-  if(!batch){
-    setStatus("❌ Inserisci posizione!");
-    feedbackError();
-    return;
-  }
+    if (isDuplicate) {
+        showToast(`⚠️ Seriale duplicato: ${serial}`, 'warning');
+        playDuplicateBeep();
+        haptic('duplicate');
+        return;
+    }
 
-  const record = {
-    code,
-    time: new Date().toLocaleTimeString(),
-    op: document.getElementById("operator").value,
-    batch,
-    modified:false,
-    img: canvas.toDataURL("image/jpeg")
-  };
+    // Capture image
+    let imageDataUrl = null;
+    try {
+        if (result && result.getResult()?.getImageData) {
+            imageDataUrl = result.getResult().getImageData();
+        }
+        // Fallback: capture from video
+        if (!imageDataUrl) {
+            const video = document.querySelector('#reader video');
+            if (video) {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+                imageDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            }
+        }
+    } catch(e) {
+        console.error('Image capture error', e);
+    }
 
-  data.push(record);
-  render();
+    const operator = document.getElementById('operatorName').value.trim() || 'N/D';
+    const pedana = document.getElementById('pedana').value.trim() || 'N/D';
+    const timestamp = new Date().toLocaleString('it-IT');
 
-  feedbackOK();
+    const record = {
+        id: Date.now() + Math.random(),
+        serial,
+        timestamp,
+        operator,
+        pedana,
+        modified: false,
+        status: 'Good',
+        note: '',
+        image: imageDataUrl
+    };
+
+    records.unshift(record);
+    scanCountVal++;
+    document.getElementById('scanCount').textContent = scanCountVal;
+
+    playSuccessBeep();
+    haptic('success');
+    renderRecords();
+    showToast(`✅ ${serial}`, 'success');
 }
 
-// ================= TABLE =================
-function render(){
-
-  const table = document.getElementById("table");
-  table.innerHTML = "";
-
-  data.slice().reverse().forEach((r,i)=>{
-
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-      <td>
-        <img src="${r.img}" class="thumb" onclick="zoom('${rk="edit(${i})">${r.code}</span><br>
-        ${r.time}
-      </td>
-      <td><button onclick="removeRow(${i})">🗑️</button></td>
-    `;
-
-    table.appendChild(row);
-  });
-
-  document.getElementById("count").textContent = data.length;
+function onScanFailure(error) {
+    // Silently ignore scan failures (normal during continuous scanning)
 }
 
-// ================= ACTIONS =================
-function edit(i){
+// === RENDER ===
+function renderRecords() {
+    const container = document.getElementById('recordsList');
 
-  let val = prompt("Modifica codice", data[i].code);
-  if(!val) return;
+    if (records.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h.01M12 7h.01M17 7h.01M7 12h10M7 17h6"/></svg>
+                <p>Nessun seriale scansionato.<br>Avvia la fotocamera per iniziare.</p>
+            </div>`;
+        return;
+    }
 
-  val = val.toUpperCase();
-
-  if(!REGEX.test(val)){
-    alert("Formato non valido");
-    return;
-  }
-
-  data[i].code = val;
-  data[i].modified = true;
-  render();
+    container.innerHTML = records.map(r => `
+        <div class="record-card" id="record-${r.id}">
+            <div class="record-top">
+                <div class="record-image-wrap" onclick="openModal('${r.id}')">
+                    ${r.image ? `<img src="${r.image}" alt="Serial image">` : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:10px;">No img</div>`}
+                    <div class="zoom-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg>
+                    </div>
+                </div>
+                <div class="record-info">
+                    <input type="text" class="serial-display ${r.modified ? 'modified' : ''}" 
+                           value="${r.serial}" 
+                           onchange="editSerial('${r.id}', this.value)"
+                           onfocus="this.dataset.orig=this.value"
+                           spellcheck="false"
+                           autocomplete="off">
+                    <div class="record-meta">
+                        <span>🕐 ${r.timestamp}</span>
+                        <span>👤 ${r.operator}</span>
+                        <span>📍 ${r.pedana}</span>
+                        ${r.modified ? '<span class="mod-badge">MODIFICATO</span>' : ''}
+                    </div>
+                </div>
+                <div class="record-actions">
+                    <button class="delete-btn" onclick="deleteRecord('${r.id}')" title="Elimina record">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="status-selector">
+                <button class="status-btn ${r.status === 'Good' ? 'active-good' : ''}" onclick="setStatus('${r.id}','Good')">✓ Good</button>
+                <button class="status-btn ${r.status === 'Rotto' ? 'active-broken' : ''}" onclick="setStatus('${r.id}','Rotto')">✕ Rotto</button>
+                <button class="status-btn ${r.status === 'Sporco' ? 'active-dirty' : ''}" onclick="setStatus('${r.id}','Sporco')">◆ Sporco</button>
+                <button class="status-btn ${r.status === 'RF-ID' ? 'active-rfid' : ''}" onclick="setStatus('${r.id}','RF-ID')">📡 RF-ID</button>
+                <button class="status-btn ${r.status === 'Barra Mancante' ? 'active-bar' : ''}" onclick="setStatus('${r.id}','Barra Mancante')">▤ Barra Manc.</button>
+                <button class="status-btn ${r.status === 'Dubbio/Altro' ? 'active-doubt' : ''}" onclick="setStatus('${r.id}','Dubbio/Altro')">❓ Dubbio</button>
+            </div>
+            <input type="text" class="note-input ${r.status === 'Dubbio/Altro' ? 'visible' : ''}" 
+                   placeholder="Note aggiuntive..." 
+                   value="${r.note}"
+                   onchange="setNote('${r.id}', this.value)">
+        </div>
+    `).join('');
 }
 
-function removeRow(i){
-  if(confirm("Eliminare?")){
-    data.splice(i,1);
-    render();
-  }
+// === RECORD ACTIONS ===
+function editSerial(id, newSerial) {
+    const record = records.find(r => String(r.id) === String(id));
+    if (!record) return;
+
+    const input = document.querySelector(`#record-${id} .serial-display`);
+    const orig = input?.dataset?.orig || record.serial;
+
+    if (newSerial === orig) return;
+
+    let fixed = fixSerialOCR(newSerial.trim());
+
+    if (fixed === record.serial) {
+        input.value = fixed;
+        return;
+    }
+
+    showConfirm(
+        'Conferma modifica seriale',
+        `Modificare "${record.serial}" in "${fixed}"?`,
+        () => {
+            if (records.some(r => r.serial === fixed && r.id !== record.id)) {
+                showToast('⚠️ Seriale già presente!', 'warning');
+                playDuplicateBeep();
+                haptic('duplicate');
+                input.value = orig;
+                return;
+            }
+            record.serial = fixed;
+            record.modified = true;
+            showToast(`Seriale modificato: ${fixed}`, 'success');
+            playSuccessBeep();
+            renderRecords();
+        }
+    );
+
+    input.value = orig;
 }
 
-function zoom(src){
-  window.open(src);
+function setStatus(id, status) {
+    const record = records.find(r => String(r.id) === String(id));
+    if (!record) return;
+    record.status = status;
+    haptic('success');
+    renderRecords();
 }
 
-// ================= FEEDBACK =================
-function feedbackOK(){
-  beep(800);
-  if(navigator.vibrate) navigator.vibrate(80);
+function setNote(id, note) {
+    const record = records.find(r => String(r.id) === String(id));
+    if (record) record.note = note;
 }
 
-function feedbackError(){
-  beep(200);
-  if(navigator.vibrate) navigator.vibrate(200);
+function deleteRecord(id) {
+    const record = records.find(r => String(r.id) === String(id));
+    if (!record) return;
+    showConfirm(
+        'Elimina record',
+        `Eliminare il seriale "${record.serial}"?`,
+        () => {
+            records = records.filter(r => String(r.id) !== String(id));
+            scanCountVal = Math.max(0, scanCountVal - 1);
+            document.getElementById('scanCount').textContent = scanCountVal;
+            haptic('error');
+            playErrorBeep();
+            renderRecords();
+            showToast('Record eliminato', 'warning');
+        }
+    );
 }
 
-function beep(freq){
-  const ctx = new AudioContext();
-  const osc = ctx.createOscillator();
-  osc.frequency.value = freq;
-  osc.connect(ctx.destination);
-  osc.start();
-  osc.stop(ctx.currentTime + 0.1);
+// === IMAGE MODAL ===
+function openModal(id) {
+    const record = records.find(r => String(r.id) === String(id));
+    if (!record || !record.image) return;
+    document.getElementById('modalImage').src = record.image;
+    document.getElementById('imageModal').classList.add('visible');
 }
 
-// ================= UI =================
-function setStatus(msg){
-  document.getElementById("status").textContent = msg;
+function closeModal() {
+    document.getElementById('imageModal').classList.remove('visible');
 }
+
+// === EXPORT EXCEL ===
+function exportExcel() {
+    if (records.length === 0) {
+        showToast('Nessun record da esportare', 'warning');
+        return;
+    }
+
+    const data = records.map((r, i) => ({
+        '#': i + 1,
+        'Timestamp': r.timestamp,
+        'Seriale': r.serial,
+        'Modificato': r.modified ? 'Sì' : 'No',
+        'Lotto/Posizione': r.pedana,
+        'Operatore': r.operator,
+        'Stato': r.status,
+        'Note': r.note
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Scansioni');
+
+    // Style column widths
+    ws['!cols'] = [
+        { wch: 5 }, { wch: 20 }, { wch: 15 }, { wch: 12 },
+        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 25 }
+    ];
+
+    const fileName = `Scansioni_${new Date().toISOString().slice(0,10)}_${Date.now()}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    showToast(`📊 Excel esportato: ${records.length} record`, 'success');
+    haptic('success');
+}
+
+// === EXPORT ZIP ===
+async function exportZip() {
+    if (records.length === 0) {
+        showToast('Nessun record da esportare', 'warning');
+        return;
+    }
+
+    showToast('📦 Creazione ZIP in corso...', 'success');
+
+    try {
+        const zip = new JSZip();
+        const imgFolder = zip.folder('immagini_seriali');
+
+        let imgCount = 0;
+        for (const r of records) {
+            if (r.image) {
+                const base64 = r.image.split(',')[1];
+                const fileName = `${r.serial}_${Date.now()}.jpg`;
+                imgFolder.file(fileName, base64, { base64: true });
+                imgCount++;
+            }
+        }
+
+        // Also add summary CSV
+        const csvData = records.map((r, i) =>
+            `${i+1},${r.timestamp},${r.serial},${r.modified?'Sì':'No'},${r.pedana},${r.operator},${r.status},"${r.note}"`
+        );
+        const csvContent = 'Numero,Timestamp,Seriale,Modificato,Lotto/Posizione,Operatore,Stato,Note\n' + csvData.join('\n');
+        zip.file('riepilogo.csv', csvContent);
+
+        const content = await zip.generateAsync({ type: 'blob' });
+        const fileName = `Archivio_Seriali_${new Date().toISOString().slice(0,10)}.zip`;
+        saveAs(content, fileName);
+
+        showToast(`📦 ZIP esportato: ${imgCount} immagini`, 'success');
+        haptic('success');
+    } catch(err) {
+        console.error(err);
+        showToast('Errore creazione ZIP', 'error');
+        playErrorBeep();
+    }
+}
+
+// === INIT ===
+document.addEventListener('DOMContentLoaded', () => {
+    renderRecords();
+});
+
+// Prevent zoom on double tap
+document.addEventListener('touchstart', (e) => {
+    if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+}, false);
 </script>
-
 </body>
 </html>
+
