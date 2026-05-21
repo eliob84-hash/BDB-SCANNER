@@ -114,25 +114,32 @@
             padding:12px; margin-bottom:10px; animation:slideIn 0.3s ease-out;
         }
         @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-        .record-top { display:flex; align-items:center; gap:10px; }
+        .record-top { display:flex; align-items:center; gap:12px; }
+
+        /* IMMAGINE PIÙ GRANDE */
         .record-image-wrap {
-            width:60px; height:44px; border-radius:8px; overflow:hidden; background:#000;
+            width:130px; height:60px; border-radius:8px; overflow:hidden; background:#000;
             flex-shrink:0; cursor:pointer; position:relative; border:1px solid var(--border);
         }
-        .record-image-wrap img { width:100%; height:100%; object-fit:cover; }
+        .record-image-wrap img { width:100%; height:100%; object-fit:cover; image-rendering:auto; }
         .record-image-wrap .zoom-icon { position:absolute; bottom:2px; right:2px; background:rgba(0,0,0,0.7); border-radius:4px; padding:2px; }
         .record-image-wrap .zoom-icon svg { width:11px; height:11px; color:white; }
+
         .record-info { flex:1; min-width:0; }
+
+        /* SERIALE COMPATTO */
         .serial-display {
-            font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:500;
-            padding:5px 9px; background:var(--bg-input); border:1px solid var(--border);
-            border-radius:8px; outline:none; width:100%; color:var(--text); transition:all 0.2s;
+            font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:500;
+            padding:5px 7px; background:var(--bg-input); border:1px solid var(--border);
+            border-radius:8px; outline:none; width:130px; max-width:130px; min-width:0;
+            color:var(--text); transition:all 0.2s; letter-spacing:1.5px; text-align:center;
         }
         .serial-display.modified { color:var(--warning); border-color:var(--warning); }
-        .serial-display:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.15); }
+        .serial-display:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.15); width:130px; }
+
         .record-meta { font-size:10px; color:var(--text-dim); margin-top:4px; display:flex; flex-wrap:wrap; gap:6px; }
         .mod-badge { background:var(--warning); color:#1e293b; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:700; }
-        .delete-btn { background:none; border:none; color:var(--text-dim); cursor:pointer; padding:6px; border-radius:8px; transition:all 0.2s; }
+        .delete-btn { background:none; border:none; color:var(--text-dim); cursor:pointer; padding:6px; border-radius:8px; transition:all 0.2s; flex-shrink:0; }
         .delete-btn:hover { background:rgba(239,68,68,0.15); color:var(--danger); }
         .delete-btn svg { width:18px; height:18px; }
         .status-selector { display:flex; gap:4px; margin-top:8px; flex-wrap:wrap; }
@@ -147,6 +154,7 @@
         .status-btn.active-rfid { background:#8b5cf6; color:white; border-color:#8b5cf6; }
         .status-btn.active-bar { background:#06b6d4; color:white; border-color:#06b6d4; }
         .status-btn.active-doubt { background:var(--text-dim); color:white; border-color:var(--text-dim); }
+        .status-btn.active-none { background:transparent; border:1px dashed var(--border); color:var(--text-dim); }
         .note-input {
             margin-top:6px; width:100%; background:var(--bg-input); border:1px solid var(--border);
             border-radius:6px; padding:6px 10px; color:var(--text); font-size:12px;
@@ -198,7 +206,13 @@
         }
         .bottom-bar .btn { font-size:12px; padding:10px 10px; }
         .progress-bar { position:absolute; bottom:0; left:0; height:3px; background:var(--accent); transition:width 0.3s; z-index:5; }
-        @media (max-width:380px) { .btn { padding:8px 8px; font-size:11px; } .status-btn { font-size:9px; padding:3px 6px; } }
+        .cooldown-overlay {
+            position:absolute; top:0; left:0; right:0; bottom:0;
+            background:rgba(16,185,129,0.08); pointer-events:none; z-index:4;
+            display:none;
+        }
+        .cooldown-overlay.active { display:block; }
+        @media (max-width:380px) { .btn { padding:8px 8px; font-size:11px; } .status-btn { font-size:9px; padding:3px 6px; } .record-image-wrap { width:110px; height:52px; } }
     </style>
 </head>
 <body>
@@ -245,6 +259,7 @@
         <video id="videoFeed" autoplay playsinline muted></video>
         <div class="roi-overlay"></div>
         <div class="scan-line"></div>
+        <div class="cooldown-overlay" id="cooldownOverlay"></div>
         <div class="ocr-status" id="ocrStatus">Inizializzazione OCR...</div>
         <div class="progress-bar" id="progressBar" style="width:0%"></div>
     </div>
@@ -293,6 +308,7 @@
 <script>
 let cameraActive=false, flashOn=false, multiDetect=false, videoEl=null, stream=null, ocrWorker=null, scanTimer=null;
 let records=[], scanTotal=0, confirmCallback=null, audioCtx=null;
+let scanCooldown=false; // Timeout di 1 secondo dopo lettura OK
 const SERIAL_PATTERN=/^[A-Z]{2}BCF00[A-F0-9]{3}$/;
 
 function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx;}
@@ -340,11 +356,12 @@ function stopCamera(){
     if(scanTimer){clearInterval(scanTimer);scanTimer=null;}
     if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
     if(ocrWorker){ocrWorker.terminate();ocrWorker=null;}
-    cameraActive=false;flashOn=false;videoEl=null;
+    cameraActive=false;flashOn=false;videoEl=null;scanCooldown=false;
     document.getElementById('cameraContainer').classList.remove('active');
     document.getElementById('btnFlash').disabled=true;
     document.getElementById('btnFlash').classList.remove('btn-accent');document.getElementById('btnFlash').classList.add('btn-warning');
     document.getElementById('scanIndicator').innerHTML='';document.getElementById('progressBar').style.width='0%';
+    document.getElementById('cooldownOverlay').classList.remove('active');
     resetBtnCamera();toast('📷 Fotocamera spenta','warning');
 }
 
@@ -362,7 +379,9 @@ function toggleMultiDetect(){multiDetect=!multiDetect;document.getElementById('t
 async function scanFrame(){
     if(!cameraActive||!videoEl||!ocrWorker)return;
     if(videoEl.readyState<2)return;
+    if(scanCooldown)return; // Bloccato durante cooldown
     beepScan();
+
     const canvas=document.getElementById('captureCanvas'),ctx=canvas.getContext('2d');
     const vw=videoEl.videoWidth,vh=videoEl.videoHeight;
     const rw=Math.floor(vw*0.85),rh=Math.floor(vh*0.3);
@@ -379,26 +398,29 @@ async function scanFrame(){
     ctx2.putImageData(imgData2,0,0);
     try{
         const results=await Promise.all([ocrWorker.recognize(canvas),ocrWorker.recognize(canvas2)]);
+        const foundSerials=[];
         for(const result of results){
             const words=result.data.words||[];
             for(const word of words){
                 let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
                 if(cleaned.length<8)continue;
                 let fixed=fixOCR(cleaned);
-                // Match diretto (solo se esattamente 10 caratteri)
-                if(fixed.length===10&&isValidSerial(fixed)){
+                if(fixed.length===10&&isValidSerial(fixed)&&!foundSerials.includes(fixed)){
                     const imgData=cropFromBbox(canvas,rw,rh,word.bbox,15);
+                    foundSerials.push(fixed);
                     processSerial(fixed,imgData);
-                    if(!multiDetect)return;continue;
+                    if(!multiDetect)return;
+                    continue;
                 }
-                // Sliding window per seriali embedded
                 for(let i=0;i<=cleaned.length-10;i++){
                     const sub=cleaned.substring(i,i+10);
                     const subFixed=fixOCR(sub);
-                    if(isValidSerial(subFixed)){
+                    if(isValidSerial(subFixed)&&!foundSerials.includes(subFixed)){
                         const imgData=cropFromBbox(canvas,rw,rh,word.bbox,15);
+                        foundSerials.push(subFixed);
                         processSerial(subFixed,imgData);
-                        if(!multiDetect)return;break;
+                        if(!multiDetect)return;
+                        break;
                     }
                 }
             }
@@ -421,10 +443,21 @@ function cropFromBbox(canvas,rw,rh,bbox,margin){
 function processSerial(serial,imgData){
     const isDup=records.some(r=>r.serial===serial);
     if(isDup){toast('⚠️ Duplicato: '+serial,'warning');beepDup();vib('dup');return;}
+
+    // Attiva cooldown di 1 secondo
+    scanCooldown=true;
+    document.getElementById('cooldownOverlay').classList.add('active');
+    document.getElementById('ocrStatus').textContent='⏱ Cooldown 1s...';
+    setTimeout(()=>{
+        scanCooldown=false;
+        document.getElementById('cooldownOverlay').classList.remove('active');
+        if(cameraActive) document.getElementById('ocrStatus').textContent='Scansione in corso...';
+    },1000);
+
     const operator=document.getElementById('operatorName').value.trim()||'N/D';
     const pedana=document.getElementById('pedana').value.trim()||'N/D';
     const ts=new Date().toLocaleString('it-IT');
-    records.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial,timestamp:ts,operator,pedana,modified:false,status:'Dubbio/Altro',note:'',image:imgData||null});
+    records.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial,timestamp:ts,operator,pedana,modified:false,status:'',note:'',image:imgData||null});
     scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
     beepOk();vib('ok');renderRecords();toast('✅ '+serial,'success');
 }
@@ -440,7 +473,7 @@ function renderRecords(){
                     <div class="zoom-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg></div>
                 </div>
                 <div class="record-info">
-                    <input type="text" class="serial-display ${r.modified?'modified':''}" value="${r.serial}" onchange="editSerial('${r.id}',this.value)" onfocus="this.dataset.orig=this.value" spellcheck="false" autocomplete="off">
+                    <input type="text" class="serial-display ${r.modified?'modified':''}" value="${r.serial}" onchange="editSerial('${r.id}',this.value)" onfocus="this.dataset.orig=this.value" spellcheck="false" autocomplete="off" maxlength="12">
                     <div class="record-meta"><span>🕐 ${r.timestamp}</span><span>👤 ${r.operator}</span><span>📍 ${r.pedana}</span>${r.modified?'<span class="mod-badge">MODIF.</span>':''}</div>
                 </div>
                 <button class="delete-btn" onclick="deleteRecord('${r.id}')" title="Elimina"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
@@ -452,6 +485,7 @@ function renderRecords(){
                 <button class="status-btn ${r.status==='RF-ID'?'active-rfid':''}" onclick="setStatus('${r.id}','RF-ID')">📡 RF-ID</button>
                 <button class="status-btn ${r.status==='Barra Mancante'?'active-bar':''}" onclick="setStatus('${r.id}','Barra Mancante')">▤ Barra Manc.</button>
                 <button class="status-btn ${r.status==='Dubbio/Altro'?'active-doubt':''}" onclick="setStatus('${r.id}','Dubbio/Altro')">❓ Dubbio</button>
+                ${r.status?`<button class="status-btn active-none" onclick="setStatus('${r.id}','')">✕ Reset</button>`:''}
             </div>
             <input type="text" class="note-input ${r.status==='Dubbio/Altro'?'visible':''}" placeholder="Note..." value="${r.note}" onchange="setNote('${r.id}',this.value)">
         </div>`).join('');
@@ -460,7 +494,7 @@ function renderRecords(){
 function editSerial(id,newVal){
     const rec=records.find(r=>r.id===id);if(!rec)return;
     const input=document.querySelector(`#record-${id} .serial-display`);const orig=input?.dataset?.orig||rec.serial;
-    if(newVal===orig)return;let fixed=fixOCR(newVal.trim());
+    if(newVal===orig)return;let fixed=fixOCR(newVal.trim().toUpperCase());
     showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{
         if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Seriale già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}
         rec.serial=fixed;rec.modified=true;toast('Seriale modificato: '+fixed,'success');beepOk();renderRecords();
@@ -481,7 +515,7 @@ function closeModal(){document.getElementById('imageModal').classList.remove('vi
 
 function exportExcel(){
     if(records.length===0){toast('Nessun record','warning');return;}
-    const data=records.map((r,i)=>({'#':i+1,'Timestamp':r.timestamp,'Seriale':r.serial,'Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,'Operatore':r.operator,'Stato':r.status,'Note':r.note}));
+    const data=records.map((r,i)=>({'#':i+1,'Timestamp':r.timestamp,'Seriale':r.serial,'Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,'Operatore':r.operator,'Stato':r.status||'—','Note':r.note}));
     const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Scansioni');
     XLSX.writeFile(wb,`Scansioni_${new Date().toISOString().slice(0,10)}.xlsx`);toast(`📊 Excel: ${records.length} record`,'success');vib('ok');
@@ -493,7 +527,7 @@ async function exportZip(){
     try{
         const zip=new JSZip(),imgF=zip.folder('immagini');let cnt=0;
         for(const r of records){if(r.image){imgF.file(`${r.serial}_${r.id}.jpg`,r.image.split(',')[1],{base64:true});cnt++;}}
-        const csv='N,Timestamp,Seriale,Modificato,Lotto,Operatore,Stato,Note\n'+records.map((r,i)=>`${i+1},${r.timestamp},${r.serial},${r.modified?'Sì':'No'},${r.pedana},${r.operator},${r.status},"${r.note}"`).join('\n');
+        const csv='N,Timestamp,Seriale,Modificato,Lotto,Operatore,Stato,Note\n'+records.map((r,i)=>`${i+1},${r.timestamp},${r.serial},${r.modified?'Sì':'No'},${r.pedana},${r.operator},${r.status||'—'},"${r.note}"`).join('\n');
         zip.file('riepilogo.csv',csv);
         const blob=await zip.generateAsync({type:'blob'});saveAs(blob,`Archivio_${new Date().toISOString().slice(0,10)}.zip`);
         toast(`📦 ZIP: ${cnt} immagini`,'success');vib('ok');
