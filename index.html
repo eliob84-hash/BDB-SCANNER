@@ -1,156 +1,311 @@
-
 <!DOCTYPE html>
 <html lang="it">
-  <!-- Versione vecchia ma funzionante -->
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scanner BDBCF</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scanner BDBCF PRO</title>
 
-  <!-- ✅ SCRIPT CORRETTI -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.jsscript src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: system-ui;
-      background: #111;
-      color: #fff;
-      text-align: center;
-    }
+<style>
+body { margin:0; font-family:system-ui; background:#0f0f1a; color:#fff; }
+video { width:100%; }
 
-    video {
-      width: 100%;
-      background: black;
-    }
+.container { position:relative; }
+.scan-box {
+  position:absolute; left:15%; top:30%; width:70%; height:25%;
+  border:2px dashed #00d2ff; border-radius:10px;
+}
+.scan-line {
+  position:absolute; width:100%; height:2px; background:red;
+  animation:scan 1.5s infinite;
+}
+@keyframes scan { 0%{top:0} 100%{top:100%} }
 
-    .container {
-      position: relative;
-    }
+button {
+  width:90%; margin:5px; padding:12px;
+  border:none; border-radius:10px;
+}
 
-    .scan-box {
-      position: absolute;
-      left: 15%;
-      top: 30%;
-      width: 70%;
-      height: 25%;
-      border: 2px dashed #00d2ff;
-      border-radius: 10px;
-    }
+input {
+  width:90%; padding:10px; margin:5px;
+  border-radius:6px; border:none;
+}
 
-    /* ✅ linea rossa */
-    .scan-line {
-      position: absolute;
-      width: 100%;
-      height: 2px;
-      background: red;
-      animation: scan 1.5s infinite;
-    }
+table { width:100%; margin-top:10px; font-size:0.85rem; }
+td,th { border-bottom:1px solid #333; padding:6px; }
 
-    @keyframes scan {
-      0% { top: 0; }
-      100% { top: 100%; }
-    }
-
-    button {
-      width: 90%;
-      padding: 12px;
-      margin: 6px;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      background: #00d2ff;
-    }
-
-    #status {
-      margin-top: 8px;
-    }
-  </style>
+.thumb { width:60px; border-radius:6px; }
+.modified { color:#ff9800; font-weight:bold; }
+</style>
 </head>
 
 <body>
 
-<h2>📷 Scanner BDBCF</h2>
+<h3>📷 Scanner BDBCF</h3>
+
+<input id="operator" placeholder="👤 Operatore">
+<input id="batch" placeholder="📦 Posizione / Pedana">
 
 <div class="container">
-  <video id="video" autoplay playsinline muted></video>
-  <div class="scan-box">
-    <div class="scan-line"></div>
-  </div>
+  <video id="video" playsinline muted></video>
+  <div class="scan-box"><div class="scan-line"></div></div>
 </div>
 
 <button onclick="toggleCamera()">📸 Camera</button>
 <button onclick="toggleFlash()">🔦 Flash</button>
+<button onclick="downloadCSV()">📄 Excel</button>
+<button onclick="downloadZIP()">📦 ZIP</button>
 
-<p id="status">🟡 Pronto</p>
+<p id="status">Pronto</p>
+<p>Totale: <span id="count">0</span></p>
+
+<table>
+<thead>
+<tr>
+<th>Ora</th><th>Seriale</th><th>Stato</th><th>Img</th><th>❌</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
 
 <script>
 const video = document.getElementById("video");
 
-let stream = null;
-let track = null;
-let flashOn = false;
+let stream=null, track=null, flashOn=false;
+let worker=null, scanning=false;
+
+let data=[];
+
+const REGEX=/^BDBCF00[0-9A-F]{3}$/;
 
 // ================= CAMERA =================
-async function toggleCamera() {
-  try {
-
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop());
-      stream = null;
-      setStatus("⏹️ Camera spenta");
-      return;
-    }
-
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-      audio: false
-    });
-
-    video.srcObject = stream;
-    await video.play();
-
-    track = stream.getVideoTracks()[0];
-
-    setStatus("✅ Camera attiva");
-
-  } catch (err) {
-    console.error(err);
-    alert("Errore camera: " + err.message);
+async function toggleCamera(){
+  if(stream){
+    stream.getTracks().forEach(t=>t.stop());
+    stream=null;
+    scanning=false;
+    setStatus("⏹️ OFF");
+    return;
   }
+
+  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+  video.srcObject=stream;
+  await video.play();
+
+  track = stream.getVideoTracks()[0];
+
+  worker = await Tesseract.createWorker("eng");
+
+  scanning=true;
+  loop();
+  setStatus("✅ Attivo");
 }
 
 // ================= FLASH =================
-async function toggleFlash() {
+async function toggleFlash(){
+  if(!track) return;
 
-  if (!track) return;
+  const cap=track.getCapabilities();
+  if(!cap.torch){
+    setStatus("⚠️ No flash");
+    return;
+  }
 
-  try {
-    const capabilities = track.getCapabilities();
+  flashOn=!flashOn;
+  await track.applyConstraints({advanced:[{torch:flashOn}]});
+}
 
-    if (!capabilities.torch) {
-      setStatus("⚠️ Flash non supportato");
+// ================= LOOP =================
+async function loop(){
+  if(!scanning) return;
+  await scan();
+  setTimeout(loop,1000);
+}
+
+// ================= SCAN =================
+async function scan(){
+
+  const c=document.createElement("canvas");
+  const ctx=c.getContext("2d");
+
+  c.width=video.videoWidth;
+  c.height=video.videoHeight;
+
+  ctx.drawImage(video,0,0);
+
+  const {data:{text}}=await worker.recognize(c);
+
+  process(text,c);
+}
+
+// ================= OCR =================
+function process(text,canvas){
+
+  let clean = text.toUpperCase()
+    .replace(/O/g,"0")
+    .replace(/I/g,"1")
+    .replace(/[^A-Z0-9]/g,"");
+
+  const matches = clean.match(/BDBCF00[0-9A-F]{3}/g)||[];
+
+  matches.forEach(code=>{
+
+    if(!REGEX.test(code)) return;
+
+    if(data.some(d=>d.code===code)){
+      feedbackError();
       return;
     }
 
-    flashOn = !flashOn;
+    add(code,canvas);
+  });
+}
 
-    await track.applyConstraints({
-      advanced: [{ torch: flashOn }]
-    });
+// ================= ADD =================
+function add(code,canvas){
 
-    setStatus(flashOn ? "🔦 Flash ON" : "🔦 Flash OFF");
+  const obj={
+    time:new Date().toLocaleTimeString(),
+    code,
+    op:document.getElementById("operator").value,
+    batch:document.getElementById("batch").value,
+    status:"Good",
+    modified:false,
+    img:canvas.toDataURL("image/jpeg",0.7)
+  };
 
-  } catch (e) {
-    setStatus("❌ Errore flash");
+  data.push(obj);
+  render();
+
+  feedbackOK();
+}
+
+// ================= RENDER =================
+function render(){
+
+  const tb=document.getElementById("tbody");
+  tb.innerHTML="";
+
+  data.slice().reverse().forEach((r,i)=>{
+
+    const tr=document.createElement("tr");
+
+    tr.innerHTML=`
+      <td>${r.time}</td>
+      <td class="${r.modified?'modified':''}" onclick="edit(${i})">${r.code}</td>
+
+      <td>
+      <select onchange="setStatusRow(${i},this.value)">
+        <option>Good</option>
+        <option>Rotto</option>
+        <option>Sporco</option>
+        <option>RF-ID</option>
+        <option>Barra</option>
+        <option>Dubbio</option>
+      </select>
+      </td>
+
+      <td><img src="${r.img}" class="thumb" onclick="zoom(this  tb.appendChild(tr);
+  });
+
+  document.getElementById("count").textContent=data.length;
+}
+
+// ================= EDIT =================
+function edit(i){
+
+  let val=prompt("Modifica codice",data[i].code);
+  if(!val) return;
+
+  val=val.toUpperCase();
+
+  if(!REGEX.test(val)){
+    alert("Formato errato");
+    return;
+  }
+
+  data[i].code=val;
+  data[i].modified=true;
+  render();
+}
+
+// ================= TABLE ACTIONS =================
+function removeRow(i){
+  if(confirm("Eliminare?")){
+    data.splice(i,1);
+    render();
   }
 }
 
+function setStatusRow(i,val){
+  data[i].status=val;
+}
+
+// ================= ZOOM =================
+function zoom(src){
+  const w=window.open("");
+  w.document.write(`<img src="${src}" style="width:100EXPORT =================
+function downloadCSV(){
+
+  let csv="Seriale,Ora,Operatore,Posizione,Stato\n";
+
+  data.forEach(r=>{
+    csv+=`${r.code},${r.time},${r.op},${r.batch},${r.status}\n`;
+  });
+
+  const blob=new Blob([csv]);
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="export.csv";
+  a.click();
+}
+
+async function downloadZIP(){
+
+  const zip=new JSZip();
+  const folder=zip.folder("img");
+
+  data.forEach(r=>{
+    const b=r.img.split(',')[1];
+    folder.file(r.code+".jpg",b,{base64:true});
+  });
+
+  const blob=await zip.generateAsync({type:"blob"});
+
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="images.zip";
+  a.click();
+}
+
+// ================= FEEDBACK =================
+function feedbackOK(){
+  beep(800);
+  if(navigator.vibrate) navigator.vibrate([100,50,100]);
+}
+
+function feedbackError(){
+  beep(200);
+  if(navigator.vibrate) navigator.vibrate(200);
+}
+
+function beep(freq){
+  const ctx=new AudioContext();
+  const osc=ctx.createOscillator();
+  osc.frequency.value=freq;
+  osc.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime+0.1);
+}
+
 // ================= UI =================
-function setStatus(msg) {
-  document.getElementById("status").textContent = msg;
+function setStatus(msg){
+  document.getElementById("status").textContent=msg;
 }
 </script>
 
 </body>
 </html>
+``
