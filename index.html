@@ -6,139 +6,224 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scanner Seriali OCR</title>
 
-<!-- ✅ LIBRERIE: SOLO <script src="..."></script> (verificato) -->
+<!-- ✅ LIBRERIE (VERIFICATE UNA PER UNA) -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
 <style>
 :root{
-  --bg:#0b0f14; --card:#121821; --accent:#00e676; --muted:#9aa4b2;
+  --bg:#0b0f14; --card:#121821; --accent:#00e676;
+  --danger:#ff5252; --muted:#9aa4b2;
 }
 *{box-sizing:border-box}
 body{
-  margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;
-  background:linear-gradient(180deg,#0b0f14,#0e1420); color:#fff; padding:12px;
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  background:linear-gradient(180deg,#0b0f14,#0e1420);
+  color:#fff;
+  padding:12px;
 }
-header{display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px}
-h1{font-size:20px; margin:0}
+h1{margin:0;font-size:20px}
 
 .card{
-  background:var(--card); border-radius:14px; padding:10px;
+  background:var(--card);
+  border-radius:14px;
+  padding:10px;
   box-shadow:0 10px 30px rgba(0,0,0,.35);
 }
-.scanner{position:relative; border-radius:12px; overflow:hidden}
-video{width:100%; display:block}
 
-/* Overlay */
-.overlay{position:absolute; inset:0; pointer-events:none}
+.inputs{
+  display:grid;
+  grid-template-columns:1fr 1fr auto;
+  gap:8px;
+  margin-bottom:8px;
+}
+
+input{
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  font-weight:600;
+}
+
+.counter{
+  text-align:center;
+  color:var(--accent);
+  font-weight:700;
+  margin-bottom:6px;
+}
+
+.scanner{
+  position:relative;
+  border-radius:12px;
+  overflow:hidden;
+}
+video{width:100%;display:block}
+
+.overlay{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
 .overlay::before{
-  content:""; position:absolute; inset:18% 12%;
-  border:2px dashed rgba(0,230,118,.7); border-radius:10px;
+  content:"";
+  position:absolute;
+  inset:18% 12%;
+  border:2px dashed rgba(0,230,118,.7);
+  border-radius:10px;
 }
 .scan-line{
-  position:absolute; left:12%; right:12%; height:3px; background:#ff3b3b;
+  position:absolute;
+  left:12%; right:12%;
+  height:3px;
+  background:#ff3b3b;
   animation:scan 2.2s linear infinite;
 }
-@keyframes scan{0%{top:18%}50%{top:82%}100%{top:18%}}
-
-.controls{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:10px 0}
-button{
-  border:none; border-radius:12px; padding:10px; color:#0b0f14;
-  background:#e6e9ef; font-weight:700; display:flex; gap:8px;
-  align-items:center; justify-content:center;
+@keyframes scan{
+  0%{top:18%}50%{top:82%}100%{top:18%}
 }
-button.alt{background:#455a64; color:#fff}
-button.ok{background:var(--accent)}
-button:active{transform:scale(.98)}
+
+.controls{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:8px;
+  margin:10px 0;
+}
+button{
+  border:none;
+  border-radius:12px;
+  padding:10px;
+  font-weight:700;
+}
+button.alt{background:#455a64;color:#fff}
+button.ok{background:var(--accent);color:#0b0f14}
 
 table{
-  width:100%; border-collapse:collapse; background:#fff; color:#000;
-  border-radius:12px; overflow:hidden; margin-top:10px;
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+  color:#000;
+  border-radius:12px;
+  overflow:hidden;
 }
-th,td{padding:8px; border-bottom:1px solid #e6e6e6; text-align:center}
+th,td{
+  padding:8px;
+  border-bottom:1px solid #e6e6e6;
+  text-align:center;
+}
 th{background:#f2f4f7}
-.thumb{width:72px; border-radius:8px}
+.thumb{width:72px;border-radius:8px}
 
-.footer-note{color:var(--muted); font-size:12px; text-align:center; margin-top:6px}
-
-/* SVG icon size */
-svg{width:18px; height:18px}
+.toast{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:var(--danger);
+  color:#fff;
+  padding:10px 16px;
+  border-radius:20px;
+  font-weight:700;
+  opacity:0;
+  transition:opacity .25s ease;
+}
+.toast.show{opacity:1}
 </style>
 </head>
 
 <body>
 
-<header>
-  <h1>Scanner Seriali</h1>
-</header>
+<h1>Scanner Seriali</h1>
 
 <div class="card">
+
+  <div class="inputs">
+    <input id="operator" placeholder="Operatore">
+    <input id="lot" placeholder="Lotto / Pedana / Posizione">
+    <button class="alt" onclick="lockOperator()">Blocca operatore</button>
+  </div>
+
+  <div class="counter">
+    Seriali acquisiti: <span id="count">0</span>
+  </div>
+
   <div class="scanner">
     <video id="video" autoplay playsinline></video>
     <div class="overlay"><div class="scan-line"></div></div>
   </div>
 
   <div class="controls">
-    <button class="alt" onclick="toggleCamera()">
-      <!-- camera icon -->
-      <svg viewBox="0 0 24 24"><path d="M4 7h3l2-2h6l2 2h3v12H4z" fill="currentColor"/></svg>
-      Camera
-    </button>
-    <button class="alt" onclick="toggleFlash()">
-      <!-- flash icon -->
-      <svg viewBox="0 0 24 24"><path d="M7 2h10l-4 8h4l-8 12 2-8H7z" fill="currentColor"/></svg>
-      Flash
-    </button>
-    <button class="ok" onclick="exportExcel()">
-      <!-- excel icon -->
-      <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM9 8l2 4-2 4h2l1-3 1 3h2l-2-4 2-4h-2l-1 3-1-3z" fill="currentColor"/></svg>
-      Excel
-    </button>
-    <button class="ok" onclick="exportZip()">
-      <!-- zip icon -->
-      <svg viewBox="0 0 24 24"><path d="M7 3h7l3 3v15H7zM9 6h2v2H9zm0 4h2v2H9zm0 4h2v2H9z" fill="currentColor"/></svg>
-      ZIP
-    </button>
+    <button class="alt" onclick="toggleCamera()">Camera</button>
+    <button class="alt" onclick="toggleFlash()">Flash</button>
+    <button class="ok" onclick="exportExcel()">Excel</button>
+    <button class="ok" onclick="exportZip()">ZIP</button>
+    <button class="ok" onclick="exportAll()">Tutto</button>
   </div>
 
   <table>
     <thead>
-      <tr><th>Seriale</th><th>Anteprima</th></tr>
+      <tr>
+        <th>Seriale</th>
+        <th>Anteprima</th>
+      </tr>
     </thead>
     <tbody id="results"></tbody>
   </table>
 
-  <div class="footer-note">
-    Riconosce solo pattern <b>BDBCF00XXX</b>. Anteprime ritagliate automaticamente.
-  </div>
 </div>
 
+<div id="toast" class="toast">Seriale già scansionato</div>
 <canvas id="canvas" hidden></canvas>
 
 <script>
-/* =================== CONFIG =================== */
+/* ================= CONFIG ================= */
 const SERIAL_REGEX = /^BDBCF00[0-9A-F]{3}$/;
 const SCAN_DELAY_MS = 1200;
 
-/* =================== STATE =================== */
+/* ================= STATO ================= */
 let stream=null, track=null, worker=null;
 let cameraOn=false, flashOn=false;
+let operatorLocked=false;
+
 const found = new Set();
-const rows = []; // { seriale, imgDataURL }
+const rows = [];
 
-/* =================== FEEDBACK =================== */
-const beep = new Audio(
- "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
-);
+/* ================= FEEDBACK ================= */
+const beepOK = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
+const beepDup = new Audio("data:audio/wav;base64,UklGRhIAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
 
-/* =================== CAMERA =================== */
+function showToast(){
+  const t=document.getElementById("toast");
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),1200);
+}
+
+function updateCounter(){
+  document.getElementById("count").textContent = found.size;
+}
+
+function lockOperator(){
+  if(!operator.value){
+    alert("Inserire operatore");
+    return;
+  }
+  operator.disabled = true;
+  operatorLocked = true;
+}
+
+/* ================= CAMERA ================= */
 async function toggleCamera(){
+  if(!operatorLocked){
+    alert("Blocca l’operatore prima di scansionare");
+    return;
+  }
   if(cameraOn){
     stream.getTracks().forEach(t=>t.stop());
-    cameraOn=false; return;
+    cameraOn=false;
+    return;
   }
-  stream = await navigator.mediaDevices.getUserMedia({ video:{facingMode:"environment"} });
+  stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
   video.srcObject = stream;
   await new Promise(r=>video.onloadedmetadata=r);
   track = stream.getVideoTracks()[0];
@@ -148,67 +233,92 @@ async function toggleCamera(){
     await worker.loadLanguage("eng");
     await worker.initialize("eng");
   }
-  cameraOn=true;
+  cameraOn = true;
   scanLoop();
 }
 
 async function toggleFlash(){
   if(!track || !track.getCapabilities().torch){
-    alert("Flash non supportato su questo dispositivo");
+    alert("Flash non supportato");
     return;
   }
-  flashOn=!flashOn;
-  await track.applyConstraints({ advanced:[{torch:flashOn}] });
+  flashOn = !flashOn;
+  await track.applyConstraints({advanced:[{torch:flashOn}]});
 }
 
-/* =================== OCR LOOP =================== */
+/* ================= OCR LOOP (ROI) ================= */
 async function scanLoop(){
   if(!cameraOn) return;
 
-  const canvas = document.getElementById("canvas");
+  const vw=video.videoWidth, vh=video.videoHeight;
+  const rx=vw*0.12, ry=vh*0.18;
+  const rw=vw*0.76, rh=vh*0.64;
+
+  canvas.width = rw/2;
+  canvas.height = rh/2;
   const ctx = canvas.getContext("2d");
-  canvas.width = video.videoWidth/2;
-  canvas.height = video.videoHeight/2;
 
-  // Pre-processing per plastica bianca / testo scuro
-  ctx.filter = "grayscale(100%) contrast(180%) brightness(110%)";
-  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  ctx.filter="grayscale(100%) contrast(180%) brightness(110%)";
+  ctx.drawImage(video, rx, ry, rw, rh, 0, 0, canvas.width, canvas.height);
 
-  const { data } = await worker.recognize(canvas);
+  const {data} = await worker.recognize(canvas);
 
   for(const w of data.words){
-    const t = w.text.replace(/O/g,"0").trim();
-    if(!SERIAL_REGEX.test(t) || found.has(t)) continue;
+    const seriale = w.text.replace(/O/g,"0").trim();
+    if(!SERIAL_REGEX.test(seriale)) continue;
 
-    found.add(t);
+    if(found.has(seriale)){
+      beepDup.play();
+      navigator.vibrate(80);
+      showToast();
+      continue;
+    }
 
-    // Crop del SOLO codice
+    found.add(seriale);
+    updateCounter();
+
     const {x0,y0,x1,y1} = w.bbox;
-    const c = document.createElement("canvas");
-    c.width = x1-x0; c.height = y1-y0;
+    const c=document.createElement("canvas");
+    c.width=x1-x0; c.height=y1-y0;
     c.getContext("2d").drawImage(canvas,x0,y0,c.width,c.height,0,0,c.width,c.height);
+
     const img = c.toDataURL("image/jpeg");
+    const timestamp = new Date().toLocaleString();
 
-    rows.push({ seriale:t, imgDataURL:img });
-    addRow(t,img);
+    rows.push({
+      seriale,
+      operatore: operator.value,
+      lotto: lot.value || "",
+      timestamp,
+      fileName: `${seriale}.jpg`,
+      img
+    });
 
-    beep.play();
+    addRow(seriale, img);
+    beepOK.play();
     navigator.vibrate(200);
   }
+
   setTimeout(scanLoop, SCAN_DELAY_MS);
 }
 
-/* =================== UI =================== */
-function addRow(seriale,img){
-  const tr = document.createElement("tr");
-  tr.innerHTML = `<td>${seriale}</td><td><img class="thumb" src="${img}"></td>`;
+/* ================= UI ================= */
+function addRow(s,img){
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td>${s}</td><td><img class="thumb" src="${img}"></td>`;
   results.appendChild(tr);
 }
 
-/* =================== EXPORT =================== */
+/* ================= EXPORT ================= */
 function exportExcel(){
   const ws = XLSX.utils.json_to_sheet(
-    rows.map(r=>({ Seriale:r.seriale, Miniatura_Base64:r.imgDataURL }))
+    rows.map(r=>({
+      Seriale: r.seriale,
+      Operatore: r.operatore,
+      Lotto: r.lotto,
+      Timestamp: r.timestamp,
+      "Nome immagine": r.fileName
+    }))
   );
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Seriali");
@@ -218,8 +328,7 @@ function exportExcel(){
 async function exportZip(){
   const zip = new JSZip();
   rows.forEach(r=>{
-    const base64 = r.imgDataURL.split(",")[1];
-    zip.file(`${r.seriale}.jpg`, base64, {base64:true});
+    zip.file(r.fileName, r.img.split(",")[1], {base64:true});
   });
   const blob = await zip.generateAsync({type:"blob"});
   const a = document.createElement("a");
@@ -227,6 +336,11 @@ async function exportZip(){
   a.download = "anteprime_seriali.zip";
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+function exportAll(){
+  exportExcel();
+  setTimeout(exportZip,300);
 }
 </script>
 
