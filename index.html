@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scanner Seriali OCR</title>
 
-<!-- ✅ SCRIPT CORRETTO (NON MODIFICARE) -->
+<!-- ✅ SCRIPT CORRETTO, UNICO, NON VISIBILE -->
 https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.jsscript>
 
 <style>
@@ -17,16 +17,12 @@ body {
   padding: 10px;
 }
 
-h2 {
-  text-align: center;
-  margin-bottom: 8px;
-}
+h2 { text-align: center; }
 
 .scanner {
   position: relative;
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 0 20px rgba(0,0,0,.6);
 }
 
 video {
@@ -34,7 +30,6 @@ video {
   display: block;
 }
 
-/* Overlay area */
 .overlay {
   position: absolute;
   inset: 0;
@@ -44,25 +39,24 @@ video {
 .overlay::before {
   content: "";
   position: absolute;
-  inset: 15% 10%;
+  inset: 18% 12%;
   border: 2px solid rgba(0,255,0,.6);
   border-radius: 8px;
 }
 
-/* Scan line */
 .scan-line {
   position: absolute;
-  left: 10%;
-  right: 10%;
+  left: 12%;
+  right: 12%;
   height: 3px;
   background: red;
   animation: scan 2.2s linear infinite;
 }
 
 @keyframes scan {
-  0% { top: 15%; }
-  50% { top: 85%; }
-  100% { top: 15%; }
+  0% { top: 18%; }
+  50% { top: 82%; }
+  100% { top: 18%; }
 }
 
 .controls {
@@ -74,18 +68,9 @@ video {
 button {
   flex: 1;
   padding: 12px;
-  font-size: 15px;
-  font-weight: 600;
   border-radius: 10px;
   border: none;
-}
-
-.primary {
-  background: #00e676;
-  color: black;
-}
-
-.secondary {
+  font-weight: 600;
   background: #455a64;
   color: white;
 }
@@ -107,7 +92,7 @@ th, td {
 }
 
 .thumb {
-  width: 75px;
+  width: 70px;
   border-radius: 6px;
 }
 </style>
@@ -125,15 +110,12 @@ th, td {
 </div>
 
 <div class="controls">
-  <button class="secondary" onclick="toggleFlash()">Flash</button>
+  <button onclick="toggleFlash()">Flash</button>
 </div>
 
 <table>
 <thead>
-<tr>
-  <th>Seriale</th>
-  <th>Miniatura</th>
-</tr>
+<tr><th>Seriale</th><th>Miniatura</th></tr>
 </thead>
 <tbody id="results"></tbody>
 </table>
@@ -142,29 +124,21 @@ th, td {
 
 <script>
 const SERIAL_REGEX = /^BDBCF00[0-9A-F]{3}$/;
+const found = new Set();
+let worker, track, flashOn = false;
 
-let worker;
-let scanning = true;
-let foundSerials = [];
-let track;
-let flashOn = false;
-
-// beep
 const beep = new Audio(
   "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
 );
 
 async function start() {
-  // CAMERA
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: "environment" }
   });
   video.srcObject = stream;
   await new Promise(r => video.onloadedmetadata = r);
-
   track = stream.getVideoTracks()[0];
 
-  // OCR WORKER
   worker = await Tesseract.createWorker();
   await worker.loadLanguage("eng");
   await worker.initialize("eng");
@@ -173,8 +147,8 @@ async function start() {
 }
 
 async function toggleFlash() {
-  if (!track?.getCapabilities().torch) {
-    alert("Flash non supportato su questo dispositivo");
+  if (!track || !track.getCapabilities().torch) {
+    alert("Flash non supportato");
     return;
   }
   flashOn = !flashOn;
@@ -182,38 +156,29 @@ async function toggleFlash() {
 }
 
 async function scanLoop() {
-  if (!scanning) return;
-
-  const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
-
   canvas.width = video.videoWidth / 2;
   canvas.height = video.videoHeight / 2;
 
-  // ✅ ottimizzato per plastica bianca
   ctx.filter = "grayscale(100%) contrast(180%) brightness(110%)";
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
   const { data } = await worker.recognize(canvas);
 
   for (const w of data.words) {
-    const text = w.text.replace(/O/g,"0").trim();
-    if (!SERIAL_REGEX.test(text)) continue;
-    if (foundSerials.includes(text)) continue;
+    const t = w.text.replace(/O/g,"0").trim();
+    if (!SERIAL_REGEX.test(t) || found.has(t)) continue;
 
-    foundSerials.push(text);
+    found.add(t);
 
     const { x0,y0,x1,y1 } = w.bbox;
-    const wdt = x1-x0, hgt = y1-y0;
+    const c = document.createElement("canvas");
+    c.width = x1-x0; c.height = y1-y0;
+    c.getContext("2d").drawImage(canvas,x0,y0,c.width,c.height,0,0,c.width,c.height);
 
-    const crop = document.createElement("canvas");
-    crop.width = wdt;
-    crop.height = hgt;
-    crop.getContext("2d")
-      .drawImage(canvas, x0, y0, wdt, hgt, 0, 0, wdt, hgt);
-
-    const thumb = crop.toDataURL("image/jpeg");
-    addRow(text, thumb);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${t}</td><td><img class="thumb" src="${c.toDataURL()}"></td>`;
+    results.appendChild(tr);
 
     beep.play();
     navigator.vibrate(200);
@@ -222,17 +187,9 @@ async function scanLoop() {
   setTimeout(scanLoop, 1200);
 }
 
-function addRow(serial, img) {
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td>${serial}</td>
-    <td><img class="thumb" src="${img}"></td>
-  `;
-  document.getElementById("results").appendChild(tr);
-}
-
 start();
 </script>
 
 </body>
 </html>
+ 
