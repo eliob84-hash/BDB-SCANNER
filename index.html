@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scanner continuo BDBCF</title>
+<title>Scanner BDBCF PRO</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
@@ -11,16 +11,15 @@
 body {
   margin:0;
   font-family:system-ui;
-  background:#111;
+  background:#0f0f1a;
   color:#fff;
-  text-align:center;
 }
+
+h3 { text-align:center; }
 
 video { width:100%; }
 
-.wrapper {
-  position:relative;
-}
+.container { position:relative; }
 
 .scan-box {
   position:absolute;
@@ -29,19 +28,29 @@ video { width:100%; }
   width:70%;
   height:25%;
   border:2px dashed #00d2ff;
+  border-radius:10px;
 }
 
 .scan-line {
   position:absolute;
-  height:2px;
   width:100%;
+  height:2px;
   background:red;
   animation:scan 2s infinite;
 }
+@keyframes scan { 0%{top:0} 100%{top:100%} }
 
-@keyframes scan {
-  0% { top:0 }
-  100% { top:100% }
+.controls {
+  padding:5px;
+  text-align:center;
+}
+
+input {
+  width:90%;
+  padding:10px;
+  margin:5px;
+  border:none;
+  border-radius:8px;
 }
 
 button {
@@ -53,24 +62,50 @@ button {
   background:#00d2ff;
 }
 
-#status { margin-top:10px }
+#status { text-align:center; margin-top:5px }
 
+table {
+  width:100%;
+  font-size:0.85rem;
+}
+
+td { padding:6px; border-bottom:1px solid #333 }
+
+.thumb {
+  width:70px;
+  border-radius:6px;
+}
+
+.modified {
+  color:#ff9800;
+  font-weight:bold;
+}
 </style>
 </head>
 
 <body>
 
-<h2>📷 Scanner continuo</h2>
+<h3>📷 Scanner BDBCF</h3>
 
-<div class="wrapper">
+<div class="controls">
+  <input id="operator" placeholder="👤 Operatore">
+  <input id="batch" placeholder="📦 Posizione">
+</div>
+
+<div class="container">
   <video id="video" playsinline muted></video>
   <div class="scan-box"><div class="scan-line"></div></div>
 </div>
 
-<button onclick="startCamera()">📸 Avvia</button>
-<button onclick="stopCamera()">⏹️ Stop</button>
+<div class="controls">
+  <button onclick="startCamera()">📸 Avvia</button>
+  <button onclick="stopCamera()">⏹️ Stop</button>
+</div>
 
 <p id="status">Pronto</p>
+<p style="text-align:center">Totale: <span id="count">0</span></p>
+
+<table id="table"></table>
 
 <script>
 const video = document.getElementById("video");
@@ -79,33 +114,31 @@ let stream = null;
 let worker = null;
 let running = false;
 
+let data = [];
+let lastCode = "";
+
 const REGEX = /^BDBCF00[0-9A-F]{3}$/;
 
 // ================= CAMERA =================
 async function startCamera(){
 
-  try{
-    stream = await navigator.mediaDevices.getUserMedia({
-      video:{ facingMode:"environment" }
-    });
+  stream = await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode:"environment" }
+  });
 
-    video.srcObject = stream;
-    await video.play();
+  video.srcObject = stream;
+  await video.play();
 
-    document.getElementById("status").textContent = "✅ Camera attiva";
+  setStatus("✅ Camera attiva");
 
-    startScanner();
-
-  } catch(e){
-    alert("Errore camera: " + e.message);
-  }
+  startScanner();
 }
 
 function stopCamera(){
   if(stream){
     stream.getTracks().forEach(t => t.stop());
     running = false;
-    document.getElementById("status").textContent = "⏹️ Stop";
+    setStatus("⏹️ Stop");
   }
 }
 
@@ -127,14 +160,12 @@ async function scanLoop(){
   if(!running) return;
 
   try{
-
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
     const w = video.videoWidth;
     const h = video.videoHeight;
 
-    // ✅ crop centrale
     const cw = w * 0.6;
     const ch = h * 0.3;
 
@@ -148,7 +179,7 @@ async function scanLoop(){
 
     const { data:{ text } } = await worker.recognize(canvas);
 
-    processText(text);
+    processText(text, canvas);
 
   } catch(e){
     console.log(e);
@@ -158,9 +189,7 @@ async function scanLoop(){
 }
 
 // ================= PARSE =================
-let lastCode = "";
-
-function processText(text){
+function processText(text, canvas){
 
   let clean = text.toUpperCase()
     .replace(/O/g,"0")
@@ -169,41 +198,125 @@ function processText(text){
 
   const matches = clean.match(/BDBCF00[0-9A-F]{3}/g) || [];
 
-  matches.forEach(code => {
+  matches.forEach(code=>{
 
     if(!REGEX.test(code)) return;
 
-    // evita ripetizioni immediate
+    // evita duplicati consecutivi
     if(code === lastCode) return;
-
     lastCode = code;
 
-    onDetected(code);
+    // evita duplicati globali
+    if(data.some(d=>d.code === code)){
+      feedbackError();
+      showToast("⚠️ Duplicato");
+      return;
+    }
+
+    addRecord(code, canvas);
   });
 }
 
-// ================= EVENTO =================
-function onDetected(code){
+// ================= ADD =================
+function addRecord(code, canvas){
 
-  document.getElementById("status").textContent = "✅ " + code;
+  const record = {
+    code,
+    time: new Date().toLocaleTimeString(),
+    op: document.getElementById("operator").value,
+    batch: document.getElementById("batch").value,
+    modified:false,
+    img: canvas.toDataURL("image/jpeg")
+  };
 
-  beep();
+  data.push(record);
 
-  if(navigator.vibrate){
-    navigator.vibrate(100);
+  render();
+  feedbackOK();
+}
+
+// ================= TABLE =================
+function render(){
+
+  const table = document.getElementById("table");
+  table.innerHTML = "";
+
+  data.slice().reverse().forEach((r,i)=>{
+
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>
+        <img src="${r.img}" class="thumb" onclick="zoom('${r.imgdit(${i})">${r.code}</span><br>
+        ${r.time}
+      </td>
+      <td><button onclick="removeRow(${i})">🗑️</button></td>
+    `;
+
+    table.appendChild(row);
+  });
+
+  document.getElementById("count").textContent = data.length;
+}
+
+// ================= ACTIONS =================
+function edit(i){
+  let val = prompt("Modifica codice", data[i].code);
+  if(!val) return;
+
+  val = val.toUpperCase();
+
+  if(!REGEX.test(val)){
+    alert("Formato non valido");
+    return;
+  }
+
+  data[i].code = val;
+  data[i].modified = true;
+  render();
+}
+
+function removeRow(i){
+  if(confirm("Eliminare?")){
+    data.splice(i,1);
+    render();
   }
 }
 
-// ================= AUDIO =================
-function beep(){
+function zoom(src){
+  window.open(src);
+}
+
+// ================= FEEDBACK =================
+function feedbackOK(){
+  beep(800);
+  if(navigator.vibrate) navigator.vibrate(80);
+}
+
+function feedbackError(){
+  beep(200);
+  if(navigator.vibrate) navigator.vibrate(200);
+}
+
+function beep(freq){
   const ctx = new AudioContext();
   const osc = ctx.createOscillator();
-  osc.frequency.value = 800;
+  osc.frequency.value = freq;
   osc.connect(ctx.destination);
   osc.start();
   osc.stop(ctx.currentTime + 0.1);
+}
+
+// ================= UI =================
+function setStatus(msg){
+  document.getElementById("status").textContent = msg;
+}
+
+function showToast(msg){
+  setStatus(msg);
 }
 </script>
 
 </body>
 </html>
+
