@@ -153,6 +153,11 @@
         .meta-tag.conf-low { background:rgba(239,68,68,0.12); color:var(--danger); }
         .meta-tag.correction { background:rgba(139,92,246,0.12); color:#a78bfa; }
         .mod-badge { background:var(--warning); color:#1e293b; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:700; }
+        .pedana-inline {
+            cursor:pointer; background:rgba(245,158,11,0.1); border:1px dashed rgba(245,158,11,0.4);
+            padding:1px 6px; border-radius:4px; transition:all 0.2s;
+        }
+        .pedana-inline:hover { background:rgba(245,158,11,0.2); }
         .delete-btn { background:none; border:none; color:var(--text-dim); cursor:pointer; padding:6px; border-radius:8px; transition:all 0.2s; flex-shrink:0; }
         .delete-btn:hover { background:rgba(239,68,68,0.15); color:var(--danger); }
         .delete-btn svg { width:18px; height:18px; }
@@ -160,8 +165,12 @@
         .status-btn {
             padding:4px 8px; border:1px solid var(--border); border-radius:6px; background:var(--bg-input);
             color:var(--text-muted); font-size:10px; font-weight:500; cursor:pointer; transition:all 0.2s;
-            font-family:'Inter',sans-serif; white-space:nowrap;
+            font-family:'Inter',sans-serif; white-space:nowrap; display:inline-flex; align-items:center; gap:3px;
         }
+        .status-btn .st-good { color:#22c55e; font-weight:700; }
+        .status-btn .st-rotto { color:#ef4444; font-weight:700; }
+        .status-btn .st-sporco { color:#a16207; font-weight:700; }
+        .status-btn .st-bar { color:#ffffff; font-weight:700; }
         .status-btn.active-good { background:var(--accent); color:white; border-color:var(--accent); }
         .status-btn.active-broken { background:var(--danger); color:white; border-color:var(--danger); }
         .status-btn.active-dirty { background:var(--warning); color:#1e293b; border-color:var(--warning); }
@@ -208,10 +217,16 @@
         .pedana-actions .btn-row { display:flex; gap:10px; }
         .pedana-actions .btn-row .btn { flex:1; }
         .serial-ref {
-            font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:600;
-            color:var(--primary-light); letter-spacing:1.5px; padding:6px 10px;
-            background:var(--bg-input); border-radius:8px; display:inline-block;
-            margin:8px 0; border:1px solid var(--border);
+            font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500;
+            color:var(--text-dim); letter-spacing:1px; padding:4px 8px;
+            background:rgba(100,116,139,0.1); border-radius:6px; display:inline-block;
+            margin:4px 0; border:1px solid rgba(100,116,139,0.2);
+        }
+        .pedana-big {
+            font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700;
+            color:var(--warning); letter-spacing:2px; padding:8px 12px;
+            background:rgba(245,158,11,0.08); border-radius:8px; display:block;
+            margin:6px 0 2px; border:1px solid rgba(245,158,11,0.3);
         }
         .empty-state { text-align:center; padding:36px 20px; color:var(--text-dim); }
         .empty-state svg { width:44px; height:44px; margin-bottom:10px; opacity:0.4; }
@@ -232,7 +247,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             Scanner Seriali OCR
         </h1>
-        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v1.8.0</span>
+        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v1.9.0</span>
     </div>
     <div class="scan-counter">
         <span class="label">Seriali: <span class="count" id="scanCount">0</span></span>
@@ -295,8 +310,7 @@
 
 <div class="confirm-modal" id="passwordModal">
     <div class="confirm-box">
-        <h3>🔒</h3>
-        <p style="margin-top:12px;"></p>
+        <h3>🔒</h3><p style="margin-top:12px;"></p>
         <input type="password" class="input-field" id="versionPassword" maxlength="4" style="text-align:center;font-family:'JetBrains Mono',monospace;letter-spacing:6px;font-size:20px;width:120px;margin:0 auto;" inputmode="numeric">
         <div class="confirm-actions" style="margin-top:16px;">
             <button class="btn btn-outline" onclick="closePasswordModal()">Annulla</button>
@@ -308,16 +322,18 @@
 <div class="version-modal" id="versionModal" onclick="closeVersionModal()">
     <div class="version-modal-box" onclick="event.stopPropagation()">
         <h3>📋 Changelog</h3>
-        <div class="ver-date" id="versionBuildDate">Generato il 22/05/2026 — 21:00 UTC+2</div>
+        <div class="ver-date" id="versionBuildDate">Generato il 22/05/2026 — 22:00 UTC+2</div>
         <div id="changelogContent"></div>
         <button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button>
     </div>
 </div>
 
+<!-- Pedana change modal -->
 <div class="confirm-modal" id="pedanaModal">
     <div class="confirm-box">
         <h3 id="pedanaModalTitle">📍 Pedana / Posizione</h3>
         <div class="serial-ref" id="pedanaSerialRef"></div>
+        <div class="pedana-big" id="pedanaBigRef"></div>
         <p id="pedanaModalMsg"></p>
         <div class="pedana-actions">
             <div class="btn-row">
@@ -331,6 +347,19 @@
                     <button class="btn btn-primary" onclick="pedanaConfirm()">Conferma</button>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pedana edit modal per record esistente -->
+<div class="confirm-modal" id="pedanaEditModal">
+    <div class="confirm-box">
+        <h3>✏️ Modifica Pedana</h3>
+        <p id="pedanaEditMsg"></p>
+        <input type="text" class="input-field" id="pedanaEditInput" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:2px;" maxlength="20">
+        <div class="confirm-actions" style="margin-top:14px;">
+            <button class="btn btn-outline" onclick="closePedanaEdit()">Annulla</button>
+            <button class="btn btn-primary" onclick="confirmPedanaEdit()">Conferma</button>
         </div>
     </div>
 </div>
@@ -360,26 +389,30 @@
 </div>
 
 <script>
-const APP_VERSION = '1.8.0';
-const APP_BUILD_DATE = '22/05/2026 21:00';
-const CHANGELOG = [
-    { ver:'v1.8.0', date:'22/05/2026 21:00', desc:'Fix seriali parziali: testo grezzo deve avere ≥10 caratteri. Messaggi errore modifica specifici (lunghezza vs prefisso).', tags:['fix'] },
-    { ver:'v1.7.0', date:'22/05/2026 20:00', desc:'Anteprima cropata al seriale con margine. Pedana modal mostra seriale di riferimento.', tags:['ui'] },
-    { ver:'v1.6.0', date:'22/05/2026 19:00', desc:'Pedana/Posizione obbligatoria. Pop-up conferma mantieni/cambia dopo ogni scansione.', tags:['feat'] },
-    { ver:'v1.5.1', date:'22/05/2026 18:00', desc:'Rimossi hint password. Campo password type="password".', tags:['ui'] },
-    { ver:'v1.5.0', date:'22/05/2026 17:30', desc:'Pattern stretto a BDBCF00. Password HHMM per changelog.', tags:['fix','feat'] },
-    { ver:'v1.4.0', date:'22/05/2026 16:45', desc:'Confidenza OCR e correzioni. Badge colorati confidenza.', tags:['feat'] },
-    { ver:'v1.3.0', date:'22/05/2026 16:10', desc:'Rimossa lente da anteprima. Immagine 130px.', tags:['ui'] },
-    { ver:'v1.2.0', date:'22/05/2026 15:40', desc:'Anteprima ridotta. Pausa durante zoom.', tags:['ui','feat'] },
-    { ver:'v1.1.0', date:'22/05/2026 14:30', desc:'Solo 10 caratteri. No Good default. Timeout 1s.', tags:['feat','fix'] },
-    { ver:'v1.0.0', date:'22/05/2026 12:00', desc:'Versione iniziale.', tags:['feat'] }
+const APP_VERSION='1.9.0';
+const APP_BUILD_DATE='22/05/2026 22:00';
+const CHANGELOG=[
+    {ver:'v1.9.0',date:'22/05/2026 22:00',desc:'Pulsanti invertiti nel modal pedana. Seriale più piccolo, pedana più visibile. Tap su posizione nei record per modificare. Colori icone stato. Auto-close fotocamera dopo 30s di inattività.',tags:['ui','feat']},
+    {ver:'v1.8.0',date:'22/05/2026 21:00',desc:'Fix seriali parziali: testo grezzo deve avere ≥10 caratteri. Messaggi errore modifica specifici.',tags:['fix']},
+    {ver:'v1.7.0',date:'22/05/2026 20:00',desc:'Anteprima cropata al seriale. Pedana modal mostra seriale riferimento.',tags:['ui']},
+    {ver:'v1.6.0',date:'22/05/2026 19:00',desc:'Pedana obbligatoria. Pop-up conferma mantieni/cambia dopo scansione.',tags:['feat']},
+    {ver:'v1.5.1',date:'22/05/2026 18:00',desc:'Rimossi hint password.',tags:['ui']},
+    {ver:'v1.5.0',date:'22/05/2026 17:30',desc:'Pattern stretto a BDBCF00. Password HHMM per changelog.',tags:['fix','feat']},
+    {ver:'v1.4.0',date:'22/05/2026 16:45',desc:'Confidenza OCR e correzioni. Badge colorati.',tags:['feat']},
+    {ver:'v1.3.0',date:'22/05/2026 16:10',desc:'Rimossa lente da anteprima.',tags:['ui']},
+    {ver:'v1.2.0',date:'22/05/2026 15:40',desc:'Anteprima ridotta. Pausa durante zoom.',tags:['ui','feat']},
+    {ver:'v1.1.0',date:'22/05/2026 14:30',desc:'Solo 10 caratteri. Timeout 1s.',tags:['feat','fix']},
+    {ver:'v1.0.0',date:'22/05/2026 12:00',desc:'Versione iniziale.',tags:['feat']}
 ];
 
-let cameraActive=false, flashOn=false, multiDetect=false, videoEl=null, stream=null, ocrWorker=null, scanTimer=null;
+let cameraActive=false, flashOn=false, multiDetect=false, videoEl=null, stream=null, ocrWorker=null, scanTimer=null, idleTimer=null;
 let records=[], scanTotal=0, confirmCallback=null, audioCtx=null;
 let scanCooldown=false, scanPaused=false;
 let lastScanPedana='';
 let pedanaCallback=null;
+let pedanaEditRecordId=null;
+let lastScanTime=0;
+const IDLE_TIMEOUT=30000;
 const SERIAL_PATTERN=/^BDBCF00[A-F0-9]{3}$/;
 
 function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx;}
@@ -396,33 +429,10 @@ function closeConfirm(){document.getElementById('confirmModal').classList.remove
 function executeConfirm(){if(confirmCallback)confirmCallback();closeConfirm();}
 
 const OCR_CORRECTION_MAP={'O':'0','o':'0','Q':'0','I':'1','l':'1','i':'1','S':'5','s':'5','Z':'2','z':'2'};
-
-function fixOCR(raw){
-    let corrections=[], fixed='';
-    for(let i=0;i<raw.length;i++){
-        if(OCR_CORRECTION_MAP.hasOwnProperty(raw[i])){
-            fixed+=OCR_CORRECTION_MAP[raw[i]];
-            corrections.push(`${raw[i]}→${OCR_CORRECTION_MAP[raw[i]]}`);
-        } else { fixed+=raw[i]; }
-    }
-    return {fixed:fixed.toUpperCase(), corrections};
-}
-
-function detectCorrections(raw,serial){
-    const corrections=[], ru=raw.toUpperCase(), mn=Math.min(ru.length,serial.length);
-    for(let i=0;i<mn;i++){ if(ru[i]!==serial[i]) corrections.push(`${ru[i]}→${serial[i]}`); }
-    return corrections;
-}
-
-function isValidSerial(s){ return SERIAL_PATTERN.test(s); }
-
-// Validate serial and return specific error message
-function validateSerial(s) {
-    if (s.length !== 10) return 'Il seriale deve avere esattamente 10 caratteri (attuali: '+s.length+')';
-    if (!s.startsWith('BDBCF00')) return 'Il seriale deve iniziare con "BDBCF00"';
-    if (!SERIAL_PATTERN.test(s)) return 'Caratteri non validi (solo 0-9, A-F dopo BDBCF00)';
-    return null;
-}
+function fixOCR(raw){let c=[],f='';for(let i=0;i<raw.length;i++){if(OCR_CORRECTION_MAP.hasOwnProperty(raw[i])){f+=OCR_CORRECTION_MAP[raw[i]];c.push(`${raw[i]}→${OCR_CORRECTION_MAP[raw[i]]}`);}else{f+=raw[i];}}return{fixed:f.toUpperCase(),corrections:c};}
+function detectCorrections(raw,serial){const c=[],ru=raw.toUpperCase(),mn=Math.min(ru.length,serial.length);for(let i=0;i<mn;i++){if(ru[i]!==serial[i])c.push(`${ru[i]}→${serial[i]}`);}return c;}
+function isValidSerial(s){return SERIAL_PATTERN.test(s);}
+function validateSerial(s){if(s.length!==10)return'Il seriale deve avere esattamente 10 caratteri (attuali: '+s.length+')';if(!s.startsWith('BDBCF00'))return'Il seriale deve iniziare con "BDBCF00"';if(!SERIAL_PATTERN.test(s))return'Caratteri non validi (solo 0-9, A-F dopo BDBCF00)';return null;}
 
 function cropFromBbox(canvas,rw,rh,bbox,margin){
     const{x0,y0,x1,y1}=bbox;
@@ -436,27 +446,18 @@ function cropFromBbox(canvas,rw,rh,bbox,margin){
 
 // ===== VERSION PASSWORD =====
 let versionPwdTimeout=null;
-function requestVersionAccess(){
-    const n=new Date();
-    versionPwdTimeout=String(n.getHours()).padStart(2,'0')+String(n.getMinutes()).padStart(2,'0');
-    document.getElementById('versionPassword').value='';
-    document.getElementById('passwordModal').classList.add('visible');
-    setTimeout(()=>{const i=document.getElementById('versionPassword');if(i)i.focus();},200);
-}
+function requestVersionAccess(){const n=new Date();versionPwdTimeout=String(n.getHours()).padStart(2,'0')+String(n.getMinutes()).padStart(2,'0');document.getElementById('versionPassword').value='';document.getElementById('passwordModal').classList.add('visible');setTimeout(()=>{const i=document.getElementById('versionPassword');if(i)i.focus();},200);}
 function closePasswordModal(){document.getElementById('passwordModal').classList.remove('visible');versionPwdTimeout=null;}
-function checkVersionPassword(){
-    const i=document.getElementById('versionPassword').value.trim();
-    if(i===versionPwdTimeout){closePasswordModal();openVersionModal();}
-    else{toast('❌ Errata','error');beepErr();vib('err');document.getElementById('versionPassword').value='';document.getElementById('versionPassword').focus();}
-}
+function checkVersionPassword(){const i=document.getElementById('versionPassword').value.trim();if(i===versionPwdTimeout){closePasswordModal();openVersionModal();}else{toast('❌ Errata','error');beepErr();vib('err');document.getElementById('versionPassword').value='';document.getElementById('versionPassword').focus();}}
 document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('passwordModal').classList.contains('visible'))checkVersionPassword();});
 
 // ===== PEDANA MODAL =====
 function showPedanaModal(serial,callback){
     const current=document.getElementById('pedana').value.trim()||'—';
-    document.getElementById('pedanaSerialRef').textContent=serial;
+    document.getElementById('pedanaSerialRef').textContent='Seriale: '+serial;
+    document.getElementById('pedanaBigRef').textContent=current;
     document.getElementById('pedanaModalTitle').textContent='📍 Pedana / Posizione';
-    document.getElementById('pedanaModalMsg').textContent=`Pedana attuale: ${current}`;
+    document.getElementById('pedanaModalMsg').textContent='Conferma o modifica';
     document.getElementById('pedanaChangeInput').style.display='none';
     document.getElementById('newPedanaInput').value='';
     pedanaCallback=callback;
@@ -486,6 +487,38 @@ function pedanaConfirm(){
 }
 document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('pedanaChangeInput').style.display==='block')pedanaConfirm();});
 
+// ===== PEDANA EDIT PER RECORD =====
+function openPedanaEdit(id){
+    const rec=records.find(r=>r.id===id);if(!rec)return;
+    pedanaEditRecordId=id;
+    document.getElementById('pedanaEditMsg').textContent=`Seriale: ${rec.serial}`;
+    document.getElementById('pedanaEditInput').value=rec.pedana;
+    document.getElementById('pedanaEditModal').classList.add('visible');
+    setTimeout(()=>{const i=document.getElementById('pedanaEditInput');if(i){i.focus();i.select();}},200);
+}
+function closePedanaEdit(){document.getElementById('pedanaEditModal').classList.remove('visible');pedanaEditRecordId=null;}
+function confirmPedanaEdit(){
+    const nv=document.getElementById('pedanaEditInput').value.trim();
+    if(!nv){toast('Campo obbligatorio','error');return;}
+    const rec=records.find(r=>r.id===pedanaEditRecordId);
+    if(rec){rec.pedana=nv;renderRecords();toast('Pedana aggiornata','success');}
+    closePedanaEdit();
+}
+document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('pedanaEditModal').classList.contains('visible'))confirmPedanaEdit();});
+
+// ===== IDLE TIMER =====
+function resetIdleTimer(){
+    if(idleTimer)clearTimeout(idleTimer);
+    if(!cameraActive)return;
+    lastScanTime=Date.now();
+    idleTimer=setTimeout(()=>{
+        if(cameraActive){
+            toast('⚡ Chiusura fotocamera: 30s di inattività (risparmio batteria/CPU)','warning');
+            setTimeout(()=>stopCamera(),500);
+        }
+    },IDLE_TIMEOUT);
+}
+
 async function toggleCamera(){if(cameraActive){stopCamera();}else{await startCamera();}}
 
 async function startCamera(){
@@ -507,12 +540,14 @@ async function startCamera(){
         document.getElementById('ocrStatus').textContent='Scansione in corso...';
         document.getElementById('progressBar').style.width='0%';
         scanTimer=setInterval(scanFrame,1200);
+        resetIdleTimer();
         toast('📷 Fotocamera OCR avviata','success');vib('ok');
     }catch(err){console.error(err);toast('Errore: '+err.message,'error');beepErr();vib('err');resetBtnCamera();}
 }
 
 function stopCamera(){
     if(scanTimer){clearInterval(scanTimer);scanTimer=null;}
+    if(idleTimer){clearTimeout(idleTimer);idleTimer=null;}
     if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
     if(ocrWorker){ocrWorker.terminate();ocrWorker=null;}
     cameraActive=false;flashOn=false;videoEl=null;scanCooldown=false;scanPaused=false;
@@ -578,15 +613,9 @@ async function scanFrame(){
             const words=result.data.words||[];
             for(const word of words){
                 let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
-                
-                // FIX: il testo grezzo DEVE avere almeno 10 caratteri
-                // Previene seriali parziali inventati dall'OCR
-                if(cleaned.length < 10) continue;
-                
+                if(cleaned.length<10)continue;
                 let{fixed,corrections}=fixOCR(cleaned);
                 const wordConf=Math.round(word.confidence);
-                
-                // Match diretto: fixed deve essere esattamente 10 caratteri
                 if(fixed.length===10&&isValidSerial(fixed)&&!foundSerials.includes(fixed)){
                     const fc=detectCorrections(cleaned,fixed);
                     const imgData=cropFromBbox(canvas,rw,rh,word.bbox,15);
@@ -595,7 +624,6 @@ async function scanFrame(){
                     if(!multiDetect)return;
                     continue;
                 }
-                // Sliding window per seriali embedded in testo più lungo
                 for(let i=0;i<=cleaned.length-10;i++){
                     const sub=cleaned.substring(i,i+10);
                     let{fixed:sf}=fixOCR(sub);
@@ -621,6 +649,7 @@ function processSerial(serial,imgData,confidence,corrections){
     const isDup=records.some(r=>r.serial===serial);
     if(isDup){toast('⚠️ Duplicato: '+serial,'warning');beepDup();vib('dup');return;}
 
+    resetIdleTimer();
     scanCooldown=true;
     document.getElementById('cooldownOverlay').classList.add('active');
     document.getElementById('ocrStatus').textContent='⏱ Cooldown...';
@@ -644,6 +673,7 @@ function processSerial(serial,imgData,confidence,corrections){
             document.getElementById('cooldownOverlay').classList.remove('active');
             if(cameraActive&&!scanPaused) document.getElementById('ocrStatus').textContent='Scansione in corso...';
             updateScanIndicator();
+            resetIdleTimer();
         });
     },400);
 }
@@ -666,18 +696,18 @@ function renderRecords(){
                         ${ch}
                         <span>🕐 ${r.timestamp}</span>
                         <span>👤 ${r.operator}</span>
-                        <span>📍 ${r.pedana}</span>
+                        <span class="pedana-inline" onclick="openPedanaEdit('${r.id}')" title="Tap per modificare">📍 ${r.pedana}</span>
                         ${r.modified?'<span class="mod-badge">MODIF.</span>':''}
                     </div>
                 </div>
                 <button class="delete-btn" onclick="deleteRecord('${r.id}')" title="Elimina"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
             </div>
             <div class="status-selector">
-                <button class="status-btn ${r.status==='Good'?'active-good':''}" onclick="setStatus('${r.id}','Good')">✓ Good</button>
-                <button class="status-btn ${r.status==='Rotto'?'active-broken':''}" onclick="setStatus('${r.id}','Rotto')">✕ Rotto</button>
-                <button class="status-btn ${r.status==='Sporco'?'active-dirty':''}" onclick="setStatus('${r.id}','Sporco')">◆ Sporco</button>
+                <button class="status-btn ${r.status==='Good'?'active-good':''}" onclick="setStatus('${r.id}','Good')"><span class="st-good">✓</span> Good</button>
+                <button class="status-btn ${r.status==='Rotto'?'active-broken':''}" onclick="setStatus('${r.id}','Rotto')"><span class="st-rotto">✕</span> Rotto</button>
+                <button class="status-btn ${r.status==='Sporco'?'active-dirty':''}" onclick="setStatus('${r.id}','Sporco')"><span class="st-sporco">◆</span> Sporco</button>
                 <button class="status-btn ${r.status==='RF-ID'?'active-rfid':''}" onclick="setStatus('${r.id}','RF-ID')">📡 RF-ID</button>
-                <button class="status-btn ${r.status==='Barra Mancante'?'active-bar':''}" onclick="setStatus('${r.id}','Barra Mancante')">▤ Barra Manc.</button>
+                <button class="status-btn ${r.status==='Barra Mancante'?'active-bar':''}" onclick="setStatus('${r.id}','Barra Mancante')"><span class="st-bar">/</span> Barra Manc.</button>
                 <button class="status-btn ${r.status==='Dubbio/Altro'?'active-doubt':''}" onclick="setStatus('${r.id}','Dubbio/Altro')">❓ Dubbio</button>
                 ${r.status?`<button class="status-btn active-none" onclick="setStatus('${r.id}','')">✕ Reset</button>`:''}
             </div>
@@ -691,18 +721,15 @@ function editSerial(id,newVal){
     const input=document.querySelector(`#record-${id} .serial-display`);const orig=input?.dataset?.orig||rec.serial;
     if(newVal===orig)return;
     let{fixed}=fixOCR(newVal.trim().toUpperCase());
-    
-    // Messaggio di errore specifico
     const errMsg=validateSerial(fixed);
     if(errMsg){toast('❌ '+errMsg,'error');beepErr();input.value=orig;return;}
-    
     showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{
         if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Seriale già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}
         rec.serial=fixed;rec.modified=true;toast('Seriale modificato: '+fixed,'success');beepOk();renderRecords();
     });input.value=orig;
 }
-function setStatus(id,s){const r=records.find(r=>r.id===id);if(!r)return;r.status=s;vib('ok');renderRecords();}
-function setNote(id,n){const r=records.find(r=>r.id===id);if(r)r.note=n;}
+function setStatus(id,s){const rec=records.find(r=>r.id===id);if(!rec)return;rec.status=s;vib('ok');renderRecords();}
+function setNote(id,n){const rec=records.find(r=>r.id===id);if(rec)rec.note=n;}
 function deleteRecord(id){
     const rec=records.find(r=>r.id===id);if(!rec)return;
     showConfirm('Elimina record',`Eliminare "${rec.serial}"?`,()=>{
@@ -742,4 +769,3 @@ let lastEnd=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-l
 </script>
 </body>
 </html>
-
