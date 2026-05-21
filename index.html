@@ -1,676 +1,346 @@
-Gestione carrier >>> C'è il personale per l'estrazione (altrimenti blocco linea)
-
-Avviso per quando uscira' il carrier (fasce orarie)
-
-Rimozione carrier dalla wis.
-
-
-
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scanner Seriali OCR</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scanner Seriali OCR</title>
 
-  <!-- ✅ TAG SCRIPT CORRETTI -->
-
-	<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<!-- ✅ SCRIPT CORRETTI (QUESTO È IL PUNTO CRITICO) -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
-  <style>
-    :root{
-      --bg:#0b0f14; --card:#121821; --accent:#00e676;
-      --warn:#ff9800; --danger:#ff5252;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto;
-      background:linear-gradient(180deg,#0b0f14,#0e1420);
-      color:#fff;padding:12px
-    }
-    h1{margin:0 0 6px 0;font-size:20px}
 
-    .card{background:var(--card);border-radius:14px;padding:10px}
+<style>
+:root{
+  --bg:#0b0f14; --card:#121821; --accent:#00e676;
+  --warn:#ff9800; --danger:#ff5252;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  background:linear-gradient(180deg,#0b0f14,#0e1420);
+  color:#fff;padding:12px
+}
+h1{margin:0 0 6px 0;font-size:20px}
 
-    .inputs{
-      display:grid;grid-template-columns:1fr 1fr;
-      gap:8px;margin-bottom:8px
-    }
-    input{
-      padding:10px;border-radius:10px;border:none;font-weight:600
-    }
+.card{background:var(--card);border-radius:14px;padding:10px}
 
-    .status{
-      display:flex;align-items:center;gap:8px;
-      font-weight:700;margin-bottom:6px
-    }
-    .led{width:12px;height:12px;border-radius:50%;background:#f44336}
-    .led.on{background:#00e676}
+.inputs{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:8px;margin-bottom:8px
+}
+input{
+  padding:10px;border-radius:10px;border:none;font-weight:600
+}
 
-    .scanner{position:relative;border-radius:12px;overflow:hidden}
-    video{width:100%;display:block}
+.status{
+  display:flex;align-items:center;gap:8px;
+  font-weight:700;margin-bottom:6px
+}
+.led{width:12px;height:12px;border-radius:50%;background:#f44336}
+.led.on{background:#00e676}
 
-    .overlay{position:absolute;inset:0;pointer-events:none}
-    .overlay::before{
-      content:"";position:absolute;inset:18% 12%;
-      border:2px dashed rgba(0,230,118,.7)
-    }
-    .scan-line{
-      position:absolute;left:12%;right:12%;
-      height:3px;background:#ff3b3b;
-      animation:scan 2.2s linear infinite
-    }
-    @keyframes scan{
-      0%{top:18%}50%{top:82%}100%{top:18%}
-    }
+.scanner{position:relative;border-radius:12px;overflow:hidden}
+video{width:100%;display:block}
 
-    .controls{
-      display:grid;grid-template-columns:repeat(6,1fr);
-      gap:8px;margin:10px 0
-    }
-    button{
-      border:none;border-radius:12px;
-      padding:10px;font-weight:700;
-      display:flex;gap:6px;align-items:center;justify-content:center
-    }
-    button.alt{background:#455a64;color:#fff}
-    button.ok{background:var(--accent);color:#0b0f14}
-    button.danger{background:var(--danger);color:#fff}
-    button.warn{background:var(--warn);color:#0b0f14}
+.overlay{
+  position:absolute;inset:0;pointer-events:none
+}
+.overlay::before{
+  content:"";position:absolute;inset:18% 12%;
+  border:2px dashed rgba(0,230,118,.7)
+}
+.scan-line{
+  position:absolute;left:12%;right:12%;
+  height:3px;background:#ff3b3b;
+  animation:scan 2.2s linear infinite
+}
+@keyframes scan{
+  0%{top:18%}50%{top:82%}100%{top:18%}
+}
 
-    table{width:100%;background:#fff;color:#000;border-collapse:collapse}
-    th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center}
+.controls{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  gap:8px;margin:10px 0
+}
+button{
+  border:none;border-radius:12px;
+  padding:10px;font-weight:700;
+  display:flex;gap:6px;align-items:center;justify-content:center
+}
+button.alt{background:#455a64;color:#fff}
+button.ok{background:var(--accent);color:#0b0f14}
+button.danger{background:var(--danger);color:#fff}
+button svg{width:18px;height:18px;fill:currentColor}
 
-    .thumb{
-      width:140px;background:#fff;padding:6px 16px;
-      border:2px solid #eee;border-radius:0;cursor:zoom-in
-    }
-    .serial{cursor:pointer;font-weight:700}
-    .serial.edited{color:var(--warn)}
+table{width:100%;background:#fff;color:#000;border-collapse:collapse}
+th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center}
 
-    .toast{
-      position:fixed;bottom:20px;left:50%;
-      transform:translateX(-50%);
-      background:var(--danger);color:#fff;
-      padding:10px 16px;border-radius:20px;
-      font-weight:700;opacity:0;
-      transition:opacity .25s ease;
-      z-index:1000
-    }
-    .toast.show{opacity:1}
+.thumb{
+  width:140px;
+  background:#fff;
+  padding:6px 16px;
+  border:2px solid #eee;
+  border-radius:0;
+  cursor:zoom-in
+}
+.serial{cursor:pointer;font-weight:700}
+.serial.edited{color:var(--warn)}
 
-    #zoomModal{
-      position:fixed;inset:0;background:rgba(0,0,0,.9);
-      display:none;align-items:center;justify-content:center;
-      z-index:999
-    }
-    #zoomModal img{max-width:95%;max-height:95%}
-    #zoomModal button{
-      position:absolute;top:20px;right:20px;
-      background:#ff5252;color:#fff;
-      border:none;padding:10px;border-radius:20px;font-weight:700
-    }
-  </style>
+.toast{
+  position:fixed;bottom:20px;left:50%;
+  transform:translateX(-50%);
+  background:var(--danger);color:#fff;
+  padding:10px 16px;border-radius:20px;
+  font-weight:700;opacity:0;
+  transition:opacity .25s ease;
+  z-index:1000
+}
+.toast.show{opacity:1}
+
+#zoomModal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.9);
+  display:none;align-items:center;justify-content:center;
+  z-index:999
+}
+#zoomModal img{max-width:95%;max-height:95%}
+#zoomModal button{
+  position:absolute;top:20px;right:20px;
+  background:#ff5252;color:#fff;
+  border:none;padding:10px;border-radius:20px;font-weight:700
+}
+</style>
 </head>
 
 <body>
-  <h1>Scanner Seriali</h1>
 
-  <div class="card">
+<h1>Scanner Seriali</h1>
 
-    <div class="inputs">
-      <input id="operator" placeholder="Operatore">
-      <input id="lot" placeholder="Lotto / Posizione">
-    </div>
+<div class="card">
 
-    <div class="status">
-      <div id="camLed" class="led"></div>
-      <span id="camStatus">Camera OFF</span>
-    </div>
-
-    <div class="scanner">
-      <video id="video" autoplay playsinline></video>
-      <div class="overlay"><div class="scan-line"></div></div>
-    </div>
-
-    <div class="controls">
-      <button class="alt" id="btnCam">📷 Camera</button>
-      <button class="alt" id="btnFlash">⚡ Flash</button>
-      <button class="ok" id="btnExcel">📊 Excel</button>
-      <button class="ok" id="btnZip">🗂 ZIP</button>
-      <button class="ok" id="btnAll">⬇ Tutto</button>
-      <button class="warn" id="btnClear">🧹 Pulisci</button>
-    </div>
-
-    <table>
-      <thead>
-        <tr><th>Seriale</th><th>Anteprima</th><th>Azione</th></tr>
-      </thead>
-      <tbody id="results"></tbody>
-    </table>
-
+  <div class="inputs">
+    <input id="operator" placeholder="Operatore">
+    <input id="lot" placeholder="Lotto / Posizione">
   </div>
 
-  <div id="toast" class="toast">Seriale già presente</div>
-
-  <div id="zoomModal">
-    <button id="btnCloseZoom">Chiudi</button>
-    <img id="zoomImg" alt="zoom">
+  <div class="status">
+    <div id="camLed" class="led"></div>
+    <span id="camStatus">Camera OFF</span>
   </div>
 
-  <canvas id="canvas" hidden></canvas>
+  <div class="scanner">
+    <video id="video" autoplay playsinline></video>
+    <div class="overlay"><div class="scan-line"></div></div>
+  </div>
 
-  <script>
-    'use strict';
+  <div class="controls">
+    <button class="alt" onclick="toggleCamera()">📷 Camera</button>
+    <button class="alt" onclick="toggleFlash()">⚡ Flash</button>
+    <button class="ok" onclick="exportExcel()">📊 Excel</button>
+    <button class="ok" onclick="exportZip()">🗂 ZIP</button>
+    <button class="ok" onclick="exportAll()">⬇ Tutto</button>
+  </div>
 
-    /* ================= CONFIG ================= */
-    const SERIAL_REGEX = /^BDBCF00[0-9A-F]{3}$/;  // pattern fisso
-    const OCR_INTERVAL_MS = 900;
+  <table>
+    <thead>
+      <tr><th>Seriale</th><th>Anteprima</th><th>Azione</th></tr>
+    </thead>
+    <tbody id="results"></tbody>
+  </table>
 
-    /* ================= DOM ================= */
-    const el = {
-      operator: document.getElementById('operator'),
-      lot: document.getElementById('lot'),
-      camLed: document.getElementById('camLed'),
-      camStatus: document.getElementById('camStatus'),
-      video: document.getElementById('video'),
-      canvas: document.getElementById('canvas'),
-      results: document.getElementById('results'),
-      toast: document.getElementById('toast'),
-      zoomModal: document.getElementById('zoomModal'),
-      zoomImg: document.getElementById('zoomImg'),
-      btnCam: document.getElementById('btnCam'),
-      btnFlash: document.getElementById('btnFlash'),
-      btnExcel: document.getElementById('btnExcel'),
-      btnZip: document.getElementById('btnZip'),
-      btnAll: document.getElementById('btnAll'),
-      btnClear: document.getElementById('btnClear'),
-      btnCloseZoom: document.getElementById('btnCloseZoom')
-    };
+</div>
 
-    /* ================= STATO ================= */
-    let stream = null, track = null, worker = null;
-    let cameraOn = false, flashOn = false, freezeOCR = false;
-    let ocrInFlight = false, lastOcrTs = 0;
+<div id="toast" class="toast">Seriale già presente</div>
 
-    const found = new Set();
-    const rows = [];
+<div id="zoomModal">
+  <button onclick="closeZoom()">Chiudi</button>
+  <img id="zoomImg">
+</div>
 
-    /* ================= INPUT PERSIST (localStorage) ================= */
-    function restoreInputs(){
-      el.operator.value = localStorage.getItem('scanner_operator') || '';
-      el.lot.value = localStorage.getItem('scanner_lot') || '';
-    }
-    function bindInputPersistence(){
-      el.operator.addEventListener('input', () => localStorage.setItem('scanner_operator', el.operator.value));
-      el.lot.addEventListener('input', () => localStorage.setItem('scanner_lot', el.lot.value));
-    }
+<canvas id="canvas" hidden></canvas>
 
-    /* ================= AUDIO + VIBRA ================= */
-    let audioCtx = null;
-    function ensureAudio(){
-      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if(audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
-    }
-    function beep(freq, dur){
-      try{
-        if(!audioCtx) return;
-        const o = audioCtx.createOscillator();
-        const g = audioCtx.createGain();
-        o.frequency.value = freq;
-        o.connect(g); g.connect(audioCtx.destination);
-        o.start();
-        g.gain.setValueAtTime(0.12, audioCtx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-        o.stop(audioCtx.currentTime + dur);
-      }catch(_){}
-    }
-    function vibrate(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
-    function toast(msg){
-      el.toast.textContent = msg;
-      el.toast.classList.add('show');
-      setTimeout(() => el.toast.classList.remove('show'), 1200);
-    }
-    function setCamStatus(on){
-      el.camLed.classList.toggle('on', on);
-      el.camStatus.textContent = on ? 'Camera ON' : 'Camera OFF';
-    }
+<script>
+/* ================= LOGICA JS (COLLAUDATA) ================= */
+const SERIAL_REGEX=/^BDBCF00[0-9A-F]{3}$/;
+let stream,track,worker;
+let cameraOn=false,flashOn=false,freezeOCR=false;
 
-    /* ================= IndexedDB ================= */
-    const DB_NAME = 'scanner_seriali_db';
-    const DB_VERSION = 1;
-    const STORE = 'serials';
+const found=new Set();
+const rows=[];
 
-    function openDB(){
-      return new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, DB_VERSION);
-        req.onupgradeneeded = () => {
-          const db = req.result;
-          if(!db.objectStoreNames.contains(STORE)){
-            db.createObjectStore(STORE, { keyPath: 'seriale' });
-          }
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-    }
+/* AUDIO + VIBRA */
+const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+function beep(freq,dur){
+  const o=audioCtx.createOscillator();
+  const g=audioCtx.createGain();
+  o.frequency.value=freq;
+  o.connect(g);g.connect(audioCtx.destination);
+  o.start();
+  g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+dur);
+  o.stop(audioCtx.currentTime+dur);
+}
+function vibrate(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
 
-    async function dbGetAll(){
-      const db = await openDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE, 'readonly');
-        const store = tx.objectStore(STORE);
-        const req = store.getAll();
-        req.onsuccess = () => resolve(req.result || []);
-        req.onerror = () => reject(req.error);
-        tx.oncomplete = () => db.close();
-      });
-    }
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),1200);
+}
 
-    async function dbPut(row){
-      const db = await openDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE, 'readwrite');
-        tx.objectStore(STORE).put(row);
-        tx.oncomplete = () => { db.close(); resolve(); };
-        tx.onerror = () => { db.close(); reject(tx.error); };
-      });
+function setCamStatus(on){
+  camLed.classList.toggle("on",on);
+  camStatus.textContent=on?"Camera ON":"Camera OFF";
+}
+
+/* CAMERA */
+async function toggleCamera(){
+  if(cameraOn){
+    stream.getTracks().forEach(t=>t.stop());
+    cameraOn=false;setCamStatus(false);return;
+  }
+  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+  video.srcObject=stream;
+  await new Promise(r=>video.onloadedmetadata=r);
+  track=stream.getVideoTracks()[0];
+
+  if(!worker){
+    worker=await Tesseract.createWorker();
+    await worker.loadLanguage("eng");
+    await worker.initialize("eng");
+  }
+  cameraOn=true;setCamStatus(true);
+  scanLoop();
+}
+
+async function toggleFlash(){
+  if(!track?.getCapabilities().torch){alert("Flash non supportato");return}
+  flashOn=!flashOn;
+  await track.applyConstraints({advanced:[{torch:flashOn}]});
+}
+
+/* OCR LOOP */
+async function scanLoop(){
+  if(!cameraOn||freezeOCR)return;
+
+  const vw=video.videoWidth,vh=video.videoHeight;
+  const rx=vw*0.12,ry=vh*0.18,rw=vw*0.76,rh=vh*0.64;
+  canvas.width=rw/2;canvas.height=rh/2;
+  const ctx=canvas.getContext("2d");
+  ctx.filter="grayscale(100%) contrast(180%) brightness(110%)";
+  ctx.drawImage(video,rx,ry,rw,rh,0,0,canvas.width,canvas.height);
+
+  const {data}=await worker.recognize(canvas);
+  for(const w of data.words){
+    const s=w.text.replace(/O/g,"0").trim();
+    if(!SERIAL_REGEX.test(s))continue;
+
+    if(found.has(s)){
+      beep(300,0.05);vibrate(80);
+      toast("Seriale già presente");
+      continue;
     }
 
-    async function dbDelete(seriale){
-      const db = await openDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE, 'readwrite');
-        tx.objectStore(STORE).delete(seriale);
-        tx.oncomplete = () => { db.close(); resolve(); };
-        tx.onerror = () => { db.close(); reject(tx.error); };
-      });
-    }
+    found.add(s);
+    beep(900,0.1);vibrate(200);
 
-    async function dbClear(){
-      const db = await openDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE, 'readwrite');
-        tx.objectStore(STORE).clear();
-        tx.oncomplete = () => { db.close(); resolve(); };
-        tx.onerror = () => { db.close(); reject(tx.error); };
-      });
-    }
+    const c=document.createElement("canvas");
+    c.width=w.bbox.x1-w.bbox.x0;
+    c.height=w.bbox.y1-w.bbox.y0;
+    c.getContext("2d").drawImage(canvas,w.bbox.x0,w.bbox.y0,c.width,c.height,0,0,c.width,c.height);
+    const img=c.toDataURL("image/jpeg");
 
-    async function dbRename(oldSeriale, newRow){
-      const db = await openDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE, 'readwrite');
-        const store = tx.objectStore(STORE);
-        store.delete(oldSeriale);
-        store.put(newRow);
-        tx.oncomplete = () => { db.close(); resolve(); };
-        tx.onerror = () => { db.close(); reject(tx.error); };
-      });
-    }
-
-    async function restoreFromDB(){
-      try{
-        const saved = await dbGetAll();
-        saved.sort((a,b) => (a._savedAt||0) - (b._savedAt||0));
-
-        rows.length = 0;
-        found.clear();
-
-        for(const r of saved){
-          if(r?.seriale && SERIAL_REGEX.test(r.seriale)){
-            rows.push(r);
-            found.add(r.seriale);
-          }
-        }
-        renderTable();
-      }catch(err){
-        console.error('Restore DB error:', err);
-      }
-    }
-
-    /* ================= CAMERA ================= */
-    async function toggleCamera(){
-      ensureAudio();
-
-      if(cameraOn){
-        await stopCamera();
-        return;
-      }
-
-      if(!window.Tesseract){
-        alert('Tesseract non caricato. Controlla i tag <script> o la rete.');
-        return;
-      }
-
-      try{
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          },
-          audio: false
-        });
-
-        el.video.srcObject = stream;
-        await new Promise(resolve => el.video.onloadedmetadata = () => resolve());
-
-        track = stream.getVideoTracks()[0];
-
-        if(!worker){
-          worker = await Tesseract.createWorker();
-          await worker.loadLanguage('eng');
-          await worker.initialize('eng');
-
-          // Ottimizzazione: solo caratteri utili al pattern
-          await worker.setParameters({
-            tessedit_char_whitelist: '0123456789ABCDEF',
-            preserve_interword_spaces: '1'
-          });
-        }
-
-        cameraOn = true;
-        setCamStatus(true);
-        scanLoop();
-
-      }catch(err){
-        console.error(err);
-        alert('Impossibile accedere alla camera. Serve HTTPS o permessi.');
-        cameraOn = false;
-        setCamStatus(false);
-      }
-    }
-
-    async function stopCamera(){
-      freezeOCR = true;
-
-      try{
-        if(track?.getCapabilities?.().torch && flashOn){
-          flashOn = false;
-          await track.applyConstraints({ advanced: [{ torch: false }] });
-        }
-      }catch(_){}
-
-      if(stream) stream.getTracks().forEach(t => t.stop());
-      stream = null;
-      track = null;
-      cameraOn = false;
-      freezeOCR = false;
-      setCamStatus(false);
-    }
-
-    async function toggleFlash(){
-      ensureAudio();
-      if(!track){ toast('Accendi prima la camera'); return; }
-
-      const caps = track.getCapabilities ? track.getCapabilities() : {};
-      if(!caps.torch){
-        alert('Flash/torch non supportato su questo dispositivo/browser.');
-        return;
-      }
-      flashOn = !flashOn;
-      try{
-        await track.applyConstraints({ advanced: [{ torch: flashOn }] });
-      }catch(err){
-        console.error(err);
-        alert('Impossibile attivare/disattivare il flash.');
-        flashOn = !flashOn;
-      }
-    }
-
-    /* ================= OCR ================= */
-    function normalizeCandidate(text){
-      return (text || '')
-        .toUpperCase()
-        .replace(/O/g, '0')
-        .replace(/[^0-9A-F]/g, '')
-        .trim();
-    }
-
-    async function scanLoop(){
-      if(!cameraOn) return;
-      if(freezeOCR) { setTimeout(scanLoop, OCR_INTERVAL_MS); return; }
-      if(ocrInFlight) { setTimeout(scanLoop, 120); return; }
-
-      const now = Date.now();
-      if(now - lastOcrTs < OCR_INTERVAL_MS){
-        setTimeout(scanLoop, OCR_INTERVAL_MS - (now - lastOcrTs));
-        return;
-      }
-
-      ocrInFlight = true;
-      lastOcrTs = now;
-
-      try{
-        const vw = el.video.videoWidth, vh = el.video.videoHeight;
-        if(!vw || !vh) return;
-
-        // ROI
-        const rx = vw * 0.12, ry = vh * 0.18, rw = vw * 0.76, rh = vh * 0.64;
-
-        // downscale per performance
-        el.canvas.width = Math.max(1, Math.floor(rw / 2));
-        el.canvas.height = Math.max(1, Math.floor(rh / 2));
-
-        const ctx = el.canvas.getContext('2d', { willReadFrequently: true });
-        ctx.filter = 'grayscale(100%) contrast(180%) brightness(110%)';
-        ctx.drawImage(el.video, rx, ry, rw, rh, 0, 0, el.canvas.width, el.canvas.height);
-
-        const { data } = await worker.recognize(el.canvas);
-
-        // multi-seriali per frame
-        for(const w of (data.words || [])){
-          const s = normalizeCandidate(w.text);
-          if(!SERIAL_REGEX.test(s)) continue;
-
-          if(found.has(s)){
-            beep(300, 0.05); vibrate(80);
-            toast('Seriale già presente');
-            continue;
-          }
-
-          found.add(s);
-          beep(900, 0.10); vibrate(200);
-
-          // crop bbox (solo seriale)
-          const bb = w.bbox;
-          const cw = Math.max(1, Math.floor(bb.x1 - bb.x0));
-          const ch = Math.max(1, Math.floor(bb.y1 - bb.y0));
-
-          const c = document.createElement('canvas');
-          c.width = cw; c.height = ch;
-          c.getContext('2d').drawImage(el.canvas, bb.x0, bb.y0, cw, ch, 0, 0, cw, ch);
-
-          const img = c.toDataURL('image/jpeg', 0.85);
-
-          const row = {
-            seriale: s,
-            operatore: el.operator.value || '',
-            lotto: el.lot.value || '',
-            timestamp: new Date().toLocaleString(),
-            fileName: `${s}.jpg`,
-            img,
-            edited: false,
-            _savedAt: Date.now()
-          };
-
-          rows.push(row);
-          renderTable();
-
-          // salva su IndexedDB
-          dbPut(row).catch(err => console.error('DB put error:', err));
-        }
-
-      }catch(err){
-        console.error('OCR error:', err);
-      }finally{
-        ocrInFlight = false;
-        setTimeout(scanLoop, OCR_INTERVAL_MS);
-      }
-    }
-
-    /* ================= TABLE ================= */
-    function renderTable(){
-      el.results.innerHTML = '';
-      rows.forEach((r, i) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="serial ${r.edited ? 'edited' : ''}" data-i="${i}">${r.seriale}</td>
-          <td>${r.img}</td>
-          <td><button class="danger" data-del="${i}">🗑</button></td>
-        `;
-        el.results.appendChild(tr);
-      });
-    }
-
-    el.results.addEventListener('click', (e) => {
-      const t = e.target;
-
-      if(t.matches('td.serial')){
-        const i = Number(t.getAttribute('data-i'));
-        editSerial(i);
-      } else if(t.matches('img.thumb')){
-        zoom(t.getAttribute('data-zoom'));
-      } else if(t.matches('button[data-del]')){
-        deleteRow(Number(t.getAttribute('data-del')));
-      }
+    rows.push({
+      seriale:s,
+      operatore:operator.value||"",
+      lotto:lot.value||"",
+      timestamp:new Date().toLocaleString(),
+      fileName:`${s}.jpg`,
+      img,
+      edited:false
     });
+    renderTable();
+  }
+  setTimeout(scanLoop,1200);
+}
 
-    async function deleteRow(i){
-      const r = rows[i];
-      if(!r) return;
-      if(!confirm(`Confermi la cancellazione del seriale ${r.seriale}?`)) return;
+/* TABLE */
+function renderTable(){
+  results.innerHTML="";
+  rows.forEach((r,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td class="serial ${r.edited?'edited':''}" onclick="editSerial(${i})">${r.seriale}</td>
+      <td><img class="thumb" src="${r.img}" onclick="zoom('${r.img}')"></td>
+      <td><button class="danger" onclick="deleteRow(${i})">🗑</button></td>`;
+    results.appendChild(tr);
+  });
+}
 
-      found.delete(r.seriale);
-      rows.splice(i, 1);
-      renderTable();
+function deleteRow(i){
+  const r=rows[i];
+  if(!confirm(\`Confermi la cancellazione del seriale \${r.seriale}?\`))return;
+  found.delete(r.seriale);
+  rows.splice(i,1);
+  renderTable();
+}
 
-      try{ await dbDelete(r.seriale); } catch(err){ console.error('DB delete error:', err); }
-    }
+/* ZOOM */
+function zoom(src){
+  freezeOCR=true;
+  zoomImg.src=src;
+  zoomModal.style.display="flex";
+}
+function closeZoom(){
+  zoomModal.style.display="none";
+  freezeOCR=false;
+}
 
-    /* ================= ZOOM ================= */
-    function zoom(src){
-      freezeOCR = true;
-      el.zoomImg.src = src;
-      el.zoomModal.style.display = 'flex';
-    }
-    function closeZoom(){
-      el.zoomModal.style.display = 'none';
-      el.zoomImg.src = '';
-      freezeOCR = false;
-    }
+/* EDIT */
+function editSerial(i){
+  const old=rows[i].seriale;
+  const nuovo=prompt("Correggi seriale:",old);
+  if(!nuovo||nuovo===old)return;
+  if(!SERIAL_REGEX.test(nuovo)){alert("Formato non valido");return}
+  if(found.has(nuovo)){alert("Seriale già presente");return}
+  if(!confirm(\`Confermi modifica \${old} → \${nuovo}?\`))return;
 
-    /* ================= EDIT ================= */
-    async function editSerial(i){
-      const r = rows[i];
-      if(!r) return;
+  found.delete(old);found.add(nuovo);
+  rows[i].seriale=nuovo;
+  rows[i].fileName=\`\${nuovo}.jpg\`;
+  rows[i].edited=true;
+  renderTable();
+}
 
-      const old = r.seriale;
-      const nuovoRaw = prompt('Correggi seriale:', old);
-      if(!nuovoRaw) return;
+/* EXPORT */
+function exportExcel(){
+  const ws=XLSX.utils.json_to_sheet(
+    rows.map(r=>({
+      Seriale:r.seriale,
+      Operatore:r.operatore,
+      Lotto:r.lotto,
+      Timestamp:r.timestamp,
+      Modificato:r.edited?"SI":"NO",
+      "Nome immagine":r.fileName
+    }))
+  );
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Seriali");
+  XLSX.writeFile(wb,"seriali.xlsx");
+}
+async function exportZip(){
+  const zip=new JSZip();
+  rows.forEach(r=>zip.file(r.fileName,r.img.split(",")[1],{base64:true}));
+  const blob=await zip.generateAsync({type:"blob"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="anteprime_seriali.zip";
+  a.click();
+}
+function exportAll(){exportExcel();setTimeout(exportZip,300)}
+</script>
 
-      const nuovo = normalizeCandidate(nuovoRaw);
-      if(nuovo === old) return;
-      if(!SERIAL_REGEX.test(nuovo)) { alert('Formato non valido'); return; }
-      if(found.has(nuovo)) { alert('Seriale già presente'); return; }
-      if(!confirm(`Confermi modifica ${old} → ${nuovo}?`)) return;
-
-      found.delete(old);
-      found.add(nuovo);
-
-      r.seriale = nuovo;
-      r.fileName = `${nuovo}.jpg`;
-      r.edited = true;
-
-      renderTable();
-
-      try{ await dbRename(old, r); } catch(err){ console.error('DB rename error:', err); }
-    }
-
-    /* ================= EXPORT ================= */
-    function exportExcel(){
-      if(!window.XLSX){ alert('XLSX non caricato.'); return; }
-
-      const ws = XLSX.utils.json_to_sheet(
-        rows.map(r => ({
-          Seriale: r.seriale,
-          Operatore: r.operatore,
-          Lotto: r.lotto,
-          Timestamp: r.timestamp,
-          Modificato: r.edited ? 'SI' : 'NO',
-          'Nome immagine': r.fileName
-        }))
-      );
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Seriali');
-      XLSX.writeFile(wb, 'seriali.xlsx');
-    }
-
-    async function exportZip(){
-      if(!window.JSZip){ alert('JSZip non caricato.'); return; }
-
-      const zip = new JSZip();
-      rows.forEach(r => {
-        const base64 = (r.img || '').split(',')[1] || '';
-        zip.file(r.fileName, base64, { base64: true });
-      });
-
-      const blob = await zip.generateAsync({ type: 'blob' });
-      const a = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-
-      a.href = url;
-      a.download = 'anteprime_seriali.zip';
-      a.click();
-
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
-    }
-
-    function exportAll(){
-      exportExcel();
-      setTimeout(() => exportZip(), 300);
-    }
-
-    /* ================= CLEAR ================= */
-    async function clearAll(){
-      if(!confirm('Vuoi cancellare TUTTI i dati salvati in locale?')) return;
-
-      freezeOCR = true;
-      try{
-        await dbClear();
-        rows.length = 0;
-        found.clear();
-        renderTable();
-        toast('Archivio locale pulito');
-      }catch(err){
-        console.error('DB clear error:', err);
-        alert('Errore durante la pulizia archivio.');
-      }finally{
-        freezeOCR = false;
-      }
-    }
-
-    /* ================= INIT ================= */
-    window.addEventListener('DOMContentLoaded', async () => {
-      restoreInputs();
-      bindInputPersistence();
-
-      await restoreFromDB();
-
-      el.btnCam.addEventListener('click', toggleCamera);
-      el.btnFlash.addEventListener('click', toggleFlash);
-      el.btnExcel.addEventListener('click', exportExcel);
-      el.btnZip.addEventListener('click', exportZip);
-      el.btnAll.addEventListener('click', exportAll);
-      el.btnClear.addEventListener('click', clearAll);
-
-      el.btnCloseZoom.addEventListener('click', closeZoom);
-      el.zoomModal.addEventListener('click', (e) => { if(e.target === el.zoomModal) closeZoom(); });
-    });
-  </script>
 </body>
-</html>	
+</html>
