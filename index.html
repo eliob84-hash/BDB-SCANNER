@@ -2,45 +2,45 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Scanner Industriale</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scanner Industriale PRO</title>
 
-<!-- LIBRERIE CORRETTE -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <style>
-body { margin:0; font-family:Arial; background:#000; color:#0f0; }
-header { padding:8px; background:#111; }
-input { width:100%; margin:4px 0; padding:8px; background:black; color:#0f0; border:1px solid #0f0; }
-video { width:100%; border-top:2px solid #0f0; border-bottom:2px solid #0f0; }
-.toolbar { display:flex; justify-content:space-around; padding:10px; }
-button { background:#000; color:#0f0; border:2px solid #0f0; padding:10px; font-size:18px; }
-.serial { font-size:16px; }
-.edited { color:orange; }
-.preview { width:90px; border:2px solid #0f0; }
-.toast { position:fixed; bottom:10px; left:50%; transform:translateX(-50%);
-background:red; color:white; padding:10px; display:none; }
+body{margin:0;background:#000;color:#0f0;font-family:Arial}
+header{padding:10px;background:#111}
+input{width:100%;margin:4px 0;padding:10px;font-weight:bold}
+video{width:100%;border-top:2px solid #0f0;border-bottom:2px solid #0f0}
+.controls{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:8px}
+button{padding:10px;font-size:16px;background:#000;color:#0f0;border:2px solid #0f0}
+.serial{font-size:20px;font-weight:bold}
+.edited{color:orange}
+.thumb{width:140px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+background:red;color:#fff;padding:10px;border-radius:20px;display:none}
 </style>
 </head>
 
 <body>
 
 <header>
-<input id="operatore" placeholder="Operatore">
-<input id="posizione" placeholder="Lotto / Posizione">
-<div>SCANSIONI: <span id="count">0</span></div>
-<label><input type="checkbox" id="multi"> MULTI-SCAN</label>
+<input id="operator" placeholder="Operatore">
+<input id="lot" placeholder="Lotto / Posizione">
+<label><input type="checkbox" id="multi" checked> Multi-scan</label>
+<div>Totale: <span id="count">0</span></div>
 </header>
 
-<video id="reader" autoplay playsinline muted></video>
+<video id="video" autoplay playsinline muted></video>
 
-<div class="toolbar">
+<div class="controls">
 <button onclick="toggleCamera()">📷</button>
 <button onclick="toggleFlash()">⚡</button>
 <button onclick="exportExcel()">📊</button>
 <button onclick="exportZip()">📦</button>
+<button onclick="clearAll()">🧹</button>
 </div>
 
 <table id="table"></table>
@@ -48,223 +48,230 @@ background:red; color:white; padding:10px; display:none; }
 
 <script>
 
-let video=document.getElementById("reader");
-let stream=null;
-let flashTrack=null;
+let video=document.getElementById("video");
+let stream=null, track=null, worker=null;
+let rows=[];
+let found=new Set();
+let debounce={};
 
-let data=[];
-let lastScanTimes={};
+const SERIAL_REGEX=/^BDBCF00[0-9A-F]{3}$/;
 
-// ================= STORAGE =================
-function save(){ localStorage.setItem("data",JSON.stringify(data)); }
-function load(){ let d=localStorage.getItem("data"); if(d) data=JSON.parse(d); }
-
-// ================= FEEDBACK =================
-function beep(f=800){
-  let ctx=new AudioContext();
-  let o=ctx.createOscillator();
-  o.frequency.value=f;
-  o.connect(ctx.destination);
-  o.start();
-  setTimeout(()=>o.stop(),100);
+// ================= UTIL
+function norm(s){
+  return s.toUpperCase()
+    .replace(/O/g,'0')
+    .replace(/I/g,'1')
+    .replace(/S/g,'5')
+    .replace(/[^0-9A-F]/g,'');
 }
-function vib(p=[50]){ if(navigator.vibrate) navigator.vibrate(p); }
 
 function toast(m){
   let t=document.getElementById("toast");
   t.innerText=m;
   t.style.display="block";
-  setTimeout(()=>t.style.display="none",2000);
+  setTimeout(()=>t.style.display="none",1500);
 }
 
-// ================= VALIDAZIONE =================
-function normalize(s){ return s.toUpperCase().replace(/O/g,"0"); }
-function valid(s){ return /^BDBCF00[A-F0-9]{3}$/.test(s); }
+function beep(f=800){
+  let c=new AudioContext();
+  let o=c.createOscillator();
+  o.frequency.value=f;
+  o.connect(c.destination);
+  o.start();
+  setTimeout(()=>o.stop(),100);
+}
 
-// ================= CAMERA =================
+function vib(v=100){ navigator.vibrate && navigator.vibrate(v); }
+
+// ================= CAMERA
 async function toggleCamera(){
-  try {
-    if(stream){
-      stream.getTracks().forEach(t=>t.stop());
-      stream=null;
-      video.srcObject=null;
-      return;
+  if(stream){
+    stream.getTracks().forEach(t=>t.stop());
+    stream=null;
+    return;
+  }
+
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:true});
+    video.srcObject=stream;
+    track=stream.getVideoTracks()[0];
+
+    if(!worker){
+      worker=await Tesseract.createWorker();
+      await worker.loadLanguage("eng");
+      await worker.initialize("eng");
+      await worker.setParameters({
+        tessedit_char_whitelist:"0123456789ABCDEF"
+      });
     }
 
-    // VERSIONE MASSIMA COMPATIBILITÀ (REDMI)
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: false
-    });
-
-    video.srcObject = stream;
-    await video.play();
-
-    flashTrack = stream.getVideoTracks()[0];
-
-    console.log("Camera OK");
-
-    scanLoop();
-
-  } catch(err){
-    alert("Errore camera: " + err.name + " - " + err.message);
-    console.error(err);
+    loop();
+  }catch(e){
+    alert("Errore camera: "+e.message);
   }
 }
 
-// FLASH (fallback)
-function toggleFlash(){
-  try {
-    if(!flashTrack) return;
+// ================= FLASH
+async function toggleFlash(){
+  if(!track) return;
 
-    const cap = flashTrack.getCapabilities();
-
-    if(cap.torch){
-      flashTrack.applyConstraints({advanced:[{torch:true}]});
-    }else{
-      alert("Flash non supportato su questo dispositivo");
-    }
-  } catch(e){
-    console.log(e);
+  let c=track.getCapabilities();
+  if(!c.torch){
+    alert("Flash non supportato");
+    return;
   }
+
+  await track.applyConstraints({advanced:[{torch:true}]});
 }
 
-// ================= OCR =================
-async function scanLoop(){
+// ================= OCR LOOP
+async function loop(){
   if(!stream) return;
 
   let canvas=document.createElement("canvas");
-  canvas.width=video.videoWidth;
-  canvas.height=video.videoHeight;
+  canvas.width=video.videoWidth/2;
+  canvas.height=video.videoHeight/2;
   let ctx=canvas.getContext("2d");
-  ctx.drawImage(video,0,0);
 
-  let r = await Tesseract.recognize(canvas,"eng");
+  ctx.filter="grayscale(100%) contrast(180%)";
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
 
-  let matches = r.data.text.match(/BDBCF0{2}[A-Z0-9]{3}/g);
+  let r=await worker.recognize(canvas);
 
-  if(matches){
-    matches.forEach(m=>processScan(m,canvas.toDataURL()));
-  }
+  let words=r.data.words || [];
+  let multi=document.getElementById("multi").checked;
 
-  requestAnimationFrame(scanLoop);
-}
+  let list=multi ? words : words.slice(0,1);
 
-// ================= LOGICA =================
-function processScan(txt,img){
+  list.forEach(w=>{
+    let s=norm(w.text);
 
-  if(!document.getElementById("operatore").value ||
-     !document.getElementById("posizione").value){
-    toast("Compila operatore e lotto!");
-    return;
-  }
+    if(!SERIAL_REGEX.test(s)) return;
 
-  txt = normalize(txt);
+    if(!document.getElementById("operator").value ||
+       !document.getElementById("lot").value){
+      toast("Compila campi");
+      return;
+    }
 
-  if(!valid(txt)) return;
+    let now=Date.now();
+    if(debounce[s] && now-debounce[s]<2500) return;
+    debounce[s]=now;
 
-  let now=Date.now();
-  if(lastScanTimes[txt] && now-lastScanTimes[txt]<2000) return;
-  lastScanTimes[txt]=now;
+    if(found.has(s)){
+      vib([200,100,200]);
+      beep(200);
+      toast("Duplicato");
+      return;
+    }
 
-  if(data.some(d=>d.serial===txt)){
-    vib([200,100,200]);
-    beep(200);
-    toast("Duplicato!");
-    return;
-  }
+    found.add(s);
+    vib(150);
+    beep(900);
 
-  data.push({
-    time:new Date().toLocaleString(),
-    serial:txt,
-    edited:false,
-    lotto:document.getElementById("posizione").value,
-    operatore:document.getElementById("operatore").value,
-    flag:"Good",
-    img:img
+    let img=canvas.toDataURL();
+
+    rows.push({
+      time:new Date().toLocaleString(),
+      serial:s,
+      operatore:operator.value,
+      lotto:lot.value,
+      edited:false,
+      img,
+      flag:"Good",
+      note:"",
+      file:s+".jpg"
+    });
+
+    render();
+    save();
   });
 
-  save();
-  update();
-
-  vib();
-  beep(900);
+  setTimeout(loop,500);
 }
 
-// ================= UI =================
-function update(){
+// ================= TABLE
+function render(){
   let html="";
-  data.forEach((r,i)=>{
+  rows.forEach((r,i)=>{
     html+=`
     <tr>
-      <td>
-        <div class="${r.edited?'edited':''}" onclick="edit(${i})">${r.serial}</div>
-        <img src="${r.img}" class="preview" onclick="window.open('${r.img   <option>Rotto</option>
-          <option>Sporco</option>
-          <option>RF-ID</option>
-          <option>Barra Mancante</option>
-          <option>Dubbio</option>
-        </select>
-      </td>
-      <td>
-        <button onclick="del(${i})">🗑</button>
-      </td>
-    </tr>`;
-  });
-
-  document.getElementById("table").innerHTML=html;
-  document.getElementById("count").innerText=data.length;
+      <td class="serial ${r.edited?'edited':''}" onclick="edit(${i})">${r.serial}</td>
+      <td><img src="${r.img}" class="thumb" onclick="window.open('${ws.length;
 }
 
+// ================= EDIT
 function edit(i){
-  let v=prompt("Modifica",data[i].serial);
+  let v=prompt("Modifica seriale",rows[i].serial);
   if(!v) return;
 
-  v=normalize(v);
-  if(!valid(v)) return alert("Non valido");
+  v=norm(v);
+  if(!SERIAL_REGEX.test(v)) return alert("Non valido");
 
-  if(confirm("Confermare?")){
-    data[i].serial=v;
-    data[i].edited=true;
-    save();
-    update();
+  if(confirm("Confermare")){
+    rows[i].serial=v;
+    rows[i].edited=true;
+    render(); save();
   }
 }
 
+// ================= DELETE
 function del(i){
   if(confirm("Eliminare?")){
-    data.splice(i,1);
-    save();
-    update();
+    found.delete(rows[i].serial);
+    rows.splice(i,1);
+    render(); save();
   }
 }
 
-// ================= EXPORT =================
+// ================= STORAGE
+function save(){
+  localStorage.setItem("data",JSON.stringify(rows));
+}
+
+function load(){
+  let d=localStorage.getItem("data");
+  if(d){
+    rows=JSON.parse(d);
+    rows.forEach(r=>found.add(r.serial));
+  }
+}
+
+// ================= EXPORT
 function exportExcel(){
-  let ws = XLSX.utils.json_to_sheet(data);
-  let wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Dati");
+  let ws=XLSX.utils.json_to_sheet(rows);
+  let wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Dati");
   XLSX.writeFile(wb,"scansioni.xlsx");
 }
 
 async function exportZip(){
-  let zip = new JSZip();
+  let zip=new JSZip();
 
-  data.forEach(d=>{
-    let b64=d.img.split(",")[1];
-    zip.file(d.serial+".png",b64,{base64:true});
+  rows.forEach(r=>{
+    let b64=r.img.split(",")[1];
+    zip.file(r.serial+".jpg",b64,{base64:true});
   });
 
-  let content = await zip.generateAsync({type:"blob"});
+  let blob=await zip.generateAsync({type:"blob"});
   let a=document.createElement("a");
-  a.href=URL.createObjectURL(content);
-  a.download="immagini.zip";
+  a.href=URL.createObjectURL(blob);
+  a.download="img.zip";
   a.click();
 }
 
-// ================= INIT =================
+// ================= CLEAR
+function clearAll(){
+  if(confirm("Pulire tutto?")){
+    rows=[]; found.clear();
+    localStorage.clear();
+    render();
+  }
+}
+
+// ================= INIT
 load();
-update();
+render();
 
 </script>
 
