@@ -59,6 +59,7 @@
         .paused-indicator .dot { width:5px; height:5px; background:var(--warning); border-radius:50%; }
         .config-panel { padding:14px 18px; display:flex; flex-direction:column; gap:10px; }
         .input-group label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim); margin-bottom:4px; }
+        .input-group label .req { color:var(--danger); }
         .input-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
         .input-field {
             background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius);
@@ -66,6 +67,9 @@
             outline:none; transition:border-color 0.2s, box-shadow 0.2s; width:100%;
         }
         .input-field:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.2); }
+        .input-field.missing { border-color:var(--danger); animation:pulseBorder 1s ease-in-out 3; }
+        @keyframes pulseBorder { 0%,100%{border-color:var(--danger)} 50%{border-color:transparent} }
+        .pedana-field { border-left:3px solid var(--warning); }
         .controls-bar { display:flex; gap:8px; padding:0 18px 10px; }
         .btn {
             display:inline-flex; align-items:center; justify-content:center; gap:6px;
@@ -127,15 +131,12 @@
             padding:12px; margin-bottom:10px; animation:slideIn 0.3s ease-out;
         }
         @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-
         .record-top { display:flex; align-items:center; gap:10px; flex-wrap:nowrap; }
-
         .record-image-wrap {
             width:130px; height:50px; border-radius:6px; overflow:hidden; background:#000;
             flex-shrink:0; cursor:pointer; position:relative; border:1px solid var(--border);
         }
         .record-image-wrap img { width:100%; height:100%; object-fit:contain; image-rendering:auto; }
-
         .record-info { flex:1; min-width:0; }
         .serial-display {
             font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:500;
@@ -145,22 +146,13 @@
         }
         .serial-display.modified { color:var(--warning); border-color:var(--warning); }
         .serial-display:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.15); width:130px; }
-
-        .record-meta {
-            font-size:10px; color:var(--text-dim); margin-top:4px;
-            display:flex; flex-wrap:wrap; gap:5px; align-items:center;
-        }
-        .meta-tag {
-            display:inline-flex; align-items:center; gap:3px;
-            padding:1px 5px; border-radius:3px; font-size:9px; font-weight:600;
-            font-family:'JetBrains Mono',monospace;
-        }
+        .record-meta { font-size:10px; color:var(--text-dim); margin-top:4px; display:flex; flex-wrap:wrap; gap:5px; align-items:center; }
+        .meta-tag { display:inline-flex; align-items:center; gap:3px; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:600; font-family:'JetBrains Mono',monospace; }
         .meta-tag.conf-high { background:rgba(16,185,129,0.12); color:var(--accent); }
         .meta-tag.conf-mid { background:rgba(245,158,11,0.12); color:var(--warning); }
         .meta-tag.conf-low { background:rgba(239,68,68,0.12); color:var(--danger); }
         .meta-tag.correction { background:rgba(139,92,246,0.12); color:#a78bfa; }
         .mod-badge { background:var(--warning); color:#1e293b; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:700; }
-
         .delete-btn { background:none; border:none; color:var(--text-dim); cursor:pointer; padding:6px; border-radius:8px; transition:all 0.2s; flex-shrink:0; }
         .delete-btn:hover { background:rgba(239,68,68,0.15); color:var(--danger); }
         .delete-btn svg { width:18px; height:18px; }
@@ -177,39 +169,17 @@
         .status-btn.active-bar { background:#06b6d4; color:white; border-color:#06b6d4; }
         .status-btn.active-doubt { background:var(--text-dim); color:white; border-color:var(--text-dim); }
         .status-btn.active-none { background:transparent; border:1px dashed var(--border); color:var(--text-dim); }
-        .note-input {
-            margin-top:6px; width:100%; background:var(--bg-input); border:1px solid var(--border);
-            border-radius:6px; padding:6px 10px; color:var(--text); font-size:12px;
-            font-family:'Inter',sans-serif; outline:none; display:none;
-        }
+        .note-input { margin-top:6px; width:100%; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:var(--text); font-size:12px; font-family:'Inter',sans-serif; outline:none; display:none; }
         .note-input.visible { display:block; }
         .note-input:focus { border-color:#ec4899; }
-
-        .image-modal {
-            position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.95);
-            z-index:1000; display:none; align-items:center; justify-content:center; cursor:pointer;
-        }
+        .image-modal { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.95); z-index:1000; display:none; align-items:center; justify-content:center; cursor:pointer; }
         .image-modal.visible { display:flex; }
         .image-modal img { max-width:95%; max-height:95%; object-fit:contain; border-radius:8px; }
-        .close-modal-btn {
-            position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.15);
-            border:none; color:white; width:36px; height:36px; border-radius:50%; cursor:pointer;
-            font-size:18px; display:flex; align-items:center; justify-content:center;
-        }
-        .version-modal {
-            position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7);
-            z-index:1500; display:none; align-items:center; justify-content:center; padding:20px;
-        }
+        .close-modal-btn { position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.15); border:none; color:white; width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; }
+        .version-modal { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:1500; display:none; align-items:center; justify-content:center; padding:20px; }
         .version-modal.visible { display:flex; }
-        .version-modal-box {
-            background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
-            padding:24px; max-width:380px; width:100%; max-height:80vh; overflow-y:auto;
-        }
-        .version-modal-box h3 {
-            font-size:18px; margin-bottom:4px;
-            background:linear-gradient(135deg,var(--primary-light),var(--accent));
-            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-        }
+        .version-modal-box { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:24px; max-width:380px; width:100%; max-height:80vh; overflow-y:auto; }
+        .version-modal-box h3 { font-size:18px; margin-bottom:4px; background:linear-gradient(135deg,var(--primary-light),var(--accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
         .version-modal-box .ver-date { font-size:12px; color:var(--text-dim); margin-bottom:16px; }
         .changelog-item { padding:10px 0; border-bottom:1px solid rgba(71,85,105,0.3); }
         .changelog-item:last-child { border-bottom:none; }
@@ -221,56 +191,31 @@
         .ch-tag.feat { background:rgba(37,99,235,0.15); color:var(--primary-light); }
         .ch-tag.fix { background:rgba(16,185,129,0.15); color:var(--accent); }
         .ch-tag.ui { background:rgba(245,158,11,0.15); color:var(--warning); }
-        .version-modal-close {
-            margin-top:16px; width:100%; padding:10px; background:var(--bg-input);
-            border:1px solid var(--border); border-radius:var(--radius); color:var(--text);
-            font-family:'Inter',sans-serif; font-weight:600; cursor:pointer; font-size:13px;
-        }
-        .toast {
-            position:fixed; top:20px; left:50%; transform:translateX(-50%) translateY(-100px);
-            background:var(--bg-card); border:1px solid var(--border); padding:12px 20px;
-            border-radius:var(--radius); font-size:13px; font-weight:500; z-index:2000;
-            transition:transform 0.3s ease-out; box-shadow:var(--shadow); max-width:90%; text-align:center;
-        }
+        .version-modal-close { margin-top:16px; width:100%; padding:10px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); font-family:'Inter',sans-serif; font-weight:600; cursor:pointer; font-size:13px; }
+        .toast { position:fixed; top:20px; left:50%; transform:translateX(-50%) translateY(-100px); background:var(--bg-card); border:1px solid var(--border); padding:12px 20px; border-radius:var(--radius); font-size:13px; font-weight:500; z-index:2000; transition:transform 0.3s ease-out; box-shadow:var(--shadow); max-width:90%; text-align:center; }
         .toast.visible { transform:translateX(-50%) translateY(0); }
         .toast.success { border-color:var(--accent); }
         .toast.warning { border-color:var(--warning); }
         .toast.error { border-color:var(--danger); }
-        .confirm-modal {
-            position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7);
-            z-index:1500; display:none; align-items:center; justify-content:center; padding:20px;
-        }
+        .confirm-modal { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:1500; display:none; align-items:center; justify-content:center; padding:20px; }
         .confirm-modal.visible { display:flex; }
-        .confirm-box {
-            background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
-            padding:22px; max-width:320px; width:100%; text-align:center;
-        }
+        .confirm-box { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:22px; max-width:320px; width:100%; text-align:center; }
         .confirm-box h3 { font-size:16px; margin-bottom:8px; }
         .confirm-box p { font-size:13px; color:var(--text-muted); margin-bottom:18px; }
         .confirm-actions { display:flex; gap:10px; }
         .confirm-actions .btn { flex:1; }
+        .pedana-actions { display:flex; flex-direction:column; gap:10px; margin-top:8px; }
+        .pedana-actions .btn-row { display:flex; gap:10px; }
+        .pedana-actions .btn-row .btn { flex:1; }
         .empty-state { text-align:center; padding:36px 20px; color:var(--text-dim); }
         .empty-state svg { width:44px; height:44px; margin-bottom:10px; opacity:0.4; }
         .empty-state p { font-size:13px; }
-        .bottom-bar {
-            position:fixed; bottom:0; left:0; right:0; background:var(--bg-card);
-            border-top:1px solid var(--border); padding:10px 18px; display:flex; gap:8px;
-            z-index:100; backdrop-filter:blur(20px);
-        }
+        .bottom-bar { position:fixed; bottom:0; left:0; right:0; background:var(--bg-card); border-top:1px solid var(--border); padding:10px 18px; display:flex; gap:8px; z-index:100; backdrop-filter:blur(20px); }
         .bottom-bar .btn { font-size:12px; padding:10px 10px; }
         .progress-bar { position:absolute; bottom:0; left:0; height:3px; background:var(--accent); transition:width 0.3s; z-index:5; }
-        .cooldown-overlay {
-            position:absolute; top:0; left:0; right:0; bottom:0;
-            background:rgba(16,185,129,0.08); pointer-events:none; z-index:4; display:none;
-        }
+        .cooldown-overlay { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(16,185,129,0.08); pointer-events:none; z-index:4; display:none; }
         .cooldown-overlay.active { display:block; }
-        @media (max-width:380px) {
-            .btn { padding:8px 8px; font-size:11px; }
-            .status-btn { font-size:9px; padding:3px 6px; }
-            .record-image-wrap { width:120px; height:46px; }
-            .serial-display { width:120px; }
-            .record-meta { gap:3px; }
-        }
+        @media (max-width:380px) { .btn { padding:8px 8px; font-size:11px; } .status-btn { font-size:9px; padding:3px 6px; } .record-image-wrap { width:120px; height:46px; } .serial-display { width:120px; } .record-meta { gap:3px; } }
     </style>
 </head>
 <body>
@@ -281,7 +226,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             Scanner Seriali OCR
         </h1>
-        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v1.5.1</span>
+        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v1.6.0</span>
     </div>
     <div class="scan-counter">
         <span class="label">Seriali: <span class="count" id="scanCount">0</span></span>
@@ -292,7 +237,7 @@
 <div class="config-panel">
     <div class="input-row">
         <div class="input-group"><label>Operatore</label><input type="text" class="input-field" id="operatorName" placeholder="Nome operatore"></div>
-        <div class="input-group"><label>N° Pedana / Posizione</label><input type="text" class="input-field" id="pedana" placeholder="Es: P01"></div>
+        <div class="input-group"><label>N° Pedana / Posizione <span class="req">*</span></label><input type="text" class="input-field pedana-field" id="pedana" placeholder="Obbligatorio"></div>
     </div>
 </div>
 
@@ -337,13 +282,11 @@
     </div>
 </div>
 
-<!-- Image zoom modal -->
 <div class="image-modal" id="imageModal" onclick="closeModal()">
     <button class="close-modal-btn" onclick="closeModal()">✕</button>
     <img id="modalImage" src="" alt="Zoom">
 </div>
 
-<!-- Password modal per versione -->
 <div class="confirm-modal" id="passwordModal">
     <div class="confirm-box">
         <h3>🔒</h3>
@@ -356,13 +299,33 @@
     </div>
 </div>
 
-<!-- Version modal -->
 <div class="version-modal" id="versionModal" onclick="closeVersionModal()">
     <div class="version-modal-box" onclick="event.stopPropagation()">
         <h3>📋 Changelog</h3>
-        <div class="ver-date" id="versionBuildDate">Generato il 22/05/2026 — 18:00 UTC+2</div>
+        <div class="ver-date" id="versionBuildDate">Generato il 22/05/2026 — 19:00 UTC+2</div>
         <div id="changelogContent"></div>
         <button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button>
+    </div>
+</div>
+
+<!-- Pedana change modal -->
+<div class="confirm-modal" id="pedanaModal">
+    <div class="confirm-box">
+        <h3 id="pedanaModalTitle">📍 Pedana / Posizione</h3>
+        <p id="pedanaModalMsg"></p>
+        <div class="pedana-actions">
+            <div class="btn-row">
+                <button class="btn btn-accent" onclick="pedanaKeep()">✓ Mantieni</button>
+                <button class="btn btn-warning" onclick="pedanaChange()">✏️ Cambia</button>
+            </div>
+            <div id="pedanaChangeInput" style="display:none;">
+                <input type="text" class="input-field" id="newPedanaInput" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:2px;" maxlength="20">
+                <div class="btn-row" style="margin-top:10px;">
+                    <button class="btn btn-outline" onclick="pedanaCancel()">Annulla</button>
+                    <button class="btn btn-primary" onclick="pedanaConfirm()">Conferma</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -391,51 +354,24 @@
 </div>
 
 <script>
-// ===== CONFIG =====
-const APP_VERSION = '1.5.1';
-const APP_BUILD_DATE = '22/05/2026 18:00';
+const APP_VERSION = '1.6.0';
+const APP_BUILD_DATE = '22/05/2026 19:00';
 const CHANGELOG = [
-    {
-        ver: 'v1.5.1', date: '22/05/2026 18:00',
-        desc: 'Rimossi hint password dal modal. Campo password ora type="password" senza placeholder.',
-        tags: ['ui']
-    },
-    {
-        ver: 'v1.5.0', date: '22/05/2026 17:30',
-        desc: 'Pattern seriale stretto a BDBCF00 (prefisso fisso). Password HHMM per accesso changelog. Anteprima = frame OCR completo (non crop).',
-        tags: ['fix','feat']
-    },
-    {
-        ver: 'v1.4.0', date: '22/05/2026 16:45',
-        desc: 'Aggiunta percentuale confidenza OCR e correzioni applicate (O→0, S→5, ecc.). Visualizzazione minimale con badge colorati in base al livello di confidenza.',
-        tags: ['feat']
-    },
-    {
-        ver: 'v1.3.0', date: '22/05/2026 16:10',
-        desc: 'Rimossa icona lente di ingrandimento dall\'anteprima. Ingrandito riquadro immagine a 130px (stessa larghezza del seriale testuale). Entrambi sulla stessa riga.',
-        tags: ['ui']
-    },
-    {
-        ver: 'v1.2.0', date: '22/05/2026 15:40',
-        desc: 'Immagine anteprima ridotta e visibile per intero. Pausa scansione durante tap-zoom. Aggiunto numero versione con changelog.',
-        tags: ['ui','feat']
-    },
-    {
-        ver: 'v1.1.0', date: '22/05/2026 14:30',
-        desc: 'Validazione seriale: accettati solo 10 caratteri. Rimossa selezione "Good" di default. Anteprima ritagliata al seriale +15px. Timeout di 1s dopo lettura per evitare false letture.',
-        tags: ['feat','fix']
-    },
-    {
-        ver: 'v1.0.0', date: '22/05/2026 12:00',
-        desc: 'Versione iniziale: Scanner OCR con Tesseract.js. Rilevamento seriale pattern [A-Z]{2}BCF00[A-F0-9]{3}. Esportazione Excel e ZIP. Feedback aptico e sonoro. Gestione duplicati.',
-        tags: ['feat']
-    }
+    { ver:'v1.6.0', date:'22/05/2026 19:00', desc:'Campo Pedana/Posizione obbligatorio. Dopo ogni scansione, pop-up per confermare se mantenere o cambiare pedana.', tags:['feat'] },
+    { ver:'v1.5.1', date:'22/05/2026 18:00', desc:'Rimossi hint password dal modal. Campo password ora type="password" senza placeholder.', tags:['ui'] },
+    { ver:'v1.5.0', date:'22/05/2026 17:30', desc:'Pattern seriale stretto a BDBCF00 (prefisso fisso). Password HHMM per accesso changelog. Anteprima = frame OCR completo.', tags:['fix','feat'] },
+    { ver:'v1.4.0', date:'22/05/2026 16:45', desc:'Aggiunta confidenza OCR e correzioni (O→0, S→5). Badge colorati per livello confidenza.', tags:['feat'] },
+    { ver:'v1.3.0', date:'22/05/2026 16:10', desc:'Rimossa lente dall\'anteprima. Immagine 130px come seriale. Stessa riga.', tags:['ui'] },
+    { ver:'v1.2.0', date:'22/05/2026 15:40', desc:'Anteprima ridotta. Pausa durante zoom. Versione con changelog.', tags:['ui','feat'] },
+    { ver:'v1.1.0', date:'22/05/2026 14:30', desc:'Solo 10 caratteri. No Good default. Crop +15px. Timeout 1s.', tags:['feat','fix'] },
+    { ver:'v1.0.0', date:'22/05/2026 12:00', desc:'Versione iniziale: OCR Tesseract.js, Excel, ZIP, aptico, duplicati.', tags:['feat'] }
 ];
 
-// ===== STATE =====
 let cameraActive=false, flashOn=false, multiDetect=false, videoEl=null, stream=null, ocrWorker=null, scanTimer=null;
 let records=[], scanTotal=0, confirmCallback=null, audioCtx=null;
 let scanCooldown=false, scanPaused=false;
+let lastScanPedana='';
+let pedanaCallback=null;
 const SERIAL_PATTERN=/^BDBCF00[A-F0-9]{3}$/;
 
 function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx;}
@@ -451,70 +387,55 @@ function showConfirm(title,msg,cb){document.getElementById('confirmTitle').textC
 function closeConfirm(){document.getElementById('confirmModal').classList.remove('visible');confirmCallback=null;}
 function executeConfirm(){if(confirmCallback)confirmCallback();closeConfirm();}
 
-const OCR_CORRECTION_MAP = {'O':'0','o':'0','Q':'0','I':'1','l':'1','i':'1','S':'5','s':'5','Z':'2','z':'2'};
-
-function fixOCR(raw) {
-    let corrections = [];
-    let fixed = '';
-    for (let i = 0; i < raw.length; i++) {
-        const ch = raw[i];
-        if (OCR_CORRECTION_MAP.hasOwnProperty(ch)) {
-            const replacement = OCR_CORRECTION_MAP[ch];
-            fixed += replacement;
-            corrections.push(`${ch}→${replacement}`);
-        } else {
-            fixed += ch;
-        }
-    }
-    return { fixed: fixed.toUpperCase(), corrections };
-}
-
-function detectCorrections(raw, serial) {
-    const corrections = [];
-    const rawUpper = raw.toUpperCase();
-    const minLen = Math.min(rawUpper.length, serial.length);
-    for (let i = 0; i < minLen; i++) {
-        if (rawUpper[i] !== serial[i]) corrections.push(`${rawUpper[i]}→${serial[i]}`);
-    }
-    return corrections;
-}
-
+const OCR_CORRECTION_MAP={'O':'0','o':'0','Q':'0','I':'1','l':'1','i':'1','S':'5','s':'5','Z':'2','z':'2'};
+function fixOCR(raw){let c=[],f='';for(let i=0;i<raw.length;i++){if(OCR_CORRECTION_MAP.hasOwnProperty(raw[i])){f+=OCR_CORRECTION_MAP[raw[i]];c.push(`${raw[i]}→${OCR_CORRECTION_MAP[raw[i]]}`);}else{f+=raw[i];}}return{fixed:f.toUpperCase(),corrections:c};}
+function detectCorrections(raw,serial){const c=[],ru=raw.toUpperCase(),mn=Math.min(ru.length,serial.length);for(let i=0;i<mn;i++){if(ru[i]!==serial[i])c.push(`${ru[i]}→${serial[i]}`);}return c;}
 function isValidSerial(s){return SERIAL_PATTERN.test(s);}
 
 // ===== VERSION PASSWORD =====
-let versionPwdTimeout = null;
+let versionPwdTimeout=null;
+function requestVersionAccess(){const n=new Date();versionPwdTimeout=String(n.getHours()).padStart(2,'0')+String(n.getMinutes()).padStart(2,'0');document.getElementById('versionPassword').value='';document.getElementById('passwordModal').classList.add('visible');setTimeout(()=>{const i=document.getElementById('versionPassword');if(i)i.focus();},200);}
+function closePasswordModal(){document.getElementById('passwordModal').classList.remove('visible');versionPwdTimeout=null;}
+function checkVersionPassword(){const i=document.getElementById('versionPassword').value.trim();if(i===versionPwdTimeout){closePasswordModal();openVersionModal();}else{toast('❌ Errata','error');beepErr();vib('err');document.getElementById('versionPassword').value='';document.getElementById('versionPassword').focus();}}
+document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('passwordModal').classList.contains('visible'))checkVersionPassword();});
 
-function requestVersionAccess(){
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2,'0');
-    const mm = String(now.getMinutes()).padStart(2,'0');
-    versionPwdTimeout = hh + mm;
-    document.getElementById('versionPassword').value = '';
-    document.getElementById('passwordModal').classList.add('visible');
-    setTimeout(()=>{ const inp = document.getElementById('versionPassword'); if(inp) inp.focus(); }, 200);
+// ===== PEDANA MODAL =====
+function showPedanaModal(callback){
+    const current=document.getElementById('pedana').value.trim()||'—';
+    document.getElementById('pedanaModalTitle').textContent='📍 Pedana / Posizione';
+    document.getElementById('pedanaModalMsg').textContent=`Pedana attuale: ${current}`;
+    document.getElementById('pedanaChangeInput').style.display='none';
+    document.getElementById('newPedanaInput').value='';
+    pedanaCallback=callback;
+    document.getElementById('pedanaModal').classList.add('visible');
 }
-
-function closePasswordModal(){
-    document.getElementById('passwordModal').classList.remove('visible');
-    versionPwdTimeout = null;
+function pedanaKeep(){
+    document.getElementById('pedanaModal').classList.remove('visible');
+    if(pedanaCallback)pedanaCallback(document.getElementById('pedana').value.trim());
+    pedanaCallback=null;
 }
-
-function checkVersionPassword(){
-    const input = document.getElementById('versionPassword').value.trim();
-    if (input === versionPwdTimeout) {
-        closePasswordModal();
-        openVersionModal();
-    } else {
-        toast('❌ Errata','error');
-        beepErr(); vib('err');
-        document.getElementById('versionPassword').value = '';
-        document.getElementById('versionPassword').focus();
-    }
+function pedanaChange(){
+    document.getElementById('pedanaChangeInput').style.display='block';
+    const np=document.getElementById('newPedanaInput');
+    np.value=lastScanPedana||'';
+    setTimeout(()=>np.focus(),100);
 }
-
-document.addEventListener('keydown', (e)=>{
-    if(e.key==='Enter' && document.getElementById('passwordModal').classList.contains('visible')){
-        checkVersionPassword();
+function pedanaCancel(){
+    document.getElementById('pedanaChangeInput').style.display='none';
+}
+function pedanaConfirm(){
+    const nv=document.getElementById('newPedanaInput').value.trim();
+    if(!nv){toast('Campo obbligatorio','error');return;}
+    document.getElementById('pedana').value=nv;
+    document.getElementById('pedanaModal').classList.remove('visible');
+    document.getElementById('pedana').classList.remove('missing');
+    lastScanPedana=nv;
+    if(pedanaCallback)pedanaCallback(nv);
+    pedanaCallback=null;
+}
+document.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter'&&document.getElementById('pedanaChangeInput').style.display==='block'){
+        pedanaConfirm();
     }
 });
 
@@ -553,8 +474,7 @@ function stopCamera(){
     document.getElementById('btnFlash').classList.remove('btn-accent');document.getElementById('btnFlash').classList.add('btn-warning');
     document.getElementById('progressBar').style.width='0%';
     document.getElementById('cooldownOverlay').classList.remove('active');
-    updateScanIndicator();
-    resetBtnCamera();toast('📷 Fotocamera spenta','warning');
+    updateScanIndicator();resetBtnCamera();toast('📷 Fotocamera spenta','warning');
 }
 
 function resetBtnCamera(){const btn=document.getElementById('btnCamera');btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Avvia OCR</span>`;btn.classList.add('btn-primary');btn.classList.remove('btn-danger');}
@@ -576,10 +496,23 @@ async function toggleFlash(){
 
 function toggleMultiDetect(){multiDetect=!multiDetect;document.getElementById('toggleMulti').classList.toggle('active',multiDetect);}
 
+function checkPedanaRequired(){
+    const p=document.getElementById('pedana').value.trim();
+    if(!p){
+        document.getElementById('pedana').classList.add('missing');
+        toast('⚠️ Inserisci Pedana/Posizione','error');
+        beepErr();vib('err');
+        return false;
+    }
+    document.getElementById('pedana').classList.remove('missing');
+    return true;
+}
+
 async function scanFrame(){
     if(!cameraActive||!videoEl||!ocrWorker)return;
     if(videoEl.readyState<2)return;
     if(scanCooldown||scanPaused)return;
+    if(!checkPedanaRequired())return;
     beepScan();
 
     const canvas=document.getElementById('captureCanvas'),ctx=canvas.getContext('2d');
@@ -588,8 +521,7 @@ async function scanFrame(){
     const rx=Math.floor((vw-rw)/2),ry=Math.floor((vh-rh)/2);
     canvas.width=rw;canvas.height=rh;
     ctx.drawImage(videoEl,rx,ry,rw,rh,0,0,rw,rh);
-
-    const roiFrameImage = canvas.toDataURL('image/jpeg', 0.75);
+    const roiFrameImage=canvas.toDataURL('image/jpeg',0.75);
 
     const imageData=ctx.getImageData(0,0,rw,rh),data=imageData.data,contrast=1.4;
     for(let i=0;i<data.length;i+=4){data[i]=Math.min(255,Math.max(0,((data[i]/255-0.5)*contrast+0.5)*255));data[i+1]=Math.min(255,Math.max(0,((data[i+1]/255-0.5)*contrast+0.5)*255));data[i+2]=Math.min(255,Math.max(0,((data[i+2]/255-0.5)*contrast+0.5)*255));}
@@ -607,23 +539,22 @@ async function scanFrame(){
             for(const word of words){
                 let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
                 if(cleaned.length<8)continue;
-                let {fixed, corrections}=fixOCR(cleaned);
-                const wordConf = Math.round(word.confidence);
-
-                if(fixed.length===10 && isValidSerial(fixed) && !foundSerials.includes(fixed)){
-                    const finalCorrections=detectCorrections(cleaned, fixed);
+                let{fixed,corrections}=fixOCR(cleaned);
+                const wordConf=Math.round(word.confidence);
+                if(fixed.length===10&&isValidSerial(fixed)&&!foundSerials.includes(fixed)){
+                    const fc=detectCorrections(cleaned,fixed);
                     foundSerials.push(fixed);
-                    processSerial(fixed, roiFrameImage, wordConf, finalCorrections);
+                    processSerial(fixed,roiFrameImage,wordConf,fc);
                     if(!multiDetect)return;
                     continue;
                 }
                 for(let i=0;i<=cleaned.length-10;i++){
                     const sub=cleaned.substring(i,i+10);
-                    let {fixed:subFixed}=fixOCR(sub);
-                    if(isValidSerial(subFixed)&&!foundSerials.includes(subFixed)){
-                        const finalCorrections=detectCorrections(sub, subFixed);
-                        foundSerials.push(subFixed);
-                        processSerial(subFixed, roiFrameImage, Math.round(word.confidence), finalCorrections);
+                    let{fixed:sf}=fixOCR(sub);
+                    if(isValidSerial(sf)&&!foundSerials.includes(sf)){
+                        const fc=detectCorrections(sub,sf);
+                        foundSerials.push(sf);
+                        processSerial(sf,roiFrameImage,Math.round(word.confidence),fc);
                         if(!multiDetect)return;
                         break;
                     }
@@ -635,13 +566,9 @@ async function scanFrame(){
     document.getElementById('progressBar').style.width='0%';
 }
 
-function getConfClass(conf) {
-    if (conf >= 80) return 'conf-high';
-    if (conf >= 60) return 'conf-mid';
-    return 'conf-low';
-}
+function getConfClass(c){if(c>=80)return'conf-high';if(c>=60)return'conf-mid';return'conf-low';}
 
-function processSerial(serial, imgData, confidence, corrections){
+function processSerial(serial,imgData,confidence,corrections){
     const isDup=records.some(r=>r.serial===serial);
     if(isDup){toast('⚠️ Duplicato: '+serial,'warning');beepDup();vib('dup');return;}
 
@@ -649,35 +576,37 @@ function processSerial(serial, imgData, confidence, corrections){
     document.getElementById('cooldownOverlay').classList.add('active');
     document.getElementById('ocrStatus').textContent='⏱ Cooldown...';
     updateScanIndicator();
-    setTimeout(()=>{
-        scanCooldown=false;
-        document.getElementById('cooldownOverlay').classList.remove('active');
-        if(cameraActive&&!scanPaused) document.getElementById('ocrStatus').textContent='Scansione in corso...';
-        updateScanIndicator();
-    },1000);
 
     const operator=document.getElementById('operatorName').value.trim()||'N/D';
     const pedana=document.getElementById('pedana').value.trim()||'N/D';
+    lastScanPedana=pedana;
     const ts=new Date().toLocaleString('it-IT');
     records.unshift({
         id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),
-        serial, timestamp:ts, operator, pedana, modified:false, status:'', note:'',
-        image:imgData||null, confidence:confidence||0, corrections:corrections||[]
+        serial,timestamp:ts,operator,pedana,modified:false,status:'',note:'',
+        image:imgData||null,confidence:confidence||0,corrections:corrections||[]
     });
     scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
     beepOk();vib('ok');renderRecords();toast('✅ '+serial,'success');
+
+    // Show pedana confirmation after a short delay
+    setTimeout(()=>{
+        showPedanaModal(()=>{
+            scanCooldown=false;
+            document.getElementById('cooldownOverlay').classList.remove('active');
+            if(cameraActive&&!scanPaused) document.getElementById('ocrStatus').textContent='Scansione in corso...';
+            updateScanIndicator();
+        });
+    },400);
 }
 
 function renderRecords(){
     const el=document.getElementById('recordsList');
     if(records.length===0){el.innerHTML=`<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h.01M12 7h.01M17 7h.01M7 12h10M7 17h6"/></svg><p>Nessun seriale scansionato.<br>Avvia la fotocamera per iniziare.</p></div>`;return;}
     el.innerHTML=records.map(r=>{
-        const confClass = getConfClass(r.confidence);
-        const corrHtml = r.corrections && r.corrections.length > 0
-            ? `<span class="meta-tag correction" title="Correzioni OCR">⚡ ${r.corrections.join(', ')}</span>`
-            : '';
-        return `
-        <div class="record-card" id="record-${r.id}">
+        const cc=getConfClass(r.confidence);
+        const ch=r.corrections&&r.corrections.length>0?`<span class="meta-tag correction" title="Correzioni OCR">⚡ ${r.corrections.join(', ')}</span>`:'';
+        return `<div class="record-card" id="record-${r.id}">
             <div class="record-top">
                 <div class="record-image-wrap" onclick="openModal('${r.id}')">
                     ${r.image?`<img src="${r.image}" alt="img">`:`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>`}
@@ -685,8 +614,8 @@ function renderRecords(){
                 <div class="record-info">
                     <input type="text" class="serial-display ${r.modified?'modified':''}" value="${r.serial}" onchange="editSerial('${r.id}',this.value)" onfocus="this.dataset.orig=this.value" spellcheck="false" autocomplete="off" maxlength="12">
                     <div class="record-meta">
-                        <span class="meta-tag ${confClass}" title="Confidenza OCR">🎯 ${r.confidence}%</span>
-                        ${corrHtml}
+                        <span class="meta-tag ${cc}" title="Confidenza OCR">🎯 ${r.confidence}%</span>
+                        ${ch}
                         <span>🕐 ${r.timestamp}</span>
                         <span>👤 ${r.operator}</span>
                         <span>📍 ${r.pedana}</span>
@@ -713,15 +642,15 @@ function editSerial(id,newVal){
     const rec=records.find(r=>r.id===id);if(!rec)return;
     const input=document.querySelector(`#record-${id} .serial-display`);const orig=input?.dataset?.orig||rec.serial;
     if(newVal===orig)return;
-    let {fixed}=fixOCR(newVal.trim().toUpperCase());
+    let{fixed}=fixOCR(newVal.trim().toUpperCase());
     if(!isValidSerial(fixed)){toast('❌ Seriale non valido (deve iniziare con BDBCF00)','error');beepErr();input.value=orig;return;}
     showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{
         if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Seriale già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}
         rec.serial=fixed;rec.modified=true;toast('Seriale modificato: '+fixed,'success');beepOk();renderRecords();
     });input.value=orig;
 }
-function setStatus(id,status){const rec=records.find(r=>r.id===id);if(!rec)return;rec.status=status;vib('ok');renderRecords();}
-function setNote(id,note){const rec=records.find(r=>r.id===id);if(rec)rec.note=note;}
+function setStatus(id,s){const r=records.find(r=>r.id===id);if(!r)return;r.status=s;vib('ok');renderRecords();}
+function setNote(id,n){const r=records.find(r=>r.id===id);if(r)r.note=n;}
 function deleteRecord(id){
     const rec=records.find(r=>r.id===id);if(!rec)return;
     showConfirm('Elimina record',`Eliminare "${rec.serial}"?`,()=>{
@@ -730,46 +659,18 @@ function deleteRecord(id){
     });
 }
 
-function openModal(id){
-    const rec=records.find(r=>r.id===id);if(!rec||!rec.image)return;
-    scanPaused=true;
-    updateScanIndicator();
-    document.getElementById('modalImage').src=rec.image;
-    document.getElementById('imageModal').classList.add('visible');
-}
-function closeModal(){
-    document.getElementById('imageModal').classList.remove('visible');
-    scanPaused=false;
-    updateScanIndicator();
-}
-
-function openVersionModal(){
-    const el=document.getElementById('changelogContent');
-    el.innerHTML=CHANGELOG.map(c=>`
-        <div class="changelog-item">
-            <span class="ch-ver">${c.ver}</span><span class="ch-date">${c.date}</span>
-            <div class="ch-desc">${c.desc}</div>
-            <div class="ch-tags">${c.tags.map(t=>`<span class="ch-tag ${t}">${t.toUpperCase()}</span>`).join('')}</div>
-        </div>
-    `).join('');
-    document.getElementById('versionModal').classList.add('visible');
-}
+function openModal(id){const rec=records.find(r=>r.id===id);if(!rec||!rec.image)return;scanPaused=true;updateScanIndicator();document.getElementById('modalImage').src=rec.image;document.getElementById('imageModal').classList.add('visible');}
+function closeModal(){document.getElementById('imageModal').classList.remove('visible');scanPaused=false;updateScanIndicator();}
+function openVersionModal(){const el=document.getElementById('changelogContent');el.innerHTML=CHANGELOG.map(c=>`<div class="changelog-item"><span class="ch-ver">${c.ver}</span><span class="ch-date">${c.date}</span><div class="ch-desc">${c.desc}</div><div class="ch-tags">${c.tags.map(t=>`<span class="ch-tag ${t}">${t.toUpperCase()}</span>`).join('')}</div></div>`).join('');document.getElementById('versionModal').classList.add('visible');}
 function closeVersionModal(){document.getElementById('versionModal').classList.remove('visible');}
 
 function exportExcel(){
     if(records.length===0){toast('Nessun record','warning');return;}
-    const data=records.map((r,i)=>({
-        '#':i+1,'Timestamp':r.timestamp,'Seriale':r.serial,
-        'Confidenza %':r.confidence,
-        'Correzioni OCR':r.corrections&&r.corrections.length?r.corrections.join(', '):'—',
-        'Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,
-        'Operatore':r.operator,'Stato':r.status||'—','Note':r.note
-    }));
+    const data=records.map((r,i)=>({'#':i+1,'Timestamp':r.timestamp,'Seriale':r.serial,'Confidenza %':r.confidence,'Correzioni OCR':r.corrections&&r.corrections.length?r.corrections.join(', '):'—','Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,'Operatore':r.operator,'Stato':r.status||'—','Note':r.note}));
     const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:12},{wch:20},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Scansioni');
     XLSX.writeFile(wb,`Scansioni_${new Date().toISOString().slice(0,10)}.xlsx`);toast(`📊 Excel: ${records.length} record`,'success');vib('ok');
 }
-
 async function exportZip(){
     if(records.length===0){toast('Nessun record','warning');return;}
     toast('📦 Creazione ZIP...','success');
@@ -789,5 +690,4 @@ let lastEnd=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-l
 </script>
 </body>
 </html>
-
 
