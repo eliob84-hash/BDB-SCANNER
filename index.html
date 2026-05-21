@@ -79,3 +79,194 @@ function toast(m){
 
 // ================= VALIDAZIONE =================
 function normalize(s){ return s.toUpperCase().replace(/O/g,"0"); }
+function valid(s){ return /^BDBCF00[A-F0-9]{3}$/.test(s); }
+
+// ================= CAMERA =================
+async function toggleCamera(){
+  try {
+    if(stream){
+      stream.getTracks().forEach(t=>t.stop());
+      stream=null;
+      video.srcObject=null;
+      return;
+    }
+
+    // VERSIONE MASSIMA COMPATIBILITÀ (REDMI)
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false
+    });
+
+    video.srcObject = stream;
+    await video.play();
+
+    flashTrack = stream.getVideoTracks()[0];
+
+    console.log("Camera OK");
+
+    scanLoop();
+
+  } catch(err){
+    alert("Errore camera: " + err.name + " - " + err.message);
+    console.error(err);
+  }
+}
+
+// FLASH (fallback)
+function toggleFlash(){
+  try {
+    if(!flashTrack) return;
+
+    const cap = flashTrack.getCapabilities();
+
+    if(cap.torch){
+      flashTrack.applyConstraints({advanced:[{torch:true}]});
+    }else{
+      alert("Flash non supportato su questo dispositivo");
+    }
+  } catch(e){
+    console.log(e);
+  }
+}
+
+// ================= OCR =================
+async function scanLoop(){
+  if(!stream) return;
+
+  let canvas=document.createElement("canvas");
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
+  let ctx=canvas.getContext("2d");
+  ctx.drawImage(video,0,0);
+
+  let r = await Tesseract.recognize(canvas,"eng");
+
+  let matches = r.data.text.match(/BDBCF0{2}[A-Z0-9]{3}/g);
+
+  if(matches){
+    matches.forEach(m=>processScan(m,canvas.toDataURL()));
+  }
+
+  requestAnimationFrame(scanLoop);
+}
+
+// ================= LOGICA =================
+function processScan(txt,img){
+
+  if(!document.getElementById("operatore").value ||
+     !document.getElementById("posizione").value){
+    toast("Compila operatore e lotto!");
+    return;
+  }
+
+  txt = normalize(txt);
+
+  if(!valid(txt)) return;
+
+  let now=Date.now();
+  if(lastScanTimes[txt] && now-lastScanTimes[txt]<2000) return;
+  lastScanTimes[txt]=now;
+
+  if(data.some(d=>d.serial===txt)){
+    vib([200,100,200]);
+    beep(200);
+    toast("Duplicato!");
+    return;
+  }
+
+  data.push({
+    time:new Date().toLocaleString(),
+    serial:txt,
+    edited:false,
+    lotto:document.getElementById("posizione").value,
+    operatore:document.getElementById("operatore").value,
+    flag:"Good",
+    img:img
+  });
+
+  save();
+  update();
+
+  vib();
+  beep(900);
+}
+
+// ================= UI =================
+function update(){
+  let html="";
+  data.forEach((r,i)=>{
+    html+=`
+    <tr>
+      <td>
+        <div class="${r.edited?'edited':''}" onclick="edit(${i})">${r.serial}</div>
+        <img src="${r.img}" class="preview" onclick="window.open('${r.img   <option>Rotto</option>
+          <option>Sporco</option>
+          <option>RF-ID</option>
+          <option>Barra Mancante</option>
+          <option>Dubbio</option>
+        </select>
+      </td>
+      <td>
+        <button onclick="del(${i})">🗑</button>
+      </td>
+    </tr>`;
+  });
+
+  document.getElementById("table").innerHTML=html;
+  document.getElementById("count").innerText=data.length;
+}
+
+function edit(i){
+  let v=prompt("Modifica",data[i].serial);
+  if(!v) return;
+
+  v=normalize(v);
+  if(!valid(v)) return alert("Non valido");
+
+  if(confirm("Confermare?")){
+    data[i].serial=v;
+    data[i].edited=true;
+    save();
+    update();
+  }
+}
+
+function del(i){
+  if(confirm("Eliminare?")){
+    data.splice(i,1);
+    save();
+    update();
+  }
+}
+
+// ================= EXPORT =================
+function exportExcel(){
+  let ws = XLSX.utils.json_to_sheet(data);
+  let wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Dati");
+  XLSX.writeFile(wb,"scansioni.xlsx");
+}
+
+async function exportZip(){
+  let zip = new JSZip();
+
+  data.forEach(d=>{
+    let b64=d.img.split(",")[1];
+    zip.file(d.serial+".png",b64,{base64:true});
+  });
+
+  let content = await zip.generateAsync({type:"blob"});
+  let a=document.createElement("a");
+  a.href=URL.createObjectURL(content);
+  a.download="immagini.zip";
+  a.click();
+}
+
+// ================= INIT =================
+load();
+update();
+
+</script>
+
+</body>
+</html>
