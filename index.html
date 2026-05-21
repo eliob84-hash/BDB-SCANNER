@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -5,48 +6,75 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scanner BDBCF PRO</title>
 
+<!-- ✅ SCRIPT CORRETTI -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <style>
-body { margin:0; font-family:system-ui; background:#0f0f1a; color:#fff; }
+body {
+  margin:0;
+  font-family:system-ui;
+  background:#0f0f1a;
+  color:#fff;
+}
+
 video { width:100%; }
 
 .container { position:relative; }
+
 .scan-box {
-  position:absolute; left:15%; top:30%; width:70%; height:25%;
-  border:2px dashed #00d2ff; border-radius:10px;
+  position:absolute;
+  left:15%;
+  top:30%;
+  width:70%;
+  height:25%;
+  border:2px dashed #00d2ff;
 }
+
 .scan-line {
-  position:absolute; width:100%; height:2px; background:red;
+  position:absolute;
+  width:100%;
+  height:2px;
+  background:red;
   animation:scan 1.5s infinite;
 }
-@keyframes scan { 0%{top:0} 100%{top:100%} }
+
+@keyframes scan {
+  0%{top:0}
+  100%{top:100%}
+}
 
 button {
-  width:90%; margin:5px; padding:12px;
-  border:none; border-radius:10px;
+  width:90%;
+  margin:5px;
+  padding:12px;
+  border:none;
+  border-radius:10px;
 }
 
 input {
-  width:90%; padding:10px; margin:5px;
-  border-radius:6px; border:none;
+  width:90%;
+  padding:10px;
+  margin:5px;
 }
 
-table { width:100%; margin-top:10px; font-size:0.85rem; }
-td,th { border-bottom:1px solid #333; padding:6px; }
+table {
+  width:100%;
+  font-size:0.85rem;
+  margin-top:10px;
+}
 
-.thumb { width:60px; border-radius:6px; }
-.modified { color:#ff9800; font-weight:bold; }
+.thumb { width:60px; }
+.modified { color:#ff9800; }
 </style>
 </head>
 
 <body>
 
-<h3>📷 Scanner BDBCF</h3>
+<h3 style="text-align:center">📷 Scanner BDBCF</h3>
 
 <input id="operator" placeholder="👤 Operatore">
-<input id="batch" placeholder="📦 Posizione / Pedana">
+<input id="batch" placeholder="📦 Posizione">
 
 <div class="container">
   <video id="video" playsinline muted></video>
@@ -58,8 +86,8 @@ td,th { border-bottom:1px solid #333; padding:6px; }
 <button onclick="downloadCSV()">📄 Excel</button>
 <button onclick="downloadZIP()">📦 ZIP</button>
 
-<p id="status">Pronto</p>
-<p>Totale: <span id="count">0</span></p>
+<p id="status" style="text-align:center">🟡 Pronto</p>
+<p style="text-align:center">Totale: <span id="count">0</span></p>
 
 <table>
 <thead>
@@ -73,8 +101,12 @@ td,th { border-bottom:1px solid #333; padding:6px; }
 <script>
 const video = document.getElementById("video");
 
-let stream=null, track=null, flashOn=false;
-let worker=null, scanning=false;
+let stream=null;
+let track=null;
+let flashOn=false;
+
+let worker=null;
+let scanning=false;
 
 let data=[];
 
@@ -82,6 +114,7 @@ const REGEX=/^BDBCF00[0-9A-F]{3}$/;
 
 // ================= CAMERA =================
 async function toggleCamera(){
+
   if(stream){
     stream.getTracks().forEach(t=>t.stop());
     stream=null;
@@ -90,42 +123,68 @@ async function toggleCamera(){
     return;
   }
 
-  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-  video.srcObject=stream;
-  await video.play();
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:"environment" },
+      audio:false
+    });
 
-  track = stream.getVideoTracks()[0];
+    video.srcObject=stream;
+    await video.play();
 
-  worker = await Tesseract.createWorker("eng");
+    track = stream.getVideoTracks()[0];
 
-  scanning=true;
-  loop();
-  setStatus("✅ Attivo");
+    worker = await Tesseract.createWorker("eng");
+
+    scanning=true;
+    loop();
+
+    setStatus("✅ Attivo");
+
+  } catch(e){
+    alert("Errore camera: "+e.message);
+  }
 }
 
 // ================= FLASH =================
 async function toggleFlash(){
+
   if(!track) return;
 
-  const cap=track.getCapabilities();
-  if(!cap.torch){
-    setStatus("⚠️ No flash");
-    return;
-  }
+  try{
+    const cap = track.getCapabilities();
 
-  flashOn=!flashOn;
-  await track.applyConstraints({advanced:[{torch:flashOn}]});
+    if(!cap.torch){
+      setStatus("⚠️ Flash non supportato");
+      return;
+    }
+
+    flashOn=!flashOn;
+
+    await track.applyConstraints({
+      advanced:[{ torch: flashOn }]
+    });
+
+    setStatus(flashOn ? "🔦 ON" : "🔦 OFF");
+
+  } catch(e){
+    setStatus("❌ Errore flash");
+  }
 }
 
 // ================= LOOP =================
 async function loop(){
   if(!scanning) return;
+
   await scan();
+
   setTimeout(loop,1000);
 }
 
 // ================= SCAN =================
 async function scan(){
+
+  if(video.readyState < 2) return;
 
   const c=document.createElement("canvas");
   const ctx=c.getContext("2d");
@@ -169,8 +228,6 @@ function add(code,canvas){
   const obj={
     time:new Date().toLocaleTimeString(),
     code,
-    op:document.getElementById("operator").value,
-    batch:document.getElementById("batch").value,
     status:"Good",
     modified:false,
     img:canvas.toDataURL("image/jpeg",0.7)
@@ -195,19 +252,11 @@ function render(){
     tr.innerHTML=`
       <td>${r.time}</td>
       <td class="${r.modified?'modified':''}" onclick="edit(${i})">${r.code}</td>
+      <td>${r.status}</td>
+      <td><img src="${})">🗑️</button></td>
+    `;
 
-      <td>
-      <select onchange="setStatusRow(${i},this.value)">
-        <option>Good</option>
-        <option>Rotto</option>
-        <option>Sporco</option>
-        <option>RF-ID</option>
-        <option>Barra</option>
-        <option>Dubbio</option>
-      </select>
-      </td>
-
-      <td><img src="${r.img}" class="thumb" onclick="zoom(this  tb.appendChild(tr);
+    tb.appendChild(tr);
   });
 
   document.getElementById("count").textContent=data.length;
@@ -215,7 +264,6 @@ function render(){
 
 // ================= EDIT =================
 function edit(i){
-
   let val=prompt("Modifica codice",data[i].code);
   if(!val) return;
 
@@ -231,28 +279,21 @@ function edit(i){
   render();
 }
 
-// ================= TABLE ACTIONS =================
+// ================= REMOVE =================
 function removeRow(i){
-  if(confirm("Eliminare?")){
+  if(confirm("Elimina record?")){
     data.splice(i,1);
     render();
   }
 }
 
-function setStatusRow(i,val){
-  data[i].status=val;
-}
-
-// ================= ZOOM =================
-function zoom(src){
-  const w=window.open("");
-  w.document.write(`<img src="${src}" style="width:100EXPORT =================
+// ================= EXPORT =================
 function downloadCSV(){
 
-  let csv="Seriale,Ora,Operatore,Posizione,Stato\n";
+  let csv="Seriale,Ora\n";
 
   data.forEach(r=>{
-    csv+=`${r.code},${r.time},${r.op},${r.batch},${r.status}\n`;
+    csv+=`${r.code},${r.time}\n`;
   });
 
   const blob=new Blob([csv]);
@@ -268,8 +309,8 @@ async function downloadZIP(){
   const folder=zip.folder("img");
 
   data.forEach(r=>{
-    const b=r.img.split(',')[1];
-    folder.file(r.code+".jpg",b,{base64:true});
+    const base64=r.img.split(',')[1];
+    folder.file(r.code+".jpg",base64,{base64:true});
   });
 
   const blob=await zip.generateAsync({type:"blob"});
@@ -308,4 +349,3 @@ function setStatus(msg){
 
 </body>
 </html>
-``
