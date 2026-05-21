@@ -57,6 +57,15 @@
             padding:3px 8px; background:rgba(245,158,11,0.1); border-radius:12px;
         }
         .paused-indicator .dot { width:5px; height:5px; background:var(--warning); border-radius:50%; }
+        .loading-indicator {
+            display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--primary-light);
+            padding:3px 8px; background:rgba(37,99,235,0.1); border-radius:12px;
+        }
+        .spinner {
+            width:10px; height:10px; border:2px solid var(--primary-light);
+            border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;
+        }
+        @keyframes spin { to{transform:rotate(360deg)} }
         .config-panel { padding:14px 18px; display:flex; flex-direction:column; gap:10px; }
         .input-group label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim); margin-bottom:4px; }
         .input-group label .req { color:var(--danger); }
@@ -247,7 +256,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             Scanner Seriali OCR
         </h1>
-        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v1.9.0</span>
+        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v2.0.0</span>
     </div>
     <div class="scan-counter">
         <span class="label">Seriali: <span class="count" id="scanCount">0</span></span>
@@ -322,13 +331,13 @@
 <div class="version-modal" id="versionModal" onclick="closeVersionModal()">
     <div class="version-modal-box" onclick="event.stopPropagation()">
         <h3>📋 Changelog</h3>
-        <div class="ver-date" id="versionBuildDate">Generato il 22/05/2026 — 22:00 UTC+2</div>
+        <div class="ver-date" id="versionBuildDate">Generato il 22/05/2026 — 23:00 UTC+2</div>
         <div id="changelogContent"></div>
         <button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button>
     </div>
 </div>
 
-<!-- Pedana change modal -->
+<!-- Pedana modal -->
 <div class="confirm-modal" id="pedanaModal">
     <div class="confirm-box">
         <h3 id="pedanaModalTitle">📍 Pedana / Posizione</h3>
@@ -337,8 +346,8 @@
         <p id="pedanaModalMsg"></p>
         <div class="pedana-actions">
             <div class="btn-row">
-                <button class="btn btn-accent" onclick="pedanaKeep()">✓ Mantieni</button>
                 <button class="btn btn-warning" onclick="pedanaChange()">✏️ Cambia</button>
+                <button class="btn btn-accent" onclick="pedanaKeep()">✓ Mantieni</button>
             </div>
             <div id="pedanaChangeInput" style="display:none;">
                 <input type="text" class="input-field" id="newPedanaInput" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:2px;" maxlength="20">
@@ -389,18 +398,20 @@
 </div>
 
 <script>
-const APP_VERSION='1.9.0';
-const APP_BUILD_DATE='22/05/2026 22:00';
+const APP_VERSION='2.0.0';
+const APP_BUILD_DATE='22/05/2026 23:00';
+const STORAGE_KEY='scannerSerialiOCR_data';
 const CHANGELOG=[
-    {ver:'v1.9.0',date:'22/05/2026 22:00',desc:'Pulsanti invertiti nel modal pedana. Seriale più piccolo, pedana più visibile. Tap su posizione nei record per modificare. Colori icone stato. Auto-close fotocamera dopo 30s di inattività.',tags:['ui','feat']},
-    {ver:'v1.8.0',date:'22/05/2026 21:00',desc:'Fix seriali parziali: testo grezzo deve avere ≥10 caratteri. Messaggi errore modifica specifici.',tags:['fix']},
-    {ver:'v1.7.0',date:'22/05/2026 20:00',desc:'Anteprima cropata al seriale. Pedana modal mostra seriale riferimento.',tags:['ui']},
-    {ver:'v1.6.0',date:'22/05/2026 19:00',desc:'Pedana obbligatoria. Pop-up conferma mantieni/cambia dopo scansione.',tags:['feat']},
+    {ver:'v2.0.0',date:'22/05/2026 23:00',desc:'Salvataggio dati locale (localStorage). Angoli anteprima arrotondati. Margine seriale ridotto. Icona stato OCR (loading/ready). Frequenza scan velocizzata. Pulsanti pedana invertiti (Mantieni a destra).',tags:['feat','ui','fix']},
+    {ver:'v1.9.0',date:'22/05/2026 22:00',desc:'Pulsanti invertiti nel modal pedana. Tap su posizione nei record. Colori icone stato. Auto-close fotocamera 30s.',tags:['ui','feat']},
+    {ver:'v1.8.0',date:'22/05/2026 21:00',desc:'Fix seriali parziali. Messaggi errore specifici.',tags:['fix']},
+    {ver:'v1.7.0',date:'22/05/2026 20:00',desc:'Anteprima cropata. Pedana modal mostra seriale.',tags:['ui']},
+    {ver:'v1.6.0',date:'22/05/2026 19:00',desc:'Pedana obbligatoria. Conferma mantieni/cambia.',tags:['feat']},
     {ver:'v1.5.1',date:'22/05/2026 18:00',desc:'Rimossi hint password.',tags:['ui']},
-    {ver:'v1.5.0',date:'22/05/2026 17:30',desc:'Pattern stretto a BDBCF00. Password HHMM per changelog.',tags:['fix','feat']},
-    {ver:'v1.4.0',date:'22/05/2026 16:45',desc:'Confidenza OCR e correzioni. Badge colorati.',tags:['feat']},
-    {ver:'v1.3.0',date:'22/05/2026 16:10',desc:'Rimossa lente da anteprima.',tags:['ui']},
-    {ver:'v1.2.0',date:'22/05/2026 15:40',desc:'Anteprima ridotta. Pausa durante zoom.',tags:['ui','feat']},
+    {ver:'v1.5.0',date:'22/05/2026 17:30',desc:'Pattern stretto BDBCF00. Password HHMM.',tags:['fix','feat']},
+    {ver:'v1.4.0',date:'22/05/2026 16:45',desc:'Confidenza OCR e correzioni.',tags:['feat']},
+    {ver:'v1.3.0',date:'22/05/2026 16:10',desc:'Rimossa lente anteprima.',tags:['ui']},
+    {ver:'v1.2.0',date:'22/05/2026 15:40',desc:'Anteprima ridotta. Pausa zoom.',tags:['ui','feat']},
     {ver:'v1.1.0',date:'22/05/2026 14:30',desc:'Solo 10 caratteri. Timeout 1s.',tags:['feat','fix']},
     {ver:'v1.0.0',date:'22/05/2026 12:00',desc:'Versione iniziale.',tags:['feat']}
 ];
@@ -413,7 +424,9 @@ let pedanaCallback=null;
 let pedanaEditRecordId=null;
 let lastScanTime=0;
 const IDLE_TIMEOUT=30000;
+const SCAN_INTERVAL=800; // Velocizzato da 1200 a 800ms
 const SERIAL_PATTERN=/^BDBCF00[A-F0-9]{3}$/;
+const IMG_MARGIN=8; // Ridotto da 15 a 8px
 
 function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx;}
 function playTone(f,d,t='square',v=0.12){try{const c=getAudioCtx(),o=c.createOscillator(),g=c.createGain();o.type=t;o.frequency.value=f;g.gain.value=v;g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d/1000);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d/1000);}catch(e){}}
@@ -442,6 +455,47 @@ function cropFromBbox(canvas,rw,rh,bbox,margin){
     const cc=document.createElement('canvas');cc.width=cW;cc.height=cH;
     const cctx=cc.getContext('2d');cctx.drawImage(canvas,cX,cY,cW,cH,0,0,cW,cH);
     return cc.toDataURL('image/jpeg',0.8);
+}
+
+// ===== LOCAL STORAGE =====
+function saveToStorage(){
+    try{
+        const data={
+            records:records,
+            scanTotal:scanTotal,
+            operator:document.getElementById('operatorName').value,
+            pedana:document.getElementById('pedana').value,
+            timestamp:Date.now()
+        };
+        // Limit image size in storage
+        const leanData={
+            records:records.map(r=>({...r, image: r.image? r.image.substring(0,50)+'...'+r.image.substring(r.image.length-50) : null})),
+            scanTotal:scanTotal,
+            operator:data.operator,
+            pedana:data.pedana,
+            timestamp:Date.now()
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(leanData));
+    }catch(e){console.warn('Storage save error:',e);}
+}
+
+function loadFromStorage(){
+    try{
+        const raw=localStorage.getItem(STORAGE_KEY);
+        if(!raw)return false;
+        const data=JSON.parse(raw);
+        // Check if data is older than 7 days
+        if(Date.now()-data.timestamp > 7*24*60*60*1000) {
+            localStorage.removeItem(STORAGE_KEY);
+            return false;
+        }
+        records=data.records||[];
+        scanTotal=data.scanTotal||0;
+        if(data.operator) document.getElementById('operatorName').value=data.operator;
+        if(data.pedana) document.getElementById('pedana').value=data.pedana;
+        document.getElementById('scanCount').textContent=scanTotal;
+        return true;
+    }catch(e){console.warn('Storage load error:',e);return false;}
 }
 
 // ===== VERSION PASSWORD =====
@@ -482,6 +536,7 @@ function pedanaConfirm(){
     document.getElementById('pedanaModal').classList.remove('visible');
     document.getElementById('pedana').classList.remove('missing');
     lastScanPedana=nv;
+    saveToStorage();
     if(pedanaCallback)pedanaCallback(nv);
     pedanaCallback=null;
 }
@@ -501,7 +556,7 @@ function confirmPedanaEdit(){
     const nv=document.getElementById('pedanaEditInput').value.trim();
     if(!nv){toast('Campo obbligatorio','error');return;}
     const rec=records.find(r=>r.id===pedanaEditRecordId);
-    if(rec){rec.pedana=nv;renderRecords();toast('Pedana aggiornata','success');}
+    if(rec){rec.pedana=nv;renderRecords();saveToStorage();toast('Pedana aggiornata','success');}
     closePedanaEdit();
 }
 document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('pedanaEditModal').classList.contains('visible'))confirmPedanaEdit();});
@@ -532,14 +587,28 @@ async function startCamera(){
         await new Promise(r=>{videoEl.onloadedmetadata=()=>r();});
         document.getElementById('cameraContainer').classList.add('active');
         document.getElementById('btnFlash').disabled=false;
-        updateScanIndicator();
+
+        // Show loading state
+        document.getElementById('scanIndicator').innerHTML='<span class="loading-indicator"><span class="spinner"></span> Caricamento OCR...</span>';
+        document.getElementById('ocrStatus').textContent='Inizializzazione motore OCR...';
+
         cameraActive=true;
-        document.getElementById('ocrStatus').textContent='Caricamento OCR...';
-        ocrWorker=await Tesseract.createWorker('eng',1,{logger:(m)=>{if(m.status==='recognizing text'){document.getElementById('progressBar').style.width=Math.round(m.progress*100)+'%';document.getElementById('ocrStatus').textContent=`OCR ${Math.round(m.progress*100)}%`;}}});
+        ocrWorker=await Tesseract.createWorker('eng',1,{
+            logger:(m)=>{
+                if(m.status==='recognizing text'){
+                    document.getElementById('progressBar').style.width=Math.round(m.progress*100)+'%';
+                    document.getElementById('ocrStatus').textContent=`OCR ${Math.round(m.progress*100)}%`;
+                }
+            }
+        });
         await ocrWorker.setParameters({tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',preserve_interword_spaces:'0'});
-        document.getElementById('ocrStatus').textContent='Scansione in corso...';
+
+        // Show ready state
+        document.getElementById('scanIndicator').innerHTML='<span class="scanning-indicator"><span class="dot"></span> OCR pronto — Scansione attiva</span>';
+        document.getElementById('ocrStatus').textContent='✓ Pronto — Scansione in corso';
         document.getElementById('progressBar').style.width='0%';
-        scanTimer=setInterval(scanFrame,1200);
+
+        scanTimer=setInterval(scanFrame,SCAN_INTERVAL);
         resetIdleTimer();
         toast('📷 Fotocamera OCR avviata','success');vib('ok');
     }catch(err){console.error(err);toast('Errore: '+err.message,'error');beepErr();vib('err');resetBtnCamera();}
@@ -618,7 +687,7 @@ async function scanFrame(){
                 const wordConf=Math.round(word.confidence);
                 if(fixed.length===10&&isValidSerial(fixed)&&!foundSerials.includes(fixed)){
                     const fc=detectCorrections(cleaned,fixed);
-                    const imgData=cropFromBbox(canvas,rw,rh,word.bbox,15);
+                    const imgData=cropFromBbox(canvas,rw,rh,word.bbox,IMG_MARGIN);
                     foundSerials.push(fixed);
                     processSerial(fixed,imgData,wordConf,fc);
                     if(!multiDetect)return;
@@ -629,7 +698,7 @@ async function scanFrame(){
                     let{fixed:sf}=fixOCR(sub);
                     if(isValidSerial(sf)&&!foundSerials.includes(sf)){
                         const fc=detectCorrections(sub,sf);
-                        const imgData=cropFromBbox(canvas,rw,rh,word.bbox,15);
+                        const imgData=cropFromBbox(canvas,rw,rh,word.bbox,IMG_MARGIN);
                         foundSerials.push(sf);
                         processSerial(sf,imgData,Math.round(word.confidence),fc);
                         if(!multiDetect)return;
@@ -639,7 +708,7 @@ async function scanFrame(){
             }
         }
     }catch(e){console.error('OCR error:',e);}
-    document.getElementById('ocrStatus').textContent='Scansione in corso...';
+    document.getElementById('ocrStatus').textContent='✓ Pronto — Scansione in corso';
     document.getElementById('progressBar').style.width='0%';
 }
 
@@ -665,13 +734,14 @@ function processSerial(serial,imgData,confidence,corrections){
         image:imgData||null,confidence:confidence||0,corrections:corrections||[]
     });
     scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
+    saveToStorage();
     beepOk();vib('ok');renderRecords();toast('✅ '+serial,'success');
 
     setTimeout(()=>{
         showPedanaModal(serial,()=>{
             scanCooldown=false;
             document.getElementById('cooldownOverlay').classList.remove('active');
-            if(cameraActive&&!scanPaused) document.getElementById('ocrStatus').textContent='Scansione in corso...';
+            if(cameraActive&&!scanPaused) document.getElementById('ocrStatus').textContent='✓ Pronto — Scansione in corso';
             updateScanIndicator();
             resetIdleTimer();
         });
@@ -725,16 +795,16 @@ function editSerial(id,newVal){
     if(errMsg){toast('❌ '+errMsg,'error');beepErr();input.value=orig;return;}
     showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{
         if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Seriale già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}
-        rec.serial=fixed;rec.modified=true;toast('Seriale modificato: '+fixed,'success');beepOk();renderRecords();
+        rec.serial=fixed;rec.modified=true;toast('Seriale modificato: '+fixed,'success');beepOk();renderRecords();saveToStorage();
     });input.value=orig;
 }
-function setStatus(id,s){const rec=records.find(r=>r.id===id);if(!rec)return;rec.status=s;vib('ok');renderRecords();}
-function setNote(id,n){const rec=records.find(r=>r.id===id);if(rec)rec.note=n;}
+function setStatus(id,s){const rec=records.find(r=>r.id===id);if(!rec)return;rec.status=s;vib('ok');renderRecords();saveToStorage();}
+function setNote(id,n){const rec=records.find(r=>r.id===id);if(rec)rec.note=n;saveToStorage();}
 function deleteRecord(id){
     const rec=records.find(r=>r.id===id);if(!rec)return;
     showConfirm('Elimina record',`Eliminare "${rec.serial}"?`,()=>{
         records=records.filter(r=>r.id!==id);scanTotal=Math.max(0,scanTotal-1);
-        document.getElementById('scanCount').textContent=scanTotal;vib('err');beepErr();renderRecords();toast('Record eliminato','warning');
+        document.getElementById('scanCount').textContent=scanTotal;vib('err');beepErr();renderRecords();saveToStorage();toast('Record eliminato','warning');
     });
 }
 
@@ -763,9 +833,24 @@ async function exportZip(){
     }catch(e){console.error(e);toast('Errore ZIP','error');beepErr();}
 }
 
-document.addEventListener('DOMContentLoaded',()=>{renderRecords();});
+// Init
+document.addEventListener('DOMContentLoaded',()=>{
+    const loaded=loadFromStorage();
+    if(loaded && records.length>0){
+        renderRecords();
+        toast(`📂 ${records.length} record recuperati dalla memoria locale`,'success');
+    } else {
+        renderRecords();
+    }
+});
+
+// Save on page unload
+window.addEventListener('beforeunload',()=>{saveToStorage();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveToStorage();});
+
 document.addEventListener('touchstart',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
 let lastEnd=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lastEnd<=300)e.preventDefault();lastEnd=n;},false);
 </script>
 </body>
 </html>
+
