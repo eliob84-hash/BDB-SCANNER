@@ -11,566 +11,194 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --primary-light: #3b82f6;
-            --accent: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --bg: #0f172a;
-            --bg-card: #1e293b;
-            --bg-input: #334155;
-            --text: #f1f5f9;
-            --text-muted: #94a3b8;
-            --text-dim: #64748b;
-            --border: #475569;
-            --radius: 12px;
-            --shadow: 0 4px 24px rgba(0,0,0,0.3);
+            --primary: #2563eb; --primary-dark: #1d4ed8; --primary-light: #3b82f6;
+            --accent: #10b981; --danger: #ef4444; --warning: #f59e0b;
+            --bg: #0f172a; --bg-card: #1e293b; --bg-input: #334155;
+            --text: #f1f5f9; --text-muted: #94a3b8; --text-dim: #64748b;
+            --border: #475569; --radius: 12px; --shadow: 0 4px 24px rgba(0,0,0,0.3);
         }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden;
-            padding-bottom: 120px;
+            font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text);
+            min-height:100vh; overflow-x:hidden; padding-bottom:120px;
         }
-
         .header {
-            background: linear-gradient(135deg, var(--bg-card), #1a2332);
-            padding: 16px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            border-bottom: 1px solid var(--border);
-            backdrop-filter: blur(20px);
+            background:linear-gradient(135deg,var(--bg-card),#1a2332); padding:16px 20px;
+            position:sticky; top:0; z-index:100; border-bottom:1px solid var(--border); backdrop-filter:blur(20px);
         }
-
         .header h1 {
-            font-size: 18px;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--primary-light), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-size:18px; font-weight:700;
+            background:linear-gradient(135deg,var(--primary-light),var(--accent));
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+            display:flex; align-items:center; gap:8px;
         }
-
-        .scan-counter {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: 6px;
-        }
-
-        .scan-counter .label {
-            font-size: 12px;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
+        .scan-counter { display:flex; align-items:center; justify-content:space-between; margin-top:6px; }
+        .scan-counter .label { font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:6px; }
         .scan-counter .count {
-            background: var(--primary);
-            color: white;
-            padding: 2px 10px;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 12px;
+            background:var(--primary); color:white; padding:2px 10px; border-radius:10px;
+            font-weight:600; font-size:12px;
         }
-
         .scanning-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 11px;
-            color: var(--accent);
-            padding: 3px 8px;
-            background: rgba(16, 185, 129, 0.1);
-            border-radius: 12px;
+            display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--accent);
+            padding:3px 8px; background:rgba(16,185,129,0.1); border-radius:12px;
         }
-
-        .scanning-indicator .dot {
-            width: 5px; height: 5px;
-            background: var(--accent);
-            border-radius: 50%;
-            animation: blink 1s infinite;
-        }
-
+        .scanning-indicator .dot { width:5px; height:5px; background:var(--accent); border-radius:50%; animation:blink 1s infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-
-        .config-panel {
-            padding: 14px 18px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .input-group label {
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-dim);
-            margin-bottom: 4px;
-        }
-
-        .input-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
+        .config-panel { padding:14px 18px; display:flex; flex-direction:column; gap:10px; }
+        .input-group label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim); margin-bottom:4px; }
+        .input-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
         .input-field {
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 10px 12px;
-            color: var(--text);
-            font-size: 14px;
-            font-family: 'Inter', sans-serif;
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            width: 100%;
+            background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius);
+            padding:10px 12px; color:var(--text); font-size:14px; font-family:'Inter',sans-serif;
+            outline:none; transition:border-color 0.2s, box-shadow 0.2s; width:100%;
         }
-
-        .input-field:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-        }
-
-        .controls-bar {
-            display: flex;
-            gap: 8px;
-            padding: 0 18px 10px;
-        }
-
+        .input-field:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.2); }
+        .controls-bar { display:flex; gap:8px; padding:0 18px 10px; }
         .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 10px 14px;
-            border: none;
-            border-radius: var(--radius);
-            font-size: 13px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            transition: all 0.2s;
-            flex: 1;
-            min-width: 0;
-            white-space: nowrap;
+            display:inline-flex; align-items:center; justify-content:center; gap:6px;
+            padding:10px 14px; border:none; border-radius:var(--radius); font-size:13px;
+            font-weight:600; font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.2s;
+            flex:1; min-width:0; white-space:nowrap;
         }
-
-        .btn:active { transform: scale(0.96); }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--primary-dark); }
-        .btn-accent { background: var(--accent); color: white; }
-        .btn-warning { background: var(--warning); color: #1e293b; }
-        .btn-danger { background: var(--danger); color: white; }
-        .btn-outline { background: var(--bg-input); color: var(--text); border: 1px solid var(--border); }
-        .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
-
-        .toggle-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 6px 18px 12px;
-        }
-
-        .toggle-label {
-            font-size: 12px;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .toggle-label svg { width: 15px; height: 15px; }
-
+        .btn:active { transform:scale(0.96); }
+        .btn-primary { background:var(--primary); color:white; }
+        .btn-primary:hover { background:var(--primary-dark); }
+        .btn-accent { background:var(--accent); color:white; }
+        .btn-warning { background:var(--warning); color:#1e293b; }
+        .btn-danger { background:var(--danger); color:white; }
+        .btn-outline { background:var(--bg-input); color:var(--text); border:1px solid var(--border); }
+        .btn svg { width:16px; height:16px; flex-shrink:0; }
+        .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:6px 18px 12px; }
+        .toggle-label { font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:6px; }
+        .toggle-label svg { width:15px; height:15px; }
         .toggle-switch {
-            position: relative;
-            width: 42px;
-            height: 23px;
-            background: var(--bg-input);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background 0.3s;
-            border: 1px solid var(--border);
+            position:relative; width:42px; height:23px; background:var(--bg-input);
+            border-radius:12px; cursor:pointer; transition:background 0.3s; border:1px solid var(--border);
         }
-
-        .toggle-switch.active { background: var(--primary); border-color: var(--primary); }
-
+        .toggle-switch.active { background:var(--primary); border-color:var(--primary); }
         .toggle-switch::after {
-            content: '';
-            position: absolute;
-            top: 2px; left: 2px;
-            width: 17px; height: 17px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.3s;
+            content:''; position:absolute; top:2px; left:2px; width:17px; height:17px;
+            background:white; border-radius:50%; transition:transform 0.3s;
         }
-
-        .toggle-switch.active::after { transform: translateX(19px); }
-
-        .scanner-section {
-            padding: 0 18px;
-            position: relative;
-        }
-
+        .toggle-switch.active::after { transform:translateX(19px); }
+        .scanner-section { padding:0 18px; position:relative; }
         .camera-container {
-            position: relative;
-            border-radius: var(--radius);
-            overflow: hidden;
-            background: #000;
-            display: none;
-            aspect-ratio: 4/3;
+            position:relative; border-radius:var(--radius); overflow:hidden; background:#000;
+            display:none; aspect-ratio:4/3;
         }
-
-        .camera-container.active { display: block; }
-
-        #videoFeed {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
+        .camera-container.active { display:block; }
+        #videoFeed { width:100%; height:100%; object-fit:cover; }
         .roi-overlay {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 85%;
-            height: 30%;
-            border: 2px solid var(--accent);
-            border-radius: 8px;
-            pointer-events: none;
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.3), inset 0 0 20px rgba(16, 185, 129, 0.1);
+            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+            width:85%; height:30%; border:2px solid var(--accent); border-radius:8px;
+            pointer-events:none; box-shadow:0 0 20px rgba(16,185,129,0.3), inset 0 0 20px rgba(16,185,129,0.1);
         }
-
         .roi-overlay::before, .roi-overlay::after {
-            content: '';
-            position: absolute;
-            width: 20px; height: 20px;
-            border-color: var(--accent);
-            border-style: solid;
+            content:''; position:absolute; width:20px; height:20px; border-color:var(--accent); border-style:solid;
         }
-
-        .roi-overlay::before {
-            top: -1px; left: -1px;
-            border-width: 3px 0 0 3px;
-            border-radius: 4px 0 0 0;
-        }
-
-        .roi-overlay::after {
-            bottom: -1px; right: -1px;
-            border-width: 0 3px 3px 0;
-            border-radius: 0 0 4px 0;
-        }
-
+        .roi-overlay::before { top:-1px; left:-1px; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+        .roi-overlay::after { bottom:-1px; right:-1px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
         .scan-line {
-            position: absolute;
-            top: 50%; left: 8%;
-            width: 84%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--accent), transparent);
-            animation: scanPulse 1.8s ease-in-out infinite;
-            box-shadow: 0 0 12px var(--accent);
-            pointer-events: none;
+            position:absolute; top:50%; left:8%; width:84%; height:2px;
+            background:linear-gradient(90deg,transparent,var(--accent),transparent);
+            animation:scanPulse 1.8s ease-in-out infinite; box-shadow:0 0 12px var(--accent); pointer-events:none;
         }
-
-        @keyframes scanPulse {
-            0%,100%{opacity:0.3;transform:translateY(-18px)}
-            50%{opacity:1;transform:translateY(18px)}
-        }
-
-        .ocr-status {
-            position: absolute;
-            bottom: 8px;
-            left: 8px;
-            font-size: 10px;
-            color: var(--text-dim);
-            background: rgba(0,0,0,0.6);
-            padding: 3px 8px;
-            border-radius: 6px;
-            z-index: 5;
-        }
-
-        #captureCanvas { display: none; }
-
-        .results-section { padding: 14px 18px; }
-
-        .results-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-
-        .results-header h2 { font-size: 15px; font-weight: 600; }
-
+        @keyframes scanPulse { 0%,100%{opacity:0.3;transform:translateY(-18px)} 50%{opacity:1;transform:translateY(18px)} }
+        .ocr-status { position:absolute; bottom:8px; left:8px; font-size:10px; color:var(--text-dim); background:rgba(0,0,0,0.6); padding:3px 8px; border-radius:6px; z-index:5; }
+        #captureCanvas { display:none; }
+        .results-section { padding:14px 18px; }
+        .results-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+        .results-header h2 { font-size:15px; font-weight:600; }
         .record-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 12px;
-            margin-bottom: 10px;
-            animation: slideIn 0.3s ease-out;
+            background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);
+            padding:12px; margin-bottom:10px; animation:slideIn 0.3s ease-out;
         }
-
-        @keyframes slideIn {
-            from{opacity:0;transform:translateY(-8px)}
-            to{opacity:1;transform:translateY(0)}
-        }
-
-        .record-top {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
+        @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+        .record-top { display:flex; align-items:center; gap:10px; }
         .record-image-wrap {
-            width: 60px;
-            height: 44px;
-            border-radius: 8px;
-            overflow: hidden;
-            background: #000;
-            flex-shrink: 0;
-            cursor: pointer;
-            position: relative;
-            border: 1px solid var(--border);
+            width:60px; height:44px; border-radius:8px; overflow:hidden; background:#000;
+            flex-shrink:0; cursor:pointer; position:relative; border:1px solid var(--border);
         }
-
-        .record-image-wrap img { width: 100%; height: 100%; object-fit: cover; }
-
-        .record-image-wrap .zoom-icon {
-            position: absolute;
-            bottom: 2px; right: 2px;
-            background: rgba(0,0,0,0.7);
-            border-radius: 4px;
-            padding: 2px;
-        }
-
-        .record-image-wrap .zoom-icon svg { width: 11px; height: 11px; color: white; }
-
-        .record-info { flex: 1; min-width: 0; }
-
+        .record-image-wrap img { width:100%; height:100%; object-fit:cover; }
+        .record-image-wrap .zoom-icon { position:absolute; bottom:2px; right:2px; background:rgba(0,0,0,0.7); border-radius:4px; padding:2px; }
+        .record-image-wrap .zoom-icon svg { width:11px; height:11px; color:white; }
+        .record-info { flex:1; min-width:0; }
         .serial-display {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 14px;
-            font-weight: 500;
-            padding: 5px 9px;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            outline: none;
-            width: 100%;
-            color: var(--text);
-            transition: all 0.2s;
+            font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:500;
+            padding:5px 9px; background:var(--bg-input); border:1px solid var(--border);
+            border-radius:8px; outline:none; width:100%; color:var(--text); transition:all 0.2s;
         }
-
-        .serial-display.modified { color: var(--warning); border-color: var(--warning); }
-        .serial-display:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-
-        .record-meta {
-            font-size: 10px;
-            color: var(--text-dim);
-            margin-top: 4px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-
-        .mod-badge {
-            background: var(--warning);
-            color: #1e293b;
-            padding: 1px 5px;
-            border-radius: 3px;
-            font-size: 9px;
-            font-weight: 700;
-        }
-
-        .delete-btn {
-            background: none;
-            border: none;
-            color: var(--text-dim);
-            cursor: pointer;
-            padding: 6px;
-            border-radius: 8px;
-            transition: all 0.2s;
-        }
-
-        .delete-btn:hover { background: rgba(239,68,68,0.15); color: var(--danger); }
-        .delete-btn svg { width: 18px; height: 18px; }
-
-        .status-selector {
-            display: flex;
-            gap: 4px;
-            margin-top: 8px;
-            flex-wrap: wrap;
-        }
-
+        .serial-display.modified { color:var(--warning); border-color:var(--warning); }
+        .serial-display:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.15); }
+        .record-meta { font-size:10px; color:var(--text-dim); margin-top:4px; display:flex; flex-wrap:wrap; gap:6px; }
+        .mod-badge { background:var(--warning); color:#1e293b; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:700; }
+        .delete-btn { background:none; border:none; color:var(--text-dim); cursor:pointer; padding:6px; border-radius:8px; transition:all 0.2s; }
+        .delete-btn:hover { background:rgba(239,68,68,0.15); color:var(--danger); }
+        .delete-btn svg { width:18px; height:18px; }
+        .status-selector { display:flex; gap:4px; margin-top:8px; flex-wrap:wrap; }
         .status-btn {
-            padding: 4px 8px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background: var(--bg-input);
-            color: var(--text-muted);
-            font-size: 10px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'Inter', sans-serif;
-            white-space: nowrap;
+            padding:4px 8px; border:1px solid var(--border); border-radius:6px; background:var(--bg-input);
+            color:var(--text-muted); font-size:10px; font-weight:500; cursor:pointer; transition:all 0.2s;
+            font-family:'Inter',sans-serif; white-space:nowrap;
         }
-
-        .status-btn.active-good { background: var(--accent); color: white; border-color: var(--accent); }
-        .status-btn.active-broken { background: var(--danger); color: white; border-color: var(--danger); }
-        .status-btn.active-dirty { background: var(--warning); color: #1e293b; border-color: var(--warning); }
-        .status-btn.active-rfid { background: #8b5cf6; color: white; border-color: #8b5cf6; }
-        .status-btn.active-bar { background: #06b6d4; color: white; border-color: #06b6d4; }
-        .status-btn.active-doubt { background: var(--text-dim); color: white; border-color: var(--text-dim); }
-        .status-btn.active-note { background: #ec4899; color: white; border-color: #ec4899; }
-
+        .status-btn.active-good { background:var(--accent); color:white; border-color:var(--accent); }
+        .status-btn.active-broken { background:var(--danger); color:white; border-color:var(--danger); }
+        .status-btn.active-dirty { background:var(--warning); color:#1e293b; border-color:var(--warning); }
+        .status-btn.active-rfid { background:#8b5cf6; color:white; border-color:#8b5cf6; }
+        .status-btn.active-bar { background:#06b6d4; color:white; border-color:#06b6d4; }
+        .status-btn.active-doubt { background:var(--text-dim); color:white; border-color:var(--text-dim); }
         .note-input {
-            margin-top: 6px;
-            width: 100%;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 6px 10px;
-            color: var(--text);
-            font-size: 12px;
-            font-family: 'Inter', sans-serif;
-            outline: none;
-            display: none;
+            margin-top:6px; width:100%; background:var(--bg-input); border:1px solid var(--border);
+            border-radius:6px; padding:6px 10px; color:var(--text); font-size:12px;
+            font-family:'Inter',sans-serif; outline:none; display:none;
         }
-
-        .note-input.visible { display: block; }
-        .note-input:focus { border-color: #ec4899; }
-
+        .note-input.visible { display:block; }
+        .note-input:focus { border-color:#ec4899; }
         .image-modal {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.95);
-            z-index: 1000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
+            position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.95);
+            z-index:1000; display:none; align-items:center; justify-content:center; cursor:pointer;
         }
-
-        .image-modal.visible { display: flex; }
-        .image-modal img { max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px; }
-
+        .image-modal.visible { display:flex; }
+        .image-modal img { max-width:95%; max-height:95%; object-fit:contain; border-radius:8px; }
         .close-modal-btn {
-            position: absolute;
-            top: 16px; right: 16px;
-            background: rgba(255,255,255,0.15);
-            border: none;
-            color: white;
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.15);
+            border:none; color:white; width:36px; height:36px; border-radius:50%; cursor:pointer;
+            font-size:18px; display:flex; align-items:center; justify-content:center;
         }
-
         .toast {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-100px);
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            padding: 12px 20px;
-            border-radius: var(--radius);
-            font-size: 13px;
-            font-weight: 500;
-            z-index: 2000;
-            transition: transform 0.3s ease-out;
-            box-shadow: var(--shadow);
-            max-width: 90%;
-            text-align: center;
+            position:fixed; top:20px; left:50%; transform:translateX(-50%) translateY(-100px);
+            background:var(--bg-card); border:1px solid var(--border); padding:12px 20px;
+            border-radius:var(--radius); font-size:13px; font-weight:500; z-index:2000;
+            transition:transform 0.3s ease-out; box-shadow:var(--shadow); max-width:90%; text-align:center;
         }
-
-        .toast.visible { transform: translateX(-50%) translateY(0); }
-        .toast.success { border-color: var(--accent); }
-        .toast.warning { border-color: var(--warning); }
-        .toast.error { border-color: var(--danger); }
-
+        .toast.visible { transform:translateX(-50%) translateY(0); }
+        .toast.success { border-color:var(--accent); }
+        .toast.warning { border-color:var(--warning); }
+        .toast.error { border-color:var(--danger); }
         .confirm-modal {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 1500;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7);
+            z-index:1500; display:none; align-items:center; justify-content:center; padding:20px;
         }
-
-        .confirm-modal.visible { display: flex; }
-
+        .confirm-modal.visible { display:flex; }
         .confirm-box {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 22px;
-            max-width: 320px;
-            width: 100%;
-            text-align: center;
+            background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
+            padding:22px; max-width:320px; width:100%; text-align:center;
         }
-
-        .confirm-box h3 { font-size: 16px; margin-bottom: 8px; }
-        .confirm-box p { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; }
-
-        .confirm-actions { display: flex; gap: 10px; }
-        .confirm-actions .btn { flex: 1; }
-
-        .empty-state {
-            text-align: center;
-            padding: 36px 20px;
-            color: var(--text-dim);
-        }
-
-        .empty-state svg { width: 44px; height: 44px; margin-bottom: 10px; opacity: 0.4; }
-        .empty-state p { font-size: 13px; }
-
+        .confirm-box h3 { font-size:16px; margin-bottom:8px; }
+        .confirm-box p { font-size:13px; color:var(--text-muted); margin-bottom:18px; }
+        .confirm-actions { display:flex; gap:10px; }
+        .confirm-actions .btn { flex:1; }
+        .empty-state { text-align:center; padding:36px 20px; color:var(--text-dim); }
+        .empty-state svg { width:44px; height:44px; margin-bottom:10px; opacity:0.4; }
+        .empty-state p { font-size:13px; }
         .bottom-bar {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background: var(--bg-card);
-            border-top: 1px solid var(--border);
-            padding: 10px 18px;
-            display: flex;
-            gap: 8px;
-            z-index: 100;
-            backdrop-filter: blur(20px);
+            position:fixed; bottom:0; left:0; right:0; background:var(--bg-card);
+            border-top:1px solid var(--border); padding:10px 18px; display:flex; gap:8px;
+            z-index:100; backdrop-filter:blur(20px);
         }
-
-        .bottom-bar .btn { font-size: 12px; padding: 10px 10px; }
-
-        .progress-bar {
-            position: absolute;
-            bottom: 0; left: 0;
-            height: 3px;
-            background: var(--accent);
-            transition: width 0.3s;
-            z-index: 5;
-        }
-
-        @media (max-width: 380px) {
-            .btn { padding: 8px 8px; font-size: 11px; }
-            .status-btn { font-size: 9px; padding: 3px 6px; }
-        }
+        .bottom-bar .btn { font-size:12px; padding:10px 10px; }
+        .progress-bar { position:absolute; bottom:0; left:0; height:3px; background:var(--accent); transition:width 0.3s; z-index:5; }
+        @media (max-width:380px) { .btn { padding:8px 8px; font-size:11px; } .status-btn { font-size:9px; padding:3px 6px; } }
     </style>
 </head>
 <body>
@@ -581,23 +209,15 @@
         Scanner Seriali OCR
     </h1>
     <div class="scan-counter">
-        <span class="label">
-            Seriali: <span class="count" id="scanCount">0</span>
-        </span>
+        <span class="label">Seriali: <span class="count" id="scanCount">0</span></span>
         <span id="scanIndicator"></span>
     </div>
 </div>
 
 <div class="config-panel">
     <div class="input-row">
-        <div class="input-group">
-            <label>Operatore</label>
-            <input type="text" class="input-field" id="operatorName" placeholder="Nome operatore" value="">
-        </div>
-        <div class="input-group">
-            <label>N° Pedana / Posizione</label>
-            <input type="text" class="input-field" id="pedana" placeholder="Es: P01">
-        </div>
+        <div class="input-group"><label>Operatore</label><input type="text" class="input-field" id="operatorName" placeholder="Nome operatore"></div>
+        <div class="input-group"><label>N° Pedana / Posizione</label><input type="text" class="input-field" id="pedana" placeholder="Es: P01"></div>
     </div>
 </div>
 
@@ -632,9 +252,7 @@
 </div>
 
 <div class="results-section">
-    <div class="results-header">
-        <h2>📋 Risultati</h2>
-    </div>
+    <div class="results-header"><h2>📋 Risultati</h2></div>
     <div id="recordsList">
         <div class="empty-state">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h.01M12 7h.01M17 7h.01M7 12h10M7 17h6"/></svg>
@@ -673,360 +291,159 @@
 </div>
 
 <script>
-// ===== STATE =====
-let cameraActive = false;
-let flashOn = false;
-let multiDetect = false;
-let videoEl = null;
-let stream = null;
-let ocrWorker = null;
-let scanTimer = null;
-let records = [];
-let scanTotal = 0;
-let confirmCallback = null;
-let audioCtx = null;
+let cameraActive=false, flashOn=false, multiDetect=false, videoEl=null, stream=null, ocrWorker=null, scanTimer=null;
+let records=[], scanTotal=0, confirmCallback=null, audioCtx=null;
+const SERIAL_PATTERN=/^[A-Z]{2}BCF00[A-F0-9]{3}$/;
 
-// Pattern: 2 lettere + BCF00 + 3 caratteri esadecimali [A-F0-9]
-const SERIAL_PATTERN = /^[A-Z]{2}BCF00[A-F0-9]{3}$/;
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx;}
+function playTone(f,d,t='square',v=0.12){try{const c=getAudioCtx(),o=c.createOscillator(),g=c.createGain();o.type=t;o.frequency.value=f;g.gain.value=v;g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d/1000);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d/1000);}catch(e){}}
+function beepOk(){playTone(1200,50,'sine');setTimeout(()=>playTone(1600,50,'sine'),70);}
+function beepDup(){playTone(400,120,'sawtooth');setTimeout(()=>playTone(300,120,'sawtooth'),180);}
+function beepErr(){playTone(200,250,'sawtooth');}
+function beepScan(){playTone(800,30,'sine',0.06);}
+function vib(p='ok'){if(navigator.vibrate){if(p==='ok')navigator.vibrate([40,25,40]);else if(p==='dup')navigator.vibrate([180]);else if(p==='err')navigator.vibrate([80,40,80,40,80]);}}
 
-// ===== AUDIO =====
-function getAudioCtx() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    return audioCtx;
-}
+function toast(m,t='success'){const e=document.getElementById('toast');e.textContent=m;e.className='toast '+t;setTimeout(()=>e.classList.add('visible'),10);setTimeout(()=>e.classList.remove('visible'),2800);}
+function showConfirm(title,msg,cb){document.getElementById('confirmTitle').textContent=title;document.getElementById('confirmMsg').textContent=msg;confirmCallback=cb;document.getElementById('confirmModal').classList.add('visible');}
+function closeConfirm(){document.getElementById('confirmModal').classList.remove('visible');confirmCallback=null;}
+function executeConfirm(){if(confirmCallback)confirmCallback();closeConfirm();}
 
-function playTone(freq, dur, type='square', vol=0.12) {
-    try {
-        const c = getAudioCtx();
-        const o = c.createOscillator();
-        const g = c.createGain();
-        o.type = type;
-        o.frequency.value = freq;
-        g.gain.value = vol;
-        g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur/1000);
-        o.connect(g); g.connect(c.destination);
-        o.start(); o.stop(c.currentTime + dur/1000);
-    } catch(e){}
-}
+function fixOCR(raw){return raw.replace(/O/g,'0').replace(/o/g,'0').replace(/Q/g,'0').replace(/I/g,'1').replace(/l/g,'1').replace(/i/g,'1').replace(/S/g,'5').replace(/s/g,'5').replace(/Z/g,'2').toUpperCase();}
+function isValidSerial(s){return SERIAL_PATTERN.test(s);}
 
-function beepOk() { playTone(1200,50,'sine'); setTimeout(()=>playTone(1600,50,'sine'),70); }
-function beepDup() { playTone(400,120,'sawtooth'); setTimeout(()=>playTone(300,120,'sawtooth'),180); }
-function beepErr() { playTone(200,250,'sawtooth'); }
-function beepScan() { playTone(800,30,'sine',0.06); }
+async function toggleCamera(){if(cameraActive){stopCamera();}else{await startCamera();}}
 
-// ===== HAPTIC =====
-function vib(pat='ok') {
-    if (navigator.vibrate) {
-        if (pat==='ok') navigator.vibrate([40,25,40]);
-        else if (pat==='dup') navigator.vibrate([180]);
-        else if (pat==='err') navigator.vibrate([80,40,80,40,80]);
-    }
-}
-
-// ===== TOAST =====
-function toast(msg, type='success') {
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.className = 'toast ' + type;
-    setTimeout(()=>el.classList.add('visible'),10);
-    setTimeout(()=>el.classList.remove('visible'),2800);
-}
-
-// ===== CONFIRM =====
-function showConfirm(title, msg, cb) {
-    document.getElementById('confirmTitle').textContent = title;
-    document.getElementById('confirmMsg').textContent = msg;
-    confirmCallback = cb;
-    document.getElementById('confirmModal').classList.add('visible');
-}
-function closeConfirm() { document.getElementById('confirmModal').classList.remove('visible'); confirmCallback=null; }
-function executeConfirm() { if(confirmCallback) confirmCallback(); closeConfirm(); }
-
-// ===== OCR FIX =====
-function fixOCR(raw) {
-    return raw.replace(/O/g,'0').replace(/o/g,'0').replace(/Q/g,'0')
-              .replace(/I/g,'1').replace(/l/g,'1').replace(/i/g,'1')
-              .replace(/S/g,'5').replace(/s/g,'5')
-              .replace(/Z/g,'2')
-              .toUpperCase();
-}
-
-function isValidSerial(s) { return SERIAL_PATTERN.test(s); }
-
-function extractSerialsFromText(text) {
-    const tokens = text.split(/[\s\n\r\t,;:.!?\-]+/);
-    const found = [];
-    for (let t of tokens) {
-        t = t.replace(/[^A-Za-z0-9]/g, '');
-        if (t.length < 8 || t.length > 14) continue;
-
-        // Try direct match
-        if (isValidSerial(fixOCR(t))) { found.push(fixOCR(t)); continue; }
-
-        // Sliding window for embedded serials
-        for (let i = 0; i <= t.length - 10; i++) {
-            const sub = t.substring(i, i + 10);
-            const fixed = fixOCR(sub);
-            if (isValidSerial(fixed) && !found.includes(fixed)) {
-                found.push(fixed);
-            }
-        }
-    }
-    return found;
-}
-
-// ===== CAMERA =====
-async function toggleCamera() {
-    if (cameraActive) { stopCamera(); } else { await startCamera(); }
-}
-
-async function startCamera() {
-    const btn = document.getElementById('btnCamera');
-    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="18" y1="6" x2="6" y2="18"/></svg><span>Ferma</span>`;
-    btn.classList.remove('btn-primary'); btn.classList.add('btn-danger');
-
-    try {
-        videoEl = document.getElementById('videoFeed');
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-            audio: false
-        });
-        videoEl.srcObject = stream;
-
-        await new Promise(r => { videoEl.onloadedmetadata = () => { r(); }; });
-
+async function startCamera(){
+    const btn=document.getElementById('btnCamera');
+    btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="18" y1="6" x2="6" y2="18"/></svg><span>Ferma</span>`;
+    btn.classList.remove('btn-primary');btn.classList.add('btn-danger');
+    try{
+        videoEl=document.getElementById('videoFeed');
+        stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
+        videoEl.srcObject=stream;
+        await new Promise(r=>{videoEl.onloadedmetadata=()=>r();});
         document.getElementById('cameraContainer').classList.add('active');
-        document.getElementById('btnFlash').disabled = false;
-        document.getElementById('scanIndicator').innerHTML = '<span class="scanning-indicator"><span class="dot"></span> Scansione attiva</span>';
+        document.getElementById('btnFlash').disabled=false;
+        document.getElementById('scanIndicator').innerHTML='<span class="scanning-indicator"><span class="dot"></span> Scansione attiva</span>';
+        cameraActive=true;
+        document.getElementById('ocrStatus').textContent='Caricamento OCR...';
+        ocrWorker=await Tesseract.createWorker('eng',1,{logger:(m)=>{if(m.status==='recognizing text'){document.getElementById('progressBar').style.width=Math.round(m.progress*100)+'%';document.getElementById('ocrStatus').textContent=`OCR ${Math.round(m.progress*100)}%`;}}});
+        await ocrWorker.setParameters({tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',preserve_interword_spaces:'0'});
+        document.getElementById('ocrStatus').textContent='Scansione in corso...';
+        document.getElementById('progressBar').style.width='0%';
+        scanTimer=setInterval(scanFrame,1200);
+        toast('📷 Fotocamera OCR avviata','success');vib('ok');
+    }catch(err){console.error(err);toast('Errore: '+err.message,'error');beepErr();vib('err');resetBtnCamera();}
+}
 
-        cameraActive = true;
+function stopCamera(){
+    if(scanTimer){clearInterval(scanTimer);scanTimer=null;}
+    if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+    if(ocrWorker){ocrWorker.terminate();ocrWorker=null;}
+    cameraActive=false;flashOn=false;videoEl=null;
+    document.getElementById('cameraContainer').classList.remove('active');
+    document.getElementById('btnFlash').disabled=true;
+    document.getElementById('btnFlash').classList.remove('btn-accent');document.getElementById('btnFlash').classList.add('btn-warning');
+    document.getElementById('scanIndicator').innerHTML='';document.getElementById('progressBar').style.width='0%';
+    resetBtnCamera();toast('📷 Fotocamera spenta','warning');
+}
 
-        // Init Tesseract worker
-        document.getElementById('ocrStatus').textContent = 'Caricamento OCR...';
-        ocrWorker = await Tesseract.createWorker('eng', 1, {
-            logger: (m) => {
-                if (m.status === 'recognizing text') {
-                    const pct = Math.round(m.progress * 100);
-                    document.getElementById('progressBar').style.width = pct + '%';
-                    document.getElementById('ocrStatus').textContent = `OCR ${pct}%`;
+function resetBtnCamera(){const btn=document.getElementById('btnCamera');btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Avvia OCR</span>`;btn.classList.add('btn-primary');btn.classList.remove('btn-danger');}
+
+async function toggleFlash(){
+    if(!stream)return;
+    try{const track=stream.getVideoTracks()[0];if(!track)return;const caps=track.getCapabilities();if(!caps||!caps.torch){toast('Flash non supportato','error');return;}
+    flashOn=!flashOn;await track.applyConstraints({advanced:[{torch:flashOn}]});
+    const btn=document.getElementById('btnFlash');if(flashOn){btn.classList.remove('btn-warning');btn.classList.add('btn-accent');toast('🔦 Flash ON','success');}else{btn.classList.remove('btn-accent');btn.classList.add('btn-warning');toast('🔦 Flash OFF','warning');}}catch(e){toast('Errore flash','error');}
+}
+
+function toggleMultiDetect(){multiDetect=!multiDetect;document.getElementById('toggleMulti').classList.toggle('active',multiDetect);}
+
+async function scanFrame(){
+    if(!cameraActive||!videoEl||!ocrWorker)return;
+    if(videoEl.readyState<2)return;
+    beepScan();
+    const canvas=document.getElementById('captureCanvas'),ctx=canvas.getContext('2d');
+    const vw=videoEl.videoWidth,vh=videoEl.videoHeight;
+    const rw=Math.floor(vw*0.85),rh=Math.floor(vh*0.3);
+    const rx=Math.floor((vw-rw)/2),ry=Math.floor((vh-rh)/2);
+    canvas.width=rw;canvas.height=rh;
+    ctx.drawImage(videoEl,rx,ry,rw,rh,0,0,rw,rh);
+    const imageData=ctx.getImageData(0,0,rw,rh),data=imageData.data,contrast=1.4;
+    for(let i=0;i<data.length;i+=4){data[i]=Math.min(255,Math.max(0,((data[i]/255-0.5)*contrast+0.5)*255));data[i+1]=Math.min(255,Math.max(0,((data[i+1]/255-0.5)*contrast+0.5)*255));data[i+2]=Math.min(255,Math.max(0,((data[i+2]/255-0.5)*contrast+0.5)*255));}
+    ctx.putImageData(imageData,0,0);
+    const canvas2=document.createElement('canvas');canvas2.width=rw;canvas2.height=rh;
+    const ctx2=canvas2.getContext('2d');ctx2.drawImage(canvas,0,0);
+    const imgData2=ctx2.getImageData(0,0,rw,rh),d2=imgData2.data;
+    for(let i=0;i<d2.length;i+=4){const avg=(d2[i]+d2[i+1]+d2[i+2])/3;const val=avg>120?255:0;d2[i]=val;d2[i+1]=val;d2[i+2]=val;}
+    ctx2.putImageData(imgData2,0,0);
+    try{
+        const results=await Promise.all([ocrWorker.recognize(canvas),ocrWorker.recognize(canvas2)]);
+        for(const result of results){
+            const words=result.data.words||[];
+            for(const word of words){
+                let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
+                if(cleaned.length<8)continue;
+                let fixed=fixOCR(cleaned);
+                // Match diretto (solo se esattamente 10 caratteri)
+                if(fixed.length===10&&isValidSerial(fixed)){
+                    const imgData=cropFromBbox(canvas,rw,rh,word.bbox,15);
+                    processSerial(fixed,imgData);
+                    if(!multiDetect)return;continue;
+                }
+                // Sliding window per seriali embedded
+                for(let i=0;i<=cleaned.length-10;i++){
+                    const sub=cleaned.substring(i,i+10);
+                    const subFixed=fixOCR(sub);
+                    if(isValidSerial(subFixed)){
+                        const imgData=cropFromBbox(canvas,rw,rh,word.bbox,15);
+                        processSerial(subFixed,imgData);
+                        if(!multiDetect)return;break;
+                    }
                 }
             }
-        });
-
-        await ocrWorker.setParameters({
-            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-            preserve_interword_spaces: '0',
-        });
-
-        document.getElementById('ocrStatus').textContent = 'Scansione in corso...';
-        document.getElementById('progressBar').style.width = '0%';
-
-        // Start scan loop
-        scanTimer = setInterval(scanFrame, 1200);
-
-        toast('📷 Fotocamera OCR avviata', 'success');
-        vib('ok');
-
-    } catch (err) {
-        console.error(err);
-        toast('Errore: ' + err.message, 'error');
-        beepErr(); vib('err');
-        resetBtnCamera();
-    }
-}
-
-function stopCamera() {
-    if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
-    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-    if (ocrWorker) { ocrWorker.terminate(); ocrWorker = null; }
-
-    cameraActive = false;
-    flashOn = false;
-    videoEl = null;
-
-    document.getElementById('cameraContainer').classList.remove('active');
-    document.getElementById('btnFlash').disabled = true;
-    document.getElementById('btnFlash').classList.remove('btn-accent');
-    document.getElementById('btnFlash').classList.add('btn-warning');
-    document.getElementById('scanIndicator').innerHTML = '';
-    document.getElementById('progressBar').style.width = '0%';
-
-    resetBtnCamera();
-    toast('📷 Fotocamera spenta', 'warning');
-}
-
-function resetBtnCamera() {
-    const btn = document.getElementById('btnCamera');
-    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Avvia OCR</span>`;
-    btn.classList.add('btn-primary'); btn.classList.remove('btn-danger');
-}
-
-// ===== FLASH =====
-async function toggleFlash() {
-    if (!stream) return;
-    try {
-        const track = stream.getVideoTracks()[0];
-        if (!track) return;
-        const caps = track.getCapabilities();
-        if (!caps || !caps.torch) { toast('Flash non supportato', 'error'); return; }
-        flashOn = !flashOn;
-        await track.applyConstraints({ advanced: [{ torch: flashOn }] });
-        const btn = document.getElementById('btnFlash');
-        if (flashOn) { btn.classList.remove('btn-warning'); btn.classList.add('btn-accent'); toast('🔦 Flash ON', 'success'); }
-        else { btn.classList.remove('btn-accent'); btn.classList.add('btn-warning'); toast('🔦 Flash OFF', 'warning'); }
-    } catch(e) { toast('Errore flash', 'error'); }
-}
-
-// ===== MULTI DETECT =====
-function toggleMultiDetect() {
-    multiDetect = !multiDetect;
-    document.getElementById('toggleMulti').classList.toggle('active', multiDetect);
-}
-
-// ===== SCAN FRAME =====
-async function scanFrame() {
-    if (!cameraActive || !videoEl || !ocrWorker) return;
-    if (videoEl.readyState < 2) return;
-
-    beepScan();
-
-    const canvas = document.getElementById('captureCanvas');
-    const ctx = canvas.getContext('2d');
-
-    // Crop to ROI region (center 85% width, 30% height)
-    const vw = videoEl.videoWidth;
-    const vh = videoEl.videoHeight;
-    const rw = Math.floor(vw * 0.85);
-    const rh = Math.floor(vh * 0.3);
-    const rx = Math.floor((vw - rw) / 2);
-    const ry = Math.floor((vh - rh) / 2);
-
-    canvas.width = rw;
-    canvas.height = rh;
-
-    // Draw cropped region
-    ctx.drawImage(videoEl, rx, ry, rw, rh, 0, 0, rw, rh);
-
-    // Pre-process: increase contrast
-    const imageData = ctx.getImageData(0, 0, rw, rh);
-    const data = imageData.data;
-    const contrast = 1.4;
-    for (let i = 0; i < data.length; i += 4) {
-        data[i] = Math.min(255, ((data[i] / 255 - 0.5) * contrast + 0.5) * 255);
-        data[i+1] = Math.min(255, ((data[i+1] / 255 - 0.5) * contrast + 0.5) * 255);
-        data[i+2] = Math.min(255, ((data[i+2] / 255 - 0.5) * contrast + 0.5) * 255);
-    }
-    ctx.putImageData(imageData, 0, 0);
-
-    // Also try with grayscale threshold
-    const canvas2 = document.createElement('canvas');
-    canvas2.width = rw;
-    canvas2.height = rh;
-    const ctx2 = canvas2.getContext('2d');
-    ctx2.drawImage(canvas, 0, 0);
-    const imgData2 = ctx2.getImageData(0, 0, rw, rh);
-    const d2 = imgData2.data;
-    for (let i = 0; i < d2.length; i += 4) {
-        const avg = (d2[i] + d2[i+1] + d2[i+2]) / 3;
-        const val = avg > 120 ? 255 : 0;
-        d2[i] = val; d2[i+1] = val; d2[i+2] = val;
-    }
-    ctx2.putImageData(imgData2, 0, 0);
-
-    try {
-        // Run OCR on both versions
-        const results = await Promise.all([
-            ocrWorker.recognize(canvas),
-            ocrWorker.recognize(canvas2)
-        ]);
-
-        const allText = results.map(r => r.data.text).join('\n');
-        const serials = extractSerialsFromText(allText);
-
-        if (serials.length > 0) {
-            for (const serial of serials) {
-                processSerial(serial);
-                if (!multiDetect) break;
-            }
         }
-    } catch(e) {
-        console.error('OCR error:', e);
-    }
-
-    document.getElementById('ocrStatus').textContent = 'Scansione in corso...';
-    document.getElementById('progressBar').style.width = '0%';
+    }catch(e){console.error('OCR error:',e);}
+    document.getElementById('ocrStatus').textContent='Scansione in corso...';
+    document.getElementById('progressBar').style.width='0%';
 }
 
-function processSerial(serial) {
-    const isDup = records.some(r => r.serial === serial);
-    if (isDup) {
-        toast('⚠️ Duplicato: ' + serial, 'warning');
-        beepDup(); vib('dup');
-        return;
-    }
-
-    // Capture image
-    let imgData = null;
-    try {
-        const canvas = document.getElementById('captureCanvas');
-        imgData = canvas.toDataURL('image/jpeg', 0.75);
-    } catch(e) {}
-
-    const operator = document.getElementById('operatorName').value.trim() || 'N/D';
-    const pedana = document.getElementById('pedana').value.trim() || 'N/D';
-    const ts = new Date().toLocaleString('it-IT');
-
-    records.unshift({
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-        serial,
-        timestamp: ts,
-        operator,
-        pedana,
-        modified: false,
-        status: 'Good',
-        note: '',
-        image: imgData
-    });
-
-    scanTotal++;
-    document.getElementById('scanCount').textContent = scanTotal;
-    beepOk(); vib('ok');
-    renderRecords();
-    toast('✅ ' + serial, 'success');
+function cropFromBbox(canvas,rw,rh,bbox,margin){
+    const{x0,y0,x1,y1}=bbox;
+    const cX=Math.max(0,x0-margin),cY=Math.max(0,y0-margin);
+    const cW=Math.min(rw-cX,(x1-x0)+margin*2),cH=Math.min(rh-cY,(y1-y0)+margin*2);
+    if(cW<=0||cH<=0)return null;
+    const cc=document.createElement('canvas');cc.width=cW;cc.height=cH;
+    const cctx=cc.getContext('2d');cctx.drawImage(canvas,cX,cY,cW,cH,0,0,cW,cH);
+    return cc.toDataURL('image/jpeg',0.75);
 }
 
-// ===== RENDER =====
-function renderRecords() {
-    const el = document.getElementById('recordsList');
-    if (records.length === 0) {
-        el.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h.01M12 7h.01M17 7h.01M7 12h10M7 17h6"/></svg><p>Nessun seriale scansionato.<br>Avvia la fotocamera per iniziare.</p></div>`;
-        return;
-    }
+function processSerial(serial,imgData){
+    const isDup=records.some(r=>r.serial===serial);
+    if(isDup){toast('⚠️ Duplicato: '+serial,'warning');beepDup();vib('dup');return;}
+    const operator=document.getElementById('operatorName').value.trim()||'N/D';
+    const pedana=document.getElementById('pedana').value.trim()||'N/D';
+    const ts=new Date().toLocaleString('it-IT');
+    records.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial,timestamp:ts,operator,pedana,modified:false,status:'Dubbio/Altro',note:'',image:imgData||null});
+    scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
+    beepOk();vib('ok');renderRecords();toast('✅ '+serial,'success');
+}
 
-    el.innerHTML = records.map(r => `
+function renderRecords(){
+    const el=document.getElementById('recordsList');
+    if(records.length===0){el.innerHTML=`<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h.01M12 7h.01M17 7h.01M7 12h10M7 17h6"/></svg><p>Nessun seriale scansionato.<br>Avvia la fotocamera per iniziare.</p></div>`;return;}
+    el.innerHTML=records.map(r=>`
         <div class="record-card" id="record-${r.id}">
             <div class="record-top">
                 <div class="record-image-wrap" onclick="openModal('${r.id}')">
-                    ${r.image ? `<img src="${r.image}" alt="img">` : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>`}
+                    ${r.image?`<img src="${r.image}" alt="img">`:`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>`}
                     <div class="zoom-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg></div>
                 </div>
                 <div class="record-info">
-                    <input type="text" class="serial-display ${r.modified?'modified':''}"
-                           value="${r.serial}"
-                           onchange="editSerial('${r.id}', this.value)"
-                           onfocus="this.dataset.orig=this.value"
-                           spellcheck="false" autocomplete="off">
-                    <div class="record-meta">
-                        <span>🕐 ${r.timestamp}</span>
-                        <span>👤 ${r.operator}</span>
-                        <span>📍 ${r.pedana}</span>
-                        ${r.modified ? '<span class="mod-badge">MODIF.</span>' : ''}
-                    </div>
+                    <input type="text" class="serial-display ${r.modified?'modified':''}" value="${r.serial}" onchange="editSerial('${r.id}',this.value)" onfocus="this.dataset.orig=this.value" spellcheck="false" autocomplete="off">
+                    <div class="record-meta"><span>🕐 ${r.timestamp}</span><span>👤 ${r.operator}</span><span>📍 ${r.pedana}</span>${r.modified?'<span class="mod-badge">MODIF.</span>':''}</div>
                 </div>
-                <button class="delete-btn" onclick="deleteRecord('${r.id}')" title="Elimina">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
+                <button class="delete-btn" onclick="deleteRecord('${r.id}')" title="Elimina"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
             </div>
             <div class="status-selector">
                 <button class="status-btn ${r.status==='Good'?'active-good':''}" onclick="setStatus('${r.id}','Good')">✓ Good</button>
@@ -1036,140 +453,56 @@ function renderRecords() {
                 <button class="status-btn ${r.status==='Barra Mancante'?'active-bar':''}" onclick="setStatus('${r.id}','Barra Mancante')">▤ Barra Manc.</button>
                 <button class="status-btn ${r.status==='Dubbio/Altro'?'active-doubt':''}" onclick="setStatus('${r.id}','Dubbio/Altro')">❓ Dubbio</button>
             </div>
-            <input type="text" class="note-input ${r.status==='Dubbio/Altro'?'visible':''}"
-                   placeholder="Note..." value="${r.note}" onchange="setNote('${r.id}',this.value)">
-        </div>
-    `).join('');
+            <input type="text" class="note-input ${r.status==='Dubbio/Altro'?'visible':''}" placeholder="Note..." value="${r.note}" onchange="setNote('${r.id}',this.value)">
+        </div>`).join('');
 }
 
-// ===== RECORD ACTIONS =====
-function editSerial(id, newVal) {
-    const rec = records.find(r => r.id === id);
-    if (!rec) return;
-    const input = document.querySelector(`#record-${id} .serial-display`);
-    const orig = input?.dataset?.orig || rec.serial;
-    if (newVal === orig) return;
-
-    let fixed = fixOCR(newVal.trim());
-
-    showConfirm(
-        'Conferma modifica',
-        `Modificare "${rec.serial}" in "${fixed}"?`,
-        () => {
-            if (records.some(r => r.serial === fixed && r.id !== rec.id)) {
-                toast('⚠️ Seriale già esistente!', 'warning');
-                beepDup(); vib('dup');
-                input.value = orig;
-                return;
-            }
-            rec.serial = fixed;
-            rec.modified = true;
-            toast('Seriale modificato: ' + fixed, 'success');
-            beepOk(); renderRecords();
-        }
-    );
-    input.value = orig;
+function editSerial(id,newVal){
+    const rec=records.find(r=>r.id===id);if(!rec)return;
+    const input=document.querySelector(`#record-${id} .serial-display`);const orig=input?.dataset?.orig||rec.serial;
+    if(newVal===orig)return;let fixed=fixOCR(newVal.trim());
+    showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{
+        if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Seriale già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}
+        rec.serial=fixed;rec.modified=true;toast('Seriale modificato: '+fixed,'success');beepOk();renderRecords();
+    });input.value=orig;
+}
+function setStatus(id,status){const rec=records.find(r=>r.id===id);if(!rec)return;rec.status=status;vib('ok');renderRecords();}
+function setNote(id,note){const rec=records.find(r=>r.id===id);if(rec)rec.note=note;}
+function deleteRecord(id){
+    const rec=records.find(r=>r.id===id);if(!rec)return;
+    showConfirm('Elimina record',`Eliminare "${rec.serial}"?`,()=>{
+        records=records.filter(r=>r.id!==id);scanTotal=Math.max(0,scanTotal-1);
+        document.getElementById('scanCount').textContent=scanTotal;vib('err');beepErr();renderRecords();toast('Record eliminato','warning');
+    });
 }
 
-function setStatus(id, status) {
-    const rec = records.find(r => r.id === id);
-    if (!rec) return;
-    rec.status = status;
-    vib('ok');
-    renderRecords();
+function openModal(id){const rec=records.find(r=>r.id===id);if(!rec||!rec.image)return;document.getElementById('modalImage').src=rec.image;document.getElementById('imageModal').classList.add('visible');}
+function closeModal(){document.getElementById('imageModal').classList.remove('visible');}
+
+function exportExcel(){
+    if(records.length===0){toast('Nessun record','warning');return;}
+    const data=records.map((r,i)=>({'#':i+1,'Timestamp':r.timestamp,'Seriale':r.serial,'Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,'Operatore':r.operator,'Stato':r.status,'Note':r.note}));
+    const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Scansioni');
+    XLSX.writeFile(wb,`Scansioni_${new Date().toISOString().slice(0,10)}.xlsx`);toast(`📊 Excel: ${records.length} record`,'success');vib('ok');
 }
 
-function setNote(id, note) {
-    const rec = records.find(r => r.id === id);
-    if (rec) rec.note = note;
+async function exportZip(){
+    if(records.length===0){toast('Nessun record','warning');return;}
+    toast('📦 Creazione ZIP...','success');
+    try{
+        const zip=new JSZip(),imgF=zip.folder('immagini');let cnt=0;
+        for(const r of records){if(r.image){imgF.file(`${r.serial}_${r.id}.jpg`,r.image.split(',')[1],{base64:true});cnt++;}}
+        const csv='N,Timestamp,Seriale,Modificato,Lotto,Operatore,Stato,Note\n'+records.map((r,i)=>`${i+1},${r.timestamp},${r.serial},${r.modified?'Sì':'No'},${r.pedana},${r.operator},${r.status},"${r.note}"`).join('\n');
+        zip.file('riepilogo.csv',csv);
+        const blob=await zip.generateAsync({type:'blob'});saveAs(blob,`Archivio_${new Date().toISOString().slice(0,10)}.zip`);
+        toast(`📦 ZIP: ${cnt} immagini`,'success');vib('ok');
+    }catch(e){console.error(e);toast('Errore ZIP','error');beepErr();}
 }
 
-function deleteRecord(id) {
-    const rec = records.find(r => r.id === id);
-    if (!rec) return;
-    showConfirm(
-        'Elimina record',
-        `Eliminare "${rec.serial}"?`,
-        () => {
-            records = records.filter(r => r.id !== id);
-            scanTotal = Math.max(0, scanTotal - 1);
-            document.getElementById('scanCount').textContent = scanTotal;
-            vib('err'); beepErr();
-            renderRecords();
-            toast('Record eliminato', 'warning');
-        }
-    );
-}
-
-// ===== IMAGE MODAL =====
-function openModal(id) {
-    const rec = records.find(r => r.id === id);
-    if (!rec || !rec.image) return;
-    document.getElementById('modalImage').src = rec.image;
-    document.getElementById('imageModal').classList.add('visible');
-}
-function closeModal() { document.getElementById('imageModal').classList.remove('visible'); }
-
-// ===== EXPORT EXCEL =====
-function exportExcel() {
-    if (records.length === 0) { toast('Nessun record', 'warning'); return; }
-
-    const data = records.map((r,i) => ({
-        '#': i+1,
-        'Timestamp': r.timestamp,
-        'Seriale': r.serial,
-        'Modificato': r.modified ? 'Sì' : 'No',
-        'Lotto/Posizione': r.pedana,
-        'Operatore': r.operator,
-        'Stato': r.status,
-        'Note': r.note
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    ws['!cols'] = [{wch:5},{wch:20},{wch:15},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Scansioni');
-    XLSX.writeFile(wb, `Scansioni_${new Date().toISOString().slice(0,10)}.xlsx`);
-    toast(`📊 Excel: ${records.length} record`, 'success'); vib('ok');
-}
-
-// ===== EXPORT ZIP =====
-async function exportZip() {
-    if (records.length === 0) { toast('Nessun record', 'warning'); return; }
-    toast('📦 Creazione ZIP...', 'success');
-
-    try {
-        const zip = new JSZip();
-        const imgF = zip.folder('immagini');
-        let cnt = 0;
-
-        for (const r of records) {
-            if (r.image) {
-                imgF.file(`${r.serial}_${r.id}.jpg`, r.image.split(',')[1], {base64:true});
-                cnt++;
-            }
-        }
-
-        const csv = 'N,Timestamp,Seriale,Modificato,Lotto,Operatore,Stato,Note\n' +
-            records.map((r,i)=>`${i+1},${r.timestamp},${r.serial},${r.modified?'Sì':'No'},${r.pedana},${r.operator},${r.status},"${r.note}"`).join('\n');
-        zip.file('riepilogo.csv', csv);
-
-        const blob = await zip.generateAsync({type:'blob'});
-        saveAs(blob, `Archivio_${new Date().toISOString().slice(0,10)}.zip`);
-        toast(`📦 ZIP: ${cnt} immagini`, 'success'); vib('ok');
-    } catch(e) {
-        console.error(e);
-        toast('Errore ZIP', 'error'); beepErr();
-    }
-}
-
-// ===== INIT =====
-document.addEventListener('DOMContentLoaded', () => { renderRecords(); });
-
-// Prevent double-tap zoom
-document.addEventListener('touchstart', e => { if(e.touches.length>1) e.preventDefault(); }, {passive:false});
-let lastEnd = 0;
-document.addEventListener('touchend', e => { const n=Date.now(); if(n-lastEnd<=300) e.preventDefault(); lastEnd=n; }, false);
+document.addEventListener('DOMContentLoaded',()=>{renderRecords();});
+document.addEventListener('touchstart',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
+let lastEnd=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lastEnd<=300)e.preventDefault();lastEnd=n;},false);
 </script>
 </body>
 </html>
