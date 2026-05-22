@@ -89,8 +89,9 @@
         .ocr-status { position:absolute; bottom:8px; left:8px; font-size:10px; color:var(--text-dim); background:rgba(0,0,0,0.6); padding:3px 8px; border-radius:6px; z-index:5; }
         #captureCanvas { display:none; }
         .results-section { padding:14px 18px; }
-        .results-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-        .results-header h2 { font-size:15px; font-weight:600; }
+        .results-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:10px; }
+        .results-header h2 { font-size:15px; font-weight:600; white-space:nowrap; }
+        .btn-apply-status { flex:0 0 auto; padding:6px 12px; font-size:11px; white-space:nowrap; }
         .record-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:12px; margin-bottom:10px; animation:slideIn 0.3s ease-out; }
         @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
         .record-top { display:flex; align-items:center; gap:10px; flex-wrap:nowrap; }
@@ -132,7 +133,7 @@
         .status-btn.active-bar { background:#06b6d4; color:white; border-color:#06b6d4; }
         .status-btn.active-doubt { background:var(--text-dim); color:white; border-color:var(--text-dim); }
         .status-btn.active-none { background:transparent; border:1px dashed var(--border); color:var(--text-dim); }
-        .note-input { margin-top:6px; width:100%; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:var(--text); font-size:12px; font-family:'Inter',sans-serif; outline:none; display:block; /* Always visible now */ }
+        .note-input { margin-top:6px; width:100%; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:var(--text); font-size:12px; font-family:'Inter',sans-serif; outline:none; display:block; }
         .note-input:focus { border-color:#ec4899; }
         .image-modal { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.95); z-index:1000; display:none; align-items:center; justify-content:center; cursor:pointer; }
         .image-modal.visible { display:flex; }
@@ -176,7 +177,7 @@
         .empty-state { text-align:center; padding:36px 20px; color:var(--text-dim); }
         .empty-state svg { width:44px; height:44px; margin-bottom:10px; opacity:0.4; }
         .empty-state p { font-size:13px; }
-        .bottom-bar { position:fixed; bottom:0; left:0; right:0; background:var(--bg-card); border-top:1px solid var(--border); padding:10px 18px; display:flex; gap:8px; z-index:100; backdrop-filter:blur(20px); }
+        .bottom-bar { position:fixed; bottom:0; left:0; right:0; background:var(--bg-card); border-top:1px solid var(--border); padding:10px 18px; display:flex; gap:8px; z-index:100; backdrop-filter:blur(20px); flex-wrap:wrap; }
         .bottom-bar .btn { font-size:12px; padding:10px 10px; }
         .progress-bar { position:absolute; bottom:0; left:0; height:3px; background:var(--accent); transition:width 0.3s; z-index:5; }
         .cooldown-overlay { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(16,185,129,0.08); pointer-events:none; z-index:4; display:none; }
@@ -186,6 +187,11 @@
         .scroll-top-btn:active { transform:scale(0.9); }
         .scroll-top-btn svg { width:20px; height:20px; color:white; }
         @keyframes borderPulse { 0%,100%{border-color:var(--accent);box-shadow:0 2px 12px rgba(0,0,0,0.4),0 0 0 0 rgba(16,185,129,0.3)} 50%{border-color:rgba(16,185,129,0.5);box-shadow:0 2px 12px rgba(0,0,0,0.4),0 0 0 6px rgba(16,185,129,0)} }
+        
+        /* Status Selection Modal Styles */
+        .status-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+        .status-grid .btn { font-size:12px; padding:8px; }
+
         @media (max-width:380px) { .btn { padding:8px 8px; font-size:11px; } .status-btn { font-size:9px; padding:3px 6px; } .record-image-wrap { width:120px; height:46px; } .serial-display { width:120px; } .record-meta { gap:3px; } .gsheet-bar { flex-wrap:wrap; } }
     </style>
 </head>
@@ -197,7 +203,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             Scanner Seriali OCR
         </h1>
-        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v3.8.0</span>
+        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v3.9.0</span>
     </div>
     <div class="scan-counter">
         <span class="label">Seriali: <span class="count" id="scanCount">0</span><span id="syncIndicator" class="sync-status synced" title="Stato sync">🟢 Sync</span></span>
@@ -258,7 +264,7 @@
 <div class="results-section">
     <div class="results-header">
         <h2>📋 Risultati</h2>
-        <button class="btn btn-outline" style="flex:0;padding:6px 10px;font-size:11px;" onclick="applyStatusToPedana()">
+        <button class="btn btn-outline btn-apply-status" onclick="openApplyStatusModal()">
             Applica Stato a Pedana
         </button>
     </div>
@@ -273,7 +279,7 @@
 
 <div class="confirm-modal" id="passwordModal"><div class="confirm-box"><h3>🔒</h3><p style="margin-top:12px;"></p><input type="password" class="input-field" id="versionPassword" maxlength="4" style="text-align:center;font-family:'JetBrains Mono',monospace;letter-spacing:6px;font-size:20px;width:120px;margin:0 auto;" inputmode="numeric"><div class="confirm-actions" style="margin-top:16px;"><button class="btn btn-outline" onclick="closePasswordModal()">Annulla</button><button class="btn btn-primary" onclick="checkVersionPassword()">OK</button></div></div></div>
 
-<div class="version-modal" id="versionModal" onclick="closeVersionModal()"><div class="version-modal-box" onclick="event.stopPropagation()"><h3>📋 Changelog</h3><div class="ver-date" id="versionBuildDate">Generato il 23/05/2026 — 10:00 UTC+2</div><div id="changelogContent"></div><button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button></div></div>
+<div class="version-modal" id="versionModal" onclick="closeVersionModal()"><div class="version-modal-box" onclick="event.stopPropagation()"><h3>📋 Changelog</h3><div class="ver-date" id="versionBuildDate">Generato il 23/05/2026 — 11:00 UTC+2</div><div id="changelogContent"></div><button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button></div></div>
 
 <div class="confirm-modal" id="pedanaModal">
     <div class="confirm-box">
@@ -297,11 +303,17 @@
 <div class="confirm-modal" id="statusApplyModal">
     <div class="confirm-box">
         <h3>📍 Applica Stato</h3>
-        <p>Applicare lo stato selezionato a tutti i record della pedana <b id="applyPedanaName"></b>?</p>
-        <div class="confirm-actions">
-            <button class="btn btn-outline" onclick="document.getElementById('statusApplyModal').classList.remove('visible')">Annulla</button>
-            <button class="btn btn-primary" onclick="executeApplyStatus()">Conferma</button>
+        <p>Pedana: <b id="applyPedanaName" style="color:var(--warning)"></b></p>
+        <p style="font-size:11px;color:var(--text-dim)">Seleziona lo stato da applicare a tutti i record di questa pedana:</p>
+        <div class="status-grid">
+            <button class="btn btn-accent" onclick="executeApplyStatus('Good')">✓ Good</button>
+            <button class="btn btn-danger" onclick="executeApplyStatus('Rotto')">✕ Rotto</button>
+            <button class="btn btn-warning" onclick="executeApplyStatus('Sporco')">◆ Sporco</button>
+            <button class="btn" style="background:#8b5cf6;color:white" onclick="executeApplyStatus('RF-ID')">📡 RF-ID</button>
+            <button class="btn" style="background:#06b6d4;color:white" onclick="executeApplyStatus('Barra Mancante')">▤ Barra Manc.</button>
+            <button class="btn" style="background:var(--text-dim);color:white" onclick="executeApplyStatus('Dubbio/Altro')">❓ Dubbio</button>
         </div>
+        <button class="btn btn-outline" style="margin-top:12px;width:100%" onclick="document.getElementById('statusApplyModal').classList.remove('visible')">Annulla</button>
     </div>
 </div>
 
@@ -314,19 +326,20 @@
     <button class="btn btn-primary" onclick="exportHtmlWithImages()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>HTML+Img</button>
     <button class="btn btn-outline" onclick="exportZip()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>ZIP</button>
     <button class="btn btn-warning" onclick="syncPendingToGSheet()" id="btnSync" style="display:none;flex:0;min-width:60px;" title="Sincronizza con Sheets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
+    <button class="btn btn-outline" onclick="openGoogleSheet()" id="btnOpenSheet" style="display:none;flex:0;min-width:60px;" title="Apri Foglio Google">📄 Sheet</button>
 </div>
 
 <script>
-const APP_VERSION='3.8.0';
-const APP_BUILD_DATE='23/05/2026 10:00';
+const APP_VERSION='3.9.0';
+const APP_BUILD_DATE='23/05/2026 11:00';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
 const IMG_DB_NAME='ScannerSerialiDB';
 const IMG_DB_VERSION=1;
 const IMG_STORE='images';
 const CHANGELOG=[
-    {ver:'v3.8.0',date:'23/05/2026 10:00',desc:'Fix upload Google Sheets. Anteprima più stabile (margini +25px). Blocco seriali simili consecutivi. Note sempre visibili. Tasto applica stato a intera pedana.',tags:['fix','feat']},
-    {ver:'v3.7.0',date:'23/05/2026 09:00',desc:'Fix definitivo Google Sheets: fetch con no-cors.',tags:['fix']},
+    {ver:'v3.9.0',date:'23/05/2026 11:00',desc:'Fix input Google Sheets. Tasto Apri Sheet. UI mobile ottimizzata per Applica Stato. Popup stati con bottoni.',tags:['fix','ui']},
+    {ver:'v3.8.0',date:'23/05/2026 10:00',desc:'Fix upload Google Sheets. Anteprima +25px. Blocco seriali simili. Note sempre visibili.',tags:['fix','feat']},
     {ver:'v3.0.0',date:'23/05/2026 02:00',desc:'Integrazione Google Sheets + Drive.',tags:['feat']},
     {ver:'v2.0.0',date:'22/05/2026 23:00',desc:'Salvataggio locale.',tags:['feat','ui']},
     {ver:'v1.0.0',date:'22/05/2026 12:00',desc:'Versione iniziale.',tags:['feat']}
@@ -339,12 +352,11 @@ let lastScanPedana='', lastScanImage=null;
 let pedanaCallback=null, pedanaEditRecordId=null;
 let lastScanTime=0;
 let gsheetUrl='', syncStatus='idle';
-let pendingApplyStatus=''; // Per il modal di applicazione stato
 const GSHEET_PWD='0000';
 const IDLE_TIMEOUT=30000;
 const SCAN_INTERVAL=800;
 const SERIAL_PATTERN=/^BDBCF00[A-F0-9]{3}$/;
-const IMG_MARGIN=25; // Aumentato da 8 a 25 per migliore contesto
+const IMG_MARGIN=25; 
 
 // ===== INDEXED DB FOR IMAGES =====
 let imgDB=null;
@@ -389,7 +401,6 @@ function levenshtein(a, b) {
 
 function cropFromBbox(canvas,rw,rh,bbox,margin){
     const{x0,y0,x1,y1}=bbox;
-    // Margin aumentato a 25px per default nella chiamata
     const cX=Math.max(0,x0-margin),cY=Math.max(0,y0-margin);
     const cW=Math.min(rw-cX,(x1-x0)+margin*2),cH=Math.min(rh-cY,(y1-y0)+margin*2);
     if(cW<=0||cH<=0)return null;
@@ -418,6 +429,11 @@ function unlockGSheetUrl(){
         inp.value=gsheetUrl;
         inp.focus();
         inp.select();
+        
+        // FIX: Rimuovi listener precedenti per evitare conflitti
+        inp.onblur = null;
+        inp.onkeydown = null;
+
         inp.onblur=function(){
             gsheetUrl=this.value.trim();
             saveGSheetUrl();
@@ -443,11 +459,27 @@ function setSyncStatus(status){
     syncStatus=status;
     const el=document.getElementById('syncIndicator');
     const btn=document.getElementById('btnSync');
+    const btnSheet=document.getElementById('btnOpenSheet');
     const hasPending=records.some(r=>!r._synced);
+    
     if(status==='idle'||status==='synced'){el.className='sync-status synced';el.textContent='🟢 Sync';btn.style.display=hasPending?'inline-flex':'none';}
     else if(status==='syncing'){el.className='sync-status uploading';el.textContent='🔄 Invio...';}
     else if(status==='error'){el.className='sync-status error';el.textContent='🔴 Errore';btn.style.display='inline-flex';}
     else if(status==='pending'){el.className='sync-status pending';el.textContent='🟡 In coda';btn.style.display='inline-flex';}
+    
+    // Show/Hide Open Sheet button
+    if(gsheetUrl && gsheetUrl.length > 10) btnSheet.style.display='inline-flex';
+    else btnSheet.style.display='none';
+}
+
+function openGoogleSheet(){
+    if(gsheetUrl){
+        // Transform exec URL to sheet URL if possible, or just open the script project
+        // Usually users want to see the Sheet, not the script. 
+        // But we only have the Script URL. 
+        // Best effort: Open the script URL which redirects or shows the project.
+        window.open(gsheetUrl, '_blank');
+    }
 }
 
 async function sendToGSheet(record){
@@ -495,43 +527,32 @@ async function syncPendingToGSheet(){
 }
 
 // ===== APPLY STATUS TO PEDANA =====
-function applyStatusToPedana(){
-    // Trova l'ultimo stato selezionato dall'utente in qualche record recente? 
-    // O meglio: chiedi all'utente quale stato applicare?
-    // Implementazione semplice: prende lo stato dell'ultimo record modificato o chiede
-    // Per semplicità UI: mostriamo un prompt o usiamo l'ultimo stato cliccato.
-    // Qui implementiamo: clicca il tasto -> chiede quale stato -> applica a tutti con stessa pedana
-    
+function openApplyStatusModal(){
     const currentPedana = document.getElementById('pedana').value.trim();
     if(!currentPedana){toast('Imposta prima una Pedana','warning');return;}
-    
-    // Chiedi quale stato applicare
-    const statusToApply = prompt("Quale stato applicare a tutta la pedana "+currentPedana+"?\n(Good, Rotto, Sporco, RF-ID, Barra Mancante, Dubbio/Altro)");
-    if(!statusToApply) return;
-    
-    // Normalizza
-    let normalizedStatus = '';
-    if(statusToApply.toLowerCase().includes('good')) normalizedStatus='Good';
-    else if(statusToApply.toLowerCase().includes('rotto')) normalizedStatus='Rotto';
-    else if(statusToApply.toLowerCase().includes('sporco')) normalizedStatus='Sporco';
-    else if(statusToApply.toLowerCase().includes('rf')) normalizedStatus='RF-ID';
-    else if(statusToApply.toLowerCase().includes('barra')) normalizedStatus='Barra Mancante';
-    else if(statusToApply.toLowerCase().includes('dubbio')) normalizedStatus='Dubbio/Altro';
-    else { toast('Stato non riconosciuto','error'); return; }
+    document.getElementById('applyPedanaName').textContent = currentPedana;
+    document.getElementById('statusApplyModal').classList.add('visible');
+}
+
+function executeApplyStatus(status){
+    const currentPedana = document.getElementById('pedana').value.trim();
+    if(!currentPedana) return;
     
     let count=0;
     records.forEach(r=>{
         if(r.pedana===currentPedana){
-            r.status=normalizedStatus;
+            r.status=status;
             r._synced=false; // Force resync
             count++;
         }
     });
     
+    document.getElementById('statusApplyModal').classList.remove('visible');
+    
     if(count>0){
         saveToStorage();
         renderRecords();
-        toast(`✅ Stato "${normalizedStatus}" applicato a ${count} record`,'success');
+        toast(`✅ Stato "${status}" applicato a ${count} record`,'success');
         if(gsheetUrl) syncPendingToGSheet();
     } else {
         toast('Nessun record trovato per questa pedana','warning');
@@ -693,7 +714,7 @@ function processSerial(serial,imgData,confidence,corrections){
     const recentRecords = records.slice(0, 5);
     const isSimilar = recentRecords.some(r => {
         const dist = levenshtein(serial, r.serial);
-        return dist > 0 && dist <= 2; // Se la distanza è 1 o 2, è probabilmente un errore di lettura dello stesso oggetto
+        return dist > 0 && dist <= 2; 
     });
     
     if(isSimilar){
@@ -799,6 +820,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     loadGSheetUrl();
     const loaded=await loadFromStorage();
     if(loaded&&records.length>0){renderRecords();toast(`📂 ${records.length} record recuperati`,'success');const unsynced=records.filter(r=>!r._synced);if(unsynced.length>0){setSyncStatus('pending');if(gsheetUrl)setTimeout(()=>syncPendingToGSheet(),2000);}else{setSyncStatus('synced');}}else{renderRecords();setSyncStatus('idle');}
+    setSyncStatus(syncStatus); // Update button visibility
 });
 window.addEventListener('beforeunload',()=>{saveToStorage();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveToStorage();});
