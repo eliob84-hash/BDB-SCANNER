@@ -1,4 +1,19 @@
-<!DOCTYPE html>
+
+                        <!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                body {
+                  background-color: white; /* Ensure the iframe has a white background */
+                }
+
+                
+              </style>
+                        </head>
+                        <body>
+                            <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -46,30 +61,23 @@
             background:var(--primary); color:white; padding:2px 10px; border-radius:10px;
             font-weight:600; font-size:12px;
         }
-        .scanning-indicator {
-            display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--accent);
-            padding:3px 8px; background:rgba(16,185,129,0.1); border-radius:12px;
-        }
+        .scanning-indicator { display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--accent); padding:3px 8px; background:rgba(16,185,129,0.1); border-radius:12px; }
         .scanning-indicator .dot { width:5px; height:5px; background:var(--accent); border-radius:50%; animation:blink 1s infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-        .paused-indicator {
-            display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--warning);
-            padding:3px 8px; background:rgba(245,158,11,0.1); border-radius:12px;
-        }
+        .paused-indicator { display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--warning); padding:3px 8px; background:rgba(245,158,11,0.1); border-radius:12px; }
         .paused-indicator .dot { width:5px; height:5px; background:var(--warning); border-radius:50%; }
-        .loading-indicator {
-            display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--primary-light);
-            padding:3px 8px; background:rgba(37,99,235,0.1); border-radius:12px;
-        }
-        .spinner {
-            width:10px; height:10px; border:2px solid var(--primary-light);
-            border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;
-        }
+        .loading-indicator { display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--primary-light); padding:3px 8px; background:rgba(37,99,235,0.1); border-radius:12px; }
+        .spinner { width:10px; height:10px; border:2px solid var(--primary-light); border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; }
         @keyframes spin { to{transform:rotate(360deg)} }
+        .sync-status { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:2px 8px; border-radius:10px; margin-left:6px; }
+        .sync-status.synced { background:rgba(16,185,129,0.12); color:var(--accent); }
+        .sync-status.pending { background:rgba(245,158,11,0.12); color:var(--warning); }
+        .sync-status.error { background:rgba(239,68,68,0.12); color:var(--danger); }
         .config-panel { padding:14px 18px; display:flex; flex-direction:column; gap:10px; }
         .input-group label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim); margin-bottom:4px; }
         .input-group label .req { color:var(--danger); }
         .input-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .input-row.three { grid-template-columns:1fr 1fr 1fr; }
         .input-field {
             background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius);
             padding:10px 12px; color:var(--text); font-size:14px; font-family:'Inter',sans-serif;
@@ -79,6 +87,7 @@
         .input-field.missing { border-color:var(--danger); animation:pulseBorder 1s ease-in-out 3; }
         @keyframes pulseBorder { 0%,100%{border-color:var(--danger)} 50%{border-color:transparent} }
         .pedana-field { border-left:3px solid var(--warning); }
+        .run-field { border-left:3px solid var(--primary-light); }
         .controls-bar { display:flex; gap:8px; padding:0 18px 10px; }
         .btn {
             display:inline-flex; align-items:center; justify-content:center; gap:6px;
@@ -107,6 +116,23 @@
             background:white; border-radius:50%; transition:transform 0.3s;
         }
         .toggle-switch.active::after { transform:translateX(19px); }
+        .gsheet-section { padding:0 18px 12px; }
+        .gsheet-bar {
+            display:flex; align-items:center; gap:6px; background:var(--bg-input);
+            border:1px solid var(--border); border-radius:var(--radius); padding:8px 10px;
+        }
+        .gsheet-bar .gsheet-icon { font-size:16px; }
+        .gsheet-bar input {
+            flex:1; background:transparent; border:none; color:var(--text); font-size:11px;
+            font-family:'JetBrains Mono',monospace; outline:none; min-width:0;
+        }
+        .gsheet-bar input::placeholder { color:var(--text-dim); }
+        .gsheet-verify {
+            background:none; border:none; color:var(--primary-light); cursor:pointer;
+            font-size:11px; font-weight:600; padding:4px 8px; border-radius:4px;
+            transition:all 0.2s; white-space:nowrap;
+        }
+        .gsheet-verify:hover { background:rgba(37,99,235,0.15); }
         .scanner-section { padding:0 18px; position:relative; }
         .camera-container {
             position:relative; border-radius:var(--radius); overflow:hidden; background:#000;
@@ -161,6 +187,8 @@
         .meta-tag.conf-mid { background:rgba(245,158,11,0.12); color:var(--warning); }
         .meta-tag.conf-low { background:rgba(239,68,68,0.12); color:var(--danger); }
         .meta-tag.correction { background:rgba(139,92,246,0.12); color:#a78bfa; }
+        .meta-tag.synced-tag { background:rgba(16,185,129,0.12); color:var(--accent); }
+        .meta-tag.pending-tag { background:rgba(245,158,11,0.12); color:var(--warning); }
         .mod-badge { background:var(--warning); color:#1e293b; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:700; }
         .pedana-inline {
             cursor:pointer; background:rgba(245,158,11,0.1); border:1px dashed rgba(245,158,11,0.4);
@@ -237,6 +265,11 @@
             background:rgba(245,158,11,0.08); border-radius:8px; display:block;
             margin:6px 0 2px; border:1px solid rgba(245,158,11,0.3);
         }
+        .pedana-preview {
+            width:120px; height:44px; border-radius:6px; overflow:hidden; background:#000;
+            margin:6px auto; border:1px solid var(--border);
+        }
+        .pedana-preview img { width:100%; height:100%; object-fit:contain; }
         .empty-state { text-align:center; padding:36px 20px; color:var(--text-dim); }
         .empty-state svg { width:44px; height:44px; margin-bottom:10px; opacity:0.4; }
         .empty-state p { font-size:13px; }
@@ -245,33 +278,21 @@
         .progress-bar { position:absolute; bottom:0; left:0; height:3px; background:var(--accent); transition:width 0.3s; z-index:5; }
         .cooldown-overlay { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(16,185,129,0.08); pointer-events:none; z-index:4; display:none; }
         .cooldown-overlay.active { display:block; }
-
-        /* SCROLL TO TOP BUTTON */
         .scroll-top-btn {
-            position:fixed;
-            top:16px;
-            right:16px;
-            width:40px; height:40px;
-            background:#64748b;
-            border:1px solid var(--accent);
-            border-radius:50%;
-            display:none;
-            align-items:center; justify-content:center;
-            cursor:pointer;
-            z-index:200;
-            box-shadow:0 2px 12px rgba(0,0,0,0.4);
-            animation:borderPulse 1.2s ease-in-out infinite;
-            transition:transform 0.15s;
+            position:fixed; top:16px; right:16px; width:40px; height:40px;
+            background:#64748b; border:1px solid var(--accent); border-radius:50%;
+            display:none; align-items:center; justify-content:center;
+            cursor:pointer; z-index:200; box-shadow:0 2px 12px rgba(0,0,0,0.4);
+            animation:borderPulse 1.2s ease-in-out infinite; transition:transform 0.15s;
         }
         .scroll-top-btn.visible { display:flex; }
         .scroll-top-btn:active { transform:scale(0.9); }
         .scroll-top-btn svg { width:20px; height:20px; color:white; }
         @keyframes borderPulse {
-            0%,100%{border-color:var(--accent);box-shadow:0 2px 12px rgba(0,0,0,0.4), 0 0 0 0 rgba(16,185,129,0.3)}
-            50%{border-color:rgba(16,185,129,0.5);box-shadow:0 2px 12px rgba(0,0,0,0.4), 0 0 0 6px rgba(16,185,129,0)}
+            0%,100%{border-color:var(--accent);box-shadow:0 2px 12px rgba(0,0,0,0.4),0 0 0 0 rgba(16,185,129,0.3)}
+            50%{border-color:rgba(16,185,129,0.5);box-shadow:0 2px 12px rgba(0,0,0,0.4),0 0 0 6px rgba(16,185,129,0)}
         }
-
-        @media (max-width:380px) { .btn { padding:8px 8px; font-size:11px; } .status-btn { font-size:9px; padding:3px 6px; } .record-image-wrap { width:120px; height:46px; } .serial-display { width:120px; } .record-meta { gap:3px; } }
+        @media (max-width:380px) { .btn { padding:8px 8px; font-size:11px; } .status-btn { font-size:9px; padding:3px 6px; } .record-image-wrap { width:120px; height:46px; } .serial-display { width:120px; } .record-meta { gap:3px; } .gsheet-bar { flex-wrap:wrap; } }
     </style>
 </head>
 <body>
@@ -282,10 +303,13 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             Scanner Seriali OCR
         </h1>
-        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v2.1.0</span>
+        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v3.0.0</span>
     </div>
     <div class="scan-counter">
-        <span class="label">Seriali: <span class="count" id="scanCount">0</span></span>
+        <span class="label">
+            Seriali: <span class="count" id="scanCount">0</span>
+            <span id="syncIndicator" class="sync-status synced" title="Stato sincronizzazione">🟢 Sync</span>
+        </span>
         <span id="scanIndicator"></span>
     </div>
 </div>
@@ -294,6 +318,18 @@
     <div class="input-row">
         <div class="input-group"><label>Operatore</label><input type="text" class="input-field" id="operatorName" placeholder="Nome operatore"></div>
         <div class="input-group"><label>N° Pedana / Posizione <span class="req">*</span></label><input type="text" class="input-field pedana-field" id="pedana" placeholder="Obbligatorio"></div>
+    </div>
+    <div class="input-row">
+        <div class="input-group"><label>N° di Run</label><input type="text" class="input-field run-field" id="runNumber" placeholder="Es: 1" value="1"></div>
+    </div>
+</div>
+
+<!-- Google Sheets config -->
+<div class="gsheet-section">
+    <div class="gsheet-bar">
+        <span class="gsheet-icon">📊</span>
+        <input type="text" id="gsheetUrl" placeholder="URL Google Apps Script (opzionale)">
+        <button class="gsheet-verify" onclick="verifyGSheet()">Verifica</button>
     </div>
 </div>
 
@@ -338,7 +374,6 @@
     </div>
 </div>
 
-<!-- Scroll to top button -->
 <div class="scroll-top-btn" id="scrollTopBtn" onclick="scrollToTop()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
 </div>
@@ -362,7 +397,7 @@
 <div class="version-modal" id="versionModal" onclick="closeVersionModal()">
     <div class="version-modal-box" onclick="event.stopPropagation()">
         <h3>📋 Changelog</h3>
-        <div class="ver-date" id="versionBuildDate">Generato il 23/05/2026 — 00:00 UTC+2</div>
+        <div class="ver-date" id="versionBuildDate">Generato il 23/05/2026 — 02:00 UTC+2</div>
         <div id="changelogContent"></div>
         <button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button>
     </div>
@@ -373,6 +408,7 @@
     <div class="confirm-box">
         <h3 id="pedanaModalTitle">📍 Pedana / Posizione</h3>
         <div class="serial-ref" id="pedanaSerialRef"></div>
+        <div class="pedana-preview" id="pedanaPreviewWrap"></div>
         <div class="pedana-big" id="pedanaBigRef"></div>
         <p id="pedanaModalMsg"></p>
         <div class="pedana-actions">
@@ -391,7 +427,7 @@
     </div>
 </div>
 
-<!-- Pedana edit modal per record esistente -->
+<!-- Pedana edit modal -->
 <div class="confirm-modal" id="pedanaEditModal">
     <div class="confirm-box">
         <h3>✏️ Modifica Pedana</h3>
@@ -422,39 +458,44 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
         Excel
     </button>
-    <button class="btn btn-primary" onclick="exportZip()">
+    <button class="btn btn-primary" onclick="exportHtmlWithImages()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        HTML+Img
+    </button>
+    <button class="btn btn-outline" onclick="exportZip()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
-        ZIP Immagini
+        ZIP
+    </button>
+    <button class="btn btn-warning" onclick="syncPendingToGSheet()" id="btnSync" style="display:none;flex:0;min-width:60px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
     </button>
 </div>
 
 <script>
-const APP_VERSION='2.1.0';
-const APP_BUILD_DATE='23/05/2026 00:00';
+const APP_VERSION='3.0.0';
+const APP_BUILD_DATE='23/05/2026 02:00';
 const STORAGE_KEY='scannerSerialiOCR_data';
+const GSHEET_KEY='scannerSerialiOCR_gsheet';
+const PENDING_KEY='scannerSerialiOCR_pending';
 const CHANGELOG=[
-    {ver:'v2.1.0',date:'23/05/2026 00:00',desc:'Freccia scroll-to-top flottante con bordo verde lampeggiante. Appare quando la fotocamera esce dalla vista.',tags:['ui']},
-    {ver:'v2.0.0',date:'22/05/2026 23:00',desc:'Salvataggio dati locale. Angoli anteprima arrotondati. Margine seriale ridotto (8px). Icona stato OCR. Frequenza scan 800ms. Pulsanti pedana invertiti.',tags:['feat','ui','fix']},
-    {ver:'v1.9.0',date:'22/05/2026 22:00',desc:'Tap su posizione nei record. Colori icone stato. Auto-close fotocamera 30s.',tags:['ui','feat']},
-    {ver:'v1.8.0',date:'22/05/2026 21:00',desc:'Fix seriali parziali. Messaggi errore specifici.',tags:['fix']},
-    {ver:'v1.7.0',date:'22/05/2026 20:00',desc:'Anteprima cropata. Pedana modal mostra seriale.',tags:['ui']},
-    {ver:'v1.6.0',date:'22/05/2026 19:00',desc:'Pedana obbligatoria. Conferma mantieni/cambia.',tags:['feat']},
-    {ver:'v1.5.1',date:'22/05/2026 18:00',desc:'Rimossi hint password.',tags:['ui']},
-    {ver:'v1.5.0',date:'22/05/2026 17:30',desc:'Pattern stretto BDBCF00. Password HHMM.',tags:['fix','feat']},
-    {ver:'v1.4.0',date:'22/05/2026 16:45',desc:'Confidenza OCR e correzioni.',tags:['feat']},
-    {ver:'v1.3.0',date:'22/05/2026 16:10',desc:'Rimossa lente anteprima.',tags:['ui']},
-    {ver:'v1.2.0',date:'22/05/2026 15:40',desc:'Anteprima ridotta. Pausa zoom.',tags:['ui','feat']},
-    {ver:'v1.1.0',date:'22/05/2026 14:30',desc:'Solo 10 caratteri. Timeout 1s.',tags:['feat','fix']},
+    {ver:'v3.0.0',date:'23/05/2026 02:00',desc:'Integrazione Google Sheets. Sync automatico e manuale. Coda offline con invio automatico quando torna la connessione. Indicatore stato sincronizzazione.',tags:['feat']},
+    {ver:'v2.2.0',date:'23/05/2026 01:00',desc:'Export HTML con immagini. Campo N° Run. Anteprima nel modal pedana.',tags:['feat']},
+    {ver:'v2.1.0',date:'23/05/2026 00:00',desc:'Freccia scroll-to-top.',tags:['ui']},
+    {ver:'v2.0.0',date:'22/05/2026 23:00',desc:'Salvataggio locale. Angoli arrotondati. Margini ridotti.',tags:['feat','ui','fix']},
+    {ver:'v1.9.0',date:'22/05/2026 22:00',desc:'Tap posizione nei record. Colori icone. Auto-close 30s.',tags:['ui','feat']},
+    {ver:'v1.5.0',date:'22/05/2026 17:30',desc:'Pattern BDBCF00. Password HHMM.',tags:['fix','feat']},
     {ver:'v1.0.0',date:'22/05/2026 12:00',desc:'Versione iniziale.',tags:['feat']}
 ];
 
 let cameraActive=false, flashOn=false, multiDetect=false, videoEl=null, stream=null, ocrWorker=null, scanTimer=null, idleTimer=null;
 let records=[], scanTotal=0, confirmCallback=null, audioCtx=null;
 let scanCooldown=false, scanPaused=false;
-let lastScanPedana='';
+let lastScanPedana='', lastScanImage=null, lastScanSerial='';
 let pedanaCallback=null;
 let pedanaEditRecordId=null;
 let lastScanTime=0;
+let gsheetUrl='', syncStatus='idle'; // idle | syncing | synced | error | pending
+let pendingSync=[];
 const IDLE_TIMEOUT=30000;
 const SCAN_INTERVAL=800;
 const SERIAL_PATTERN=/^BDBCF00[A-F0-9]{3}$/;
@@ -490,44 +531,124 @@ function cropFromBbox(canvas,rw,rh,bbox,margin){
 }
 
 // ===== SCROLL TO TOP =====
-function scrollToTop(){
-    window.scrollTo({top:0, behavior:'smooth'});
-}
-
+function scrollToTop(){window.scrollTo({top:0, behavior:'smooth'});}
 function checkScrollPosition(){
     const btn=document.getElementById('scrollTopBtn');
-    const cameraContainer=document.getElementById('cameraContainer');
-    if(!cameraContainer || !cameraContainer.classList.contains('active')){
-        btn.classList.remove('visible');
-        return;
-    }
-    const rect=cameraContainer.getBoundingClientRect();
-    // Show when camera bottom is above viewport (scrolled past)
-    if(rect.bottom < 60){
-        btn.classList.add('visible');
-    } else {
-        btn.classList.remove('visible');
+    const cc=document.getElementById('cameraContainer');
+    if(!cc||!cc.classList.contains('active')){btn.classList.remove('visible');return;}
+    const rect=cc.getBoundingClientRect();
+    if(rect.bottom<60)btn.classList.add('visible'); else btn.classList.remove('visible');
+}
+window.addEventListener('scroll', checkScrollPosition, {passive:true});
+
+// ===== GOOGLE SHEETS SYNC =====
+function loadGSheetUrl(){
+    try{ const u=localStorage.getItem(GSHEET_KEY); if(u){ gsheetUrl=u; document.getElementById('gsheetUrl').value=u; } }catch(e){}
+}
+function saveGSheetUrl(){
+    const v=document.getElementById('gsheetUrl').value.trim();
+    gsheetUrl=v;
+    try{ localStorage.setItem(GSHEET_KEY, v); }catch(e){}
+}
+
+function setSyncStatus(status){
+    syncStatus=status;
+    const el=document.getElementById('syncIndicator');
+    const btn=document.getElementById('btnSync');
+    if(status==='idle'||status==='synced'){
+        el.className='sync-status synced'; el.textContent='🟢 Sync';
+        btn.style.display=pendingSync.length>0?'inline-flex':'none';
+    } else if(status==='syncing'){
+        el.className='sync-status pending'; el.textContent='🔄 Syncing...';
+    } else if(status==='error'){
+        el.className='sync-status error'; el.textContent='🔴 Errore';
+        btn.style.display='inline-flex';
+    } else if(status==='pending'){
+        el.className='sync-status pending'; el.textContent='🟡 In coda';
+        btn.style.display='inline-flex';
     }
 }
 
-window.addEventListener('scroll', checkScrollPosition, {passive:true});
+async function sendToGSheet(record){
+    if(!gsheetUrl){return false;}
+    try{
+        const payload={
+            rowNum: records.indexOf(record)+1,
+            runNumber: record.runNumber||'',
+            timestamp: record.timestamp||'',
+            serial: record.serial||'',
+            confidence: record.confidence||0,
+            corrections: (record.corrections||[]).join(', '),
+            modified: record.modified?'Sì':'No',
+            pedana: record.pedana||'',
+            operator: record.operator||'',
+            status: record.status||'',
+            note: record.note||''
+        };
+        const resp=await fetch(gsheetUrl, {
+            method:'POST',
+            mode:'no-cors',
+            headers:{'Content-Type':'text/plain'},
+            body:JSON.stringify(payload)
+        });
+        record._synced=true;
+        return true;
+    }catch(e){
+        console.warn('GSheet send failed:',e);
+        record._synced=false;
+        return false;
+    }
+}
+
+async function verifyGSheet(){
+    saveGSheetUrl();
+    if(!gsheetUrl){toast('Inserisci un URL','error');return;}
+    toast('Verifica connessione...','success');
+    try{
+        const resp=await fetch(gsheetUrl,{mode:'no-cors'});
+        toast('✅ Connesso a Google Sheets','success');
+        setSyncStatus('synced');
+    }catch(e){
+        toast('❌ Connessione fallita','error');
+        setSyncStatus('error');
+    }
+}
+
+async function syncPendingToGSheet(){
+    if(!gsheetUrl){toast('Configura prima l\'URL di Google Sheets','error');return;}
+    const unsynced=records.filter(r=>!r._synced);
+    if(unsynced.length===0){toast('Nessun record da sincronizzare','success');return;}
+    
+    setSyncStatus('syncing');
+    toast(`🔄 Invio ${unsynced.length} record...`,'success');
+    let ok=0, err=0;
+    for(const r of unsynced){
+        const success=await sendToGSheet(r);
+        if(success) ok++; else err++;
+    }
+    saveToStorage();
+    if(err===0){
+        toast(`✅ ${ok} record sincronizzati!`,'success');
+        setSyncStatus('synced');
+    } else {
+        toast(`⚠️ ${ok} ok, ${err} errori`,'warning');
+        setSyncStatus('error');
+    }
+}
 
 // ===== LOCAL STORAGE =====
 function saveToStorage(){
     try{
-        // Save records without full images to avoid localStorage size limits
         const leanRecords=records.map(r=>{
             const copy={...r};
-            if(copy.image && copy.image.length > 200){
-                copy.image=copy.image.substring(0,100)+'...[truncated]';
-            }
+            if(copy.image && copy.image.length>200) copy.image=copy.image.substring(0,100)+'...[truncated]';
             return copy;
         });
         const data={
-            records:leanRecords,
-            scanTotal:scanTotal,
+            records:leanRecords, scanTotal:scanTotal,
             operator:document.getElementById('operatorName').value,
             pedana:document.getElementById('pedana').value,
+            runNumber:document.getElementById('runNumber').value,
             timestamp:Date.now()
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -539,21 +660,14 @@ function loadFromStorage(){
         const raw=localStorage.getItem(STORAGE_KEY);
         if(!raw)return false;
         const data=JSON.parse(raw);
-        if(Date.now()-data.timestamp > 7*24*60*60*1000) {
-            localStorage.removeItem(STORAGE_KEY);
-            return false;
-        }
+        if(Date.now()-data.timestamp > 7*24*60*60*1000){localStorage.removeItem(STORAGE_KEY);return false;}
         records=data.records||[];
         scanTotal=data.scanTotal||0;
         if(data.operator) document.getElementById('operatorName').value=data.operator;
         if(data.pedana) document.getElementById('pedana').value=data.pedana;
+        if(data.runNumber) document.getElementById('runNumber').value=data.runNumber;
         document.getElementById('scanCount').textContent=scanTotal;
-        // Restore images as null (they're truncated in storage)
-        records.forEach(r=>{
-            if(r.image && r.image.includes('[truncated]')){
-                r.image=null;
-            }
-        });
+        records.forEach(r=>{if(r.image && r.image.includes('[truncated]'))r.image=null;});
         return true;
     }catch(e){console.warn('Storage load error:',e);return false;}
 }
@@ -566,28 +680,22 @@ function checkVersionPassword(){const i=document.getElementById('versionPassword
 document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('passwordModal').classList.contains('visible'))checkVersionPassword();});
 
 // ===== PEDANA MODAL =====
-function showPedanaModal(serial,callback){
+function showPedanaModal(serial, imgData, callback){
     const current=document.getElementById('pedana').value.trim()||'—';
     document.getElementById('pedanaSerialRef').textContent='Seriale: '+serial;
     document.getElementById('pedanaBigRef').textContent=current;
     document.getElementById('pedanaModalTitle').textContent='📍 Pedana / Posizione';
     document.getElementById('pedanaModalMsg').textContent='Conferma o modifica';
+    const pw=document.getElementById('pedanaPreviewWrap');
+    if(imgData){pw.innerHTML=`<img src="${imgData}" alt="preview">`;pw.style.display='block';}
+    else{pw.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>';pw.style.display='flex';}
     document.getElementById('pedanaChangeInput').style.display='none';
     document.getElementById('newPedanaInput').value='';
     pedanaCallback=callback;
     document.getElementById('pedanaModal').classList.add('visible');
 }
-function pedanaKeep(){
-    document.getElementById('pedanaModal').classList.remove('visible');
-    if(pedanaCallback)pedanaCallback(document.getElementById('pedana').value.trim());
-    pedanaCallback=null;
-}
-function pedanaChange(){
-    document.getElementById('pedanaChangeInput').style.display='block';
-    const np=document.getElementById('newPedanaInput');
-    np.value=lastScanPedana||'';
-    setTimeout(()=>np.focus(),100);
-}
+function pedanaKeep(){document.getElementById('pedanaModal').classList.remove('visible');if(pedanaCallback)pedanaCallback(document.getElementById('pedana').value.trim());pedanaCallback=null;}
+function pedanaChange(){document.getElementById('pedanaChangeInput').style.display='block';const np=document.getElementById('newPedanaInput');np.value=lastScanPedana||'';setTimeout(()=>np.focus(),100);}
 function pedanaCancel(){document.getElementById('pedanaChangeInput').style.display='none';}
 function pedanaConfirm(){
     const nv=document.getElementById('newPedanaInput').value.trim();
@@ -595,14 +703,11 @@ function pedanaConfirm(){
     document.getElementById('pedana').value=nv;
     document.getElementById('pedanaModal').classList.remove('visible');
     document.getElementById('pedana').classList.remove('missing');
-    lastScanPedana=nv;
-    saveToStorage();
-    if(pedanaCallback)pedanaCallback(nv);
-    pedanaCallback=null;
+    lastScanPedana=nv;saveToStorage();
+    if(pedanaCallback)pedanaCallback(nv);pedanaCallback=null;
 }
 document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('pedanaChangeInput').style.display==='block')pedanaConfirm();});
 
-// ===== PEDANA EDIT PER RECORD =====
 function openPedanaEdit(id){
     const rec=records.find(r=>r.id===id);if(!rec)return;
     pedanaEditRecordId=id;
@@ -626,12 +731,7 @@ function resetIdleTimer(){
     if(idleTimer)clearTimeout(idleTimer);
     if(!cameraActive)return;
     lastScanTime=Date.now();
-    idleTimer=setTimeout(()=>{
-        if(cameraActive){
-            toast('⚡ Chiusura fotocamera: 30s di inattività (risparmio batteria/CPU)','warning');
-            setTimeout(()=>stopCamera(),500);
-        }
-    },IDLE_TIMEOUT);
+    idleTimer=setTimeout(()=>{if(cameraActive){toast('⚡ Chiusura fotocamera: 30s di inattività','warning');setTimeout(()=>stopCamera(),500);}},IDLE_TIMEOUT);
 }
 
 async function toggleCamera(){if(cameraActive){stopCamera();}else{await startCamera();}}
@@ -656,8 +756,7 @@ async function startCamera(){
         document.getElementById('ocrStatus').textContent='✓ Pronto — Scansione in corso';
         document.getElementById('progressBar').style.width='0%';
         scanTimer=setInterval(scanFrame,SCAN_INTERVAL);
-        resetIdleTimer();
-        checkScrollPosition();
+        resetIdleTimer();checkScrollPosition();
         toast('📷 Fotocamera OCR avviata','success');vib('ok');
     }catch(err){console.error(err);toast('Errore: '+err.message,'error');beepErr();vib('err');resetBtnCamera();}
 }
@@ -772,18 +871,26 @@ function processSerial(serial,imgData,confidence,corrections){
     updateScanIndicator();
     const operator=document.getElementById('operatorName').value.trim()||'N/D';
     const pedana=document.getElementById('pedana').value.trim()||'N/D';
-    lastScanPedana=pedana;
+    const runNum=document.getElementById('runNumber').value.trim()||'1';
+    lastScanPedana=pedana;lastScanImage=imgData;lastScanSerial=serial;
     const ts=new Date().toLocaleString('it-IT');
-    records.unshift({
+    const rec={
         id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),
-        serial,timestamp:ts,operator,pedana,modified:false,status:'',note:'',
-        image:imgData||null,confidence:confidence||0,corrections:corrections||[]
-    });
+        serial,timestamp:ts,operator,pedana,runNumber:runNum,
+        modified:false,status:'',note:'',
+        image:imgData||null,confidence:confidence||0,corrections:corrections||[],
+        _synced:false
+    };
+    records.unshift(rec);
     scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
     saveToStorage();
     beepOk();vib('ok');renderRecords();toast('✅ '+serial,'success');
+
+    // Send to Google Sheets (async, non-blocking)
+    if(gsheetUrl){sendToGSheet(rec).then(()=>{saveToStorage();setSyncStatus('synced');}).catch(()=>{setSyncStatus('pending');});}
+
     setTimeout(()=>{
-        showPedanaModal(serial,()=>{
+        showPedanaModal(serial, imgData, ()=>{
             scanCooldown=false;
             document.getElementById('cooldownOverlay').classList.remove('active');
             if(cameraActive&&!scanPaused) document.getElementById('ocrStatus').textContent='✓ Pronto — Scansione in corso';
@@ -799,6 +906,7 @@ function renderRecords(){
     el.innerHTML=records.map(r=>{
         const cc=getConfClass(r.confidence);
         const ch=r.corrections&&r.corrections.length>0?`<span class="meta-tag correction" title="Correzioni OCR">⚡ ${r.corrections.join(', ')}</span>`:'';
+        const syncTag=r._synced?'<span class="meta-tag synced-tag" title="Sincronizzato">☁️</span>':'<span class="meta-tag pending-tag" title="In coda">📤</span>';
         return `<div class="record-card" id="record-${r.id}">
             <div class="record-top">
                 <div class="record-image-wrap" onclick="openModal('${r.id}')">
@@ -808,8 +916,9 @@ function renderRecords(){
                     <input type="text" class="serial-display ${r.modified?'modified':''}" value="${r.serial}" onchange="editSerial('${r.id}',this.value)" onfocus="this.dataset.orig=this.value" spellcheck="false" autocomplete="off" maxlength="12">
                     <div class="record-meta">
                         <span class="meta-tag ${cc}" title="Confidenza OCR">🎯 ${r.confidence}%</span>
-                        ${ch}
+                        ${ch}${syncTag}
                         <span>🕐 ${r.timestamp}</span>
+                        <span>🏃 Run ${r.runNumber||'—'}</span>
                         <span>👤 ${r.operator}</span>
                         <span class="pedana-inline" onclick="openPedanaEdit('${r.id}')" title="Tap per modificare">📍 ${r.pedana}</span>
                         ${r.modified?'<span class="mod-badge">MODIF.</span>':''}
@@ -840,10 +949,10 @@ function editSerial(id,newVal){
     if(errMsg){toast('❌ '+errMsg,'error');beepErr();input.value=orig;return;}
     showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{
         if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Seriale già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}
-        rec.serial=fixed;rec.modified=true;toast('Seriale modificato: '+fixed,'success');beepOk();renderRecords();saveToStorage();
+        rec.serial=fixed;rec.modified=true;rec._synced=false;toast('Seriale modificato: '+fixed,'success');beepOk();renderRecords();saveToStorage();
     });input.value=orig;
 }
-function setStatus(id,s){const rec=records.find(r=>r.id===id);if(!rec)return;rec.status=s;vib('ok');renderRecords();saveToStorage();}
+function setStatus(id,s){const rec=records.find(r=>r.id===id);if(!rec)return;rec.status=s;rec._synced=false;vib('ok');renderRecords();saveToStorage();}
 function setNote(id,n){const rec=records.find(r=>r.id===id);if(rec)rec.note=n;saveToStorage();}
 function deleteRecord(id){
     const rec=records.find(r=>r.id===id);if(!rec)return;
@@ -860,11 +969,46 @@ function closeVersionModal(){document.getElementById('versionModal').classList.r
 
 function exportExcel(){
     if(records.length===0){toast('Nessun record','warning');return;}
-    const data=records.map((r,i)=>({'#':i+1,'Timestamp':r.timestamp,'Seriale':r.serial,'Confidenza %':r.confidence,'Correzioni OCR':r.corrections&&r.corrections.length?r.corrections.join(', '):'—','Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,'Operatore':r.operator,'Stato':r.status||'—','Note':r.note}));
-    const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:12},{wch:20},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];
+    const data=records.map((r,i)=>({'#':i+1,'N° Run':r.runNumber||'—','Timestamp':r.timestamp,'Seriale':r.serial,'Confidenza %':r.confidence,'Correzioni OCR':r.corrections&&r.corrections.length?r.corrections.join(', '):'—','Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,'Operatore':r.operator,'Stato':r.status||'—','Note':r.note}));
+    const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=[{wch:5},{wch:8},{wch:20},{wch:15},{wch:12},{wch:20},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Scansioni');
     XLSX.writeFile(wb,`Scansioni_${new Date().toISOString().slice(0,10)}.xlsx`);toast(`📊 Excel: ${records.length} record`,'success');vib('ok');
 }
+
+function exportHtmlWithImages(){
+    if(records.length===0){toast('Nessun record','warning');return;}
+    let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Report Scansioni ${new Date().toLocaleDateString('it-IT')}</title>
+<style>
+body{font-family:Arial,sans-serif;margin:20px;background:#f5f5f5;color:#333;}
+h1{font-size:20px;margin-bottom:4px;}.meta{font-size:12px;color:#666;margin-bottom:16px;}
+table{width:100%;border-collapse:collapse;background:white;box-shadow:0 1px 3px rgba(0,0,0,0.1);font-size:12px;}
+th{background:#1e293b;color:white;padding:8px 6px;text-align:left;font-size:11px;position:sticky;top:0;}
+td{padding:6px;border-bottom:1px solid #e2e8f0;vertical-align:middle;}tr:hover{background:#f0f9ff;}
+.img-cell{width:140px;text-align:center;}.img-cell img{max-width:130px;max-height:50px;border-radius:4px;border:1px solid #ddd;}
+.serial{font-family:monospace;font-weight:bold;font-size:14px;letter-spacing:1px;}
+.good{color:#10b981;font-weight:bold;}.rotto{color:#ef4444;font-weight:bold;}.sporco{color:#a16207;font-weight:bold;}
+.rfid{color:#8b5cf6;font-weight:bold;}.bar{color:#06b6d4;font-weight:bold;}.dubbio{color:#64748b;font-weight:bold;}
+.conf-high{color:#10b981;}.conf-mid{color:#f59e0b;}.conf-low{color:#ef4444;}
+@media print{body{margin:10px;}table{font-size:10px;}}
+</style></head><body><h1>📋 Report Scansioni Seriali</h1>
+<div class="meta">Generato: ${new Date().toLocaleString('it-IT')} | Totale record: ${records.length}</div>
+<table><thead><tr><th>#</th><th>Run</th><th>Timestamp</th><th>Anteprima</th><th>Seriale</th><th>Conf.</th><th>Correzioni</th><th>Pedana</th><th>Operatore</th><th>Stato</th><th>Note</th></tr></thead><tbody>`;
+    records.forEach((r,i)=>{
+        const cc=r.confidence>=80?'conf-high':r.confidence>=60?'conf-mid':'conf-low';
+        let stClass='',stText=r.status||'—';
+        if(r.status==='Good')stClass='good';else if(r.status==='Rotto')stClass='rotto';
+        else if(r.status==='Sporco')stClass='sporco';else if(r.status==='RF-ID')stClass='rfid';
+        else if(r.status==='Barra Mancante')stClass='bar';else if(r.status==='Dubbio/Altro')stClass='dubbio';
+        const imgHtml=r.image?`<div class="img-cell"><img src="${r.image}" alt="serial"></div>`:'<div class="img-cell">—</div>';
+        html+=`<tr><td>${i+1}</td><td>${r.runNumber||'—'}</td><td>${r.timestamp}</td>${imgHtml}<td class="serial">${r.serial}${r.modified?' <small style="color:#f59e0b;">(mod)</small>':''}</td><td class="${cc}">${r.confidence}%</td><td>${(r.corrections||[]).join(', ')||'—'}</td><td>${r.pedana}</td><td>${r.operator}</td><td class="${stClass}">${stText}</td><td>${r.note||''}</td></tr>`;
+    });
+    html+=`</tbody></table></body></html>`;
+    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+    saveAs(blob,`Report_Scansioni_${new Date().toISOString().slice(0,10)}.html`);
+    toast(`📄 HTML esportato: ${records.length} record con immagini`,'success');vib('ok');
+}
+
 async function exportZip(){
     if(records.length===0){toast('Nessun record','warning');return;}
     toast('📦 Creazione ZIP...','success');
@@ -880,13 +1024,22 @@ async function exportZip(){
 
 // Init
 document.addEventListener('DOMContentLoaded',()=>{
+    loadGSheetUrl();
     const loaded=loadFromStorage();
     if(loaded && records.length>0){
         renderRecords();
-        toast(`📂 ${records.length} record recuperati dalla memoria locale`,'success');
-    } else {
-        renderRecords();
-    }
+        toast(`📂 ${records.length} record recuperati`,'success');
+        // Check sync status
+        const unsynced=records.filter(r=>!r._synced);
+        if(unsynced.length>0){
+            setSyncStatus('pending');
+            if(gsheetUrl){
+                setTimeout(()=>syncPendingToGSheet(),2000);
+            }
+        } else {
+            setSyncStatus('synced');
+        }
+    } else { renderRecords(); }
 });
 
 window.addEventListener('beforeunload',()=>{saveToStorage();});
@@ -898,3 +1051,66 @@ let lastEnd=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-l
 </body>
 </html>
 
+
+
+              <script>
+                              // === GOOGLE APPS SCRIPT - Scanner Seriali OCR ===
+const SHEET_NAME = 'Foglio1'; // Cambia se hai rinominato il foglio
+
+function doGet(e) {
+  return ContentService.createTextOutput(JSON.stringify({status: 'ok', message: 'Scanner API attiva'}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      return error('Foglio non trovato: ' + SHEET_NAME);
+    }
+    
+    // Supporta invio singolo o multiplo
+    const records = Array.isArray(data) ? data : [data];
+    let added = 0;
+    
+    for (const r of records) {
+      const lastRow = sheet.getLastRow();
+      sheet.appendRow([
+        r.rowNum || lastRow + 1,
+        r.runNumber || '',
+        r.timestamp || '',
+        r.serial || '',
+        r.confidence || '',
+        r.corrections || '',
+        r.modified || '',
+        r.pedana || '',
+        r.operator || '',
+        r.status || '',
+        r.note || ''
+      ]);
+      added++;
+    }
+    
+    return success(`Aggiunti ${added} record`);
+  } catch (err) {
+    return error(err.toString());
+  }
+}
+
+function success(msg) {
+  return ContentService.createTextOutput(JSON.stringify({status: 'success', message: msg}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function error(msg) {
+  return ContentService.createTextOutput(JSON.stringify({status: 'error', message: msg}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+
+              </script>
+                        </body>
+                        </html>
+                    
