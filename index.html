@@ -198,7 +198,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             Scanner Seriali OCR
         </h1>
-        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v3.4.0</span>
+        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v3.5.0</span>
     </div>
     <div class="scan-counter">
         <span class="label">Seriali: <span class="count" id="scanCount">0</span><span id="syncIndicator" class="sync-status synced" title="Stato sync">🟢 Sync</span></span>
@@ -269,7 +269,7 @@
 
 <div class="confirm-modal" id="passwordModal"><div class="confirm-box"><h3>🔒</h3><p style="margin-top:12px;"></p><input type="password" class="input-field" id="versionPassword" maxlength="4" style="text-align:center;font-family:'JetBrains Mono',monospace;letter-spacing:6px;font-size:20px;width:120px;margin:0 auto;" inputmode="numeric"><div class="confirm-actions" style="margin-top:16px;"><button class="btn btn-outline" onclick="closePasswordModal()">Annulla</button><button class="btn btn-primary" onclick="checkVersionPassword()">OK</button></div></div></div>
 
-<div class="version-modal" id="versionModal" onclick="closeVersionModal()"><div class="version-modal-box" onclick="event.stopPropagation()"><h3>📋 Changelog</h3><div class="ver-date" id="versionBuildDate">Generato il 23/05/2026 — 06:00 UTC+2</div><div id="changelogContent"></div><button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button></div></div>
+<div class="version-modal" id="versionModal" onclick="closeVersionModal()"><div class="version-modal-box" onclick="event.stopPropagation()"><h3>📋 Changelog</h3><div class="ver-date" id="versionBuildDate">Generato il 23/05/2026 — 07:00 UTC+2</div><div id="changelogContent"></div><button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button></div></div>
 
 <div class="confirm-modal" id="pedanaModal">
     <div class="confirm-box">
@@ -301,17 +301,16 @@
 </div>
 
 <script>
-const APP_VERSION='3.4.0';
-const APP_BUILD_DATE='23/05/2026 06:00';
+const APP_VERSION='3.5.0';
+const APP_BUILD_DATE='23/05/2026 07:00';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
 const IMG_DB_NAME='ScannerSerialiDB';
 const IMG_DB_VERSION=1;
 const IMG_STORE='images';
 const CHANGELOG=[
-    {ver:'v3.4.0',date:'23/05/2026 06:00',desc:'URL sempre protetto da pwd. Freccia scroll in basso a destra. Immagini salvate in IndexedDB (persistono dopo refresh).',tags:['feat','fix','ui']},
-    {ver:'v3.3.0',date:'23/05/2026 05:00',desc:'RUN con placeholder. URL protetto. Freccia scroll-to-top corretta.',tags:['fix','ui']},
-    {ver:'v3.2.0',date:'23/05/2026 04:00',desc:'Run solo in tabella, editabile. URL protetto da password.',tags:['feat','ui']},
+    {ver:'v3.5.0',date:'23/05/2026 07:00',desc:'Fix fetch Google Sheets: rimosso mode no-cors, usato fetch diretto con text/plain. Ora l\'upload su Sheets+Drive funziona.',tags:['fix']},
+    {ver:'v3.4.0',date:'23/05/2026 06:00',desc:'URL sempre protetto da pwd. Freccia scroll in basso a destra. Immagini in IndexedDB.',tags:['feat','fix','ui']},
     {ver:'v3.0.0',date:'23/05/2026 02:00',desc:'Integrazione Google Sheets + Drive.',tags:['feat']},
     {ver:'v2.0.0',date:'22/05/2026 23:00',desc:'Salvataggio locale.',tags:['feat','ui']},
     {ver:'v1.0.0',date:'22/05/2026 12:00',desc:'Versione iniziale.',tags:['feat']}
@@ -332,51 +331,11 @@ const IMG_MARGIN=8;
 
 // ===== INDEXED DB FOR IMAGES =====
 let imgDB=null;
-
-function openImgDB(){
-    return new Promise((resolve,reject)=>{
-        if(imgDB){resolve(imgDB);return;}
-        const req=indexedDB.open(IMG_DB_NAME,IMG_DB_VERSION);
-        req.onupgradeneeded=(e)=>{
-            const db=e.target.result;
-            if(!db.objectStoreNames.contains(IMG_STORE)) db.createObjectStore(IMG_STORE,{keyPath:'id'});
-        };
-        req.onsuccess=(e)=>{imgDB=e.target.result;resolve(imgDB);};
-        req.onerror=(e)=>reject(e);
-    });
-}
-
-async function saveImg(id,dataUrl){
-    try{
-        const db=await openImgDB();
-        const tx=db.transaction(IMG_STORE,'readwrite');
-        const store=tx.objectStore(IMG_STORE);
-        store.put({id:id, data:dataUrl});
-        return new Promise((r)=>{tx.oncomplete=()=>r();});
-    }catch(e){console.warn('ImgDB save err:',e);}
-}
-
-async function getImg(id){
-    try{
-        const db=await openImgDB();
-        const tx=db.transaction(IMG_STORE,'readonly');
-        const store=tx.objectStore(IMG_STORE);
-        return new Promise((r)=>{const req=store.get(id);req.onsuccess=()=>r(req.result?req.result.data:null);req.onerror=()=>r(null);});
-    }catch(e){return null;}
-}
-
-async function deleteImg(id){
-    try{const db=await openImgDB();const tx=db.transaction(IMG_STORE,'readwrite');tx.objectStore(IMG_STORE).delete(id);}catch(e){}
-}
-
-async function loadAllImages(){
-    try{
-        const db=await openImgDB();
-        const tx=db.transaction(IMG_STORE,'readonly');
-        const store=tx.objectStore(IMG_STORE);
-        return new Promise((r)=>{const req=store.getAll();req.onsuccess=()=>{const map={};(req.result||[]).forEach(item=>{map[item.id]=item.data;});r(map);};req.onerror=()=>r({});});
-    }catch(e){return {};}
-}
+function openImgDB(){return new Promise((resolve,reject)=>{if(imgDB){resolve(imgDB);return;}const req=indexedDB.open(IMG_DB_NAME,IMG_DB_VERSION);req.onupgradeneeded=(e)=>{const db=e.target.result;if(!db.objectStoreNames.contains(IMG_STORE))db.createObjectStore(IMG_STORE,{keyPath:'id'});};req.onsuccess=(e)=>{imgDB=e.target.result;resolve(imgDB);};req.onerror=(e)=>reject(e);});}
+async function saveImg(id,dataUrl){try{const db=await openImgDB();const tx=db.transaction(IMG_STORE,'readwrite');tx.objectStore(IMG_STORE).put({id:id,data:dataUrl});return new Promise((r)=>{tx.oncomplete=()=>r();});}catch(e){console.warn('ImgDB save err:',e);}}
+async function getImg(id){try{const db=await openImgDB();const tx=db.transaction(IMG_STORE,'readonly');const store=tx.objectStore(IMG_STORE);return new Promise((r)=>{const req=store.get(id);req.onsuccess=()=>r(req.result?req.result.data:null);req.onerror=()=>r(null);});}catch(e){return null;}}
+async function deleteImg(id){try{const db=await openImgDB();const tx=db.transaction(IMG_STORE,'readwrite');tx.objectStore(IMG_STORE).delete(id);}catch(e){}}
+async function loadAllImages(){try{const db=await openImgDB();const tx=db.transaction(IMG_STORE,'readonly');const store=tx.objectStore(IMG_STORE);return new Promise((r)=>{const req=store.getAll();req.onsuccess=()=>{const map={};(req.result||[]).forEach(item=>{map[item.id]=item.data;});r(map);};req.onerror=()=>r({});});}catch(e){return {};}}
 
 // ===== AUDIO =====
 function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx;}
@@ -400,60 +359,16 @@ function cropFromBbox(canvas,rw,rh,bbox,margin){const{x0,y0,x1,y1}=bbox;const cX
 
 // ===== SCROLL =====
 function scrollToTop(){window.scrollTo({top:0,behavior:'smooth'});}
-function checkScrollPosition(){
-    const btn=document.getElementById('scrollTopBtn');
-    const scrolledDown=window.scrollY>200;
-    if(scrolledDown)btn.classList.add('visible');else btn.classList.remove('visible');
-}
+function checkScrollPosition(){const btn=document.getElementById('scrollTopBtn');const scrolledDown=window.scrollY>200;if(scrolledDown)btn.classList.add('visible');else btn.classList.remove('visible');}
 window.addEventListener('scroll',checkScrollPosition,{passive:true});
 
-// ===== GSHEET URL (sempre protetto da password) =====
+// ===== GSHEET URL =====
 function loadGSheetUrl(){try{const u=localStorage.getItem(GSHEET_KEY);if(u){gsheetUrl=u;updateMask();}}catch(e){}}
 function saveGSheetUrl(){try{localStorage.setItem(GSHEET_KEY,gsheetUrl);}catch(e){}}
+function updateMask(){const mask=document.getElementById('gsheetMask');if(gsheetUrl){const short=gsheetUrl.length>30?gsheetUrl.substring(0,15)+'...'+gsheetUrl.substring(gsheetUrl.length-10):gsheetUrl;mask.textContent='✅ '+short;mask.classList.add('has-url');}else{mask.textContent='••••••••••';mask.classList.remove('has-url');}}
+function unlockGSheetUrl(){const p=prompt('Inserisci password:');if(p===GSHEET_PWD){const mask=document.getElementById('gsheetMask');const inp=document.getElementById('gsheetUrl');mask.style.display='none';inp.style.display='block';inp.value=gsheetUrl;inp.focus();inp.onblur=function(){gsheetUrl=this.value.trim();saveGSheetUrl();updateMask();this.style.display='none';mask.style.display='block';};inp.onkeydown=function(e){if(e.key==='Enter'){gsheetUrl=this.value.trim();saveGSheetUrl();updateMask();this.style.display='none';mask.style.display='block';toast('URL salvato','success');}};}else if(p!==null){toast('❌ Errata','error');beepErr();vib('err');}}
 
-function updateMask(){
-    const mask=document.getElementById('gsheetMask');
-    if(gsheetUrl){
-        const short=gsheetUrl.length>30?gsheetUrl.substring(0,15)+'...'+gsheetUrl.substring(gsheetUrl.length-10):gsheetUrl;
-        mask.textContent='✅ '+short;
-        mask.classList.add('has-url');
-    } else {
-        mask.textContent='••••••••••';
-        mask.classList.remove('has-url');
-    }
-}
-
-function unlockGSheetUrl(){
-    const p=prompt('Inserisci password:');
-    if(p===GSHEET_PWD){
-        const mask=document.getElementById('gsheetMask');
-        const inp=document.getElementById('gsheetUrl');
-        mask.style.display='none';
-        inp.style.display='block';
-        inp.value=gsheetUrl;
-        inp.focus();
-        // Quando si clicca fuori o si preme Enter, si chiude e si salva
-        inp.onblur=function(){
-            gsheetUrl=this.value.trim();
-            saveGSheetUrl();
-            updateMask();
-            this.style.display='none';
-            mask.style.display='block';
-        };
-        inp.onkeydown=function(e){
-            if(e.key==='Enter'){
-                gsheetUrl=this.value.trim();
-                saveGSheetUrl();
-                updateMask();
-                this.style.display='none';
-                mask.style.display='block';
-                toast('URL salvato','success');
-            }
-        };
-    } else if(p!==null){ toast('❌ Errata','error'); beepErr(); vib('err'); }
-}
-
-// ===== SYNC =====
+// ===== SYNC (FIXED) =====
 function setSyncStatus(status){
     syncStatus=status;
     const el=document.getElementById('syncIndicator');
@@ -465,13 +380,15 @@ function setSyncStatus(status){
     else if(status==='pending'){el.className='sync-status pending';el.textContent='🟡 In coda';btn.style.display='inline-flex';}
 }
 
+// FIX: Rimosso mode:'no-cors', usato text/plain
 async function sendToGSheet(record){
     if(!gsheetUrl)return false;
     try{
         const payload={rowNum:records.indexOf(record)+1,timestamp:record.timestamp||'',serial:record.serial||'',confidence:record.confidence||0,corrections:(record.corrections||[]).join(', '),modified:record.modified?'Sì':'No',runNumber:record.runNumber||'',pedana:record.pedana||'',operator:record.operator||'',status:record.status||'',note:record.note||''};
         const uploadImg=document.getElementById('gsheetImgToggle').checked;
         if(uploadImg&&record.image)payload.imageData=record.image;
-        await fetch(gsheetUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+        // FIX: fetch diretto senza no-cors
+        const resp=await fetch(gsheetUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
         record._synced=true;record._imgUploaded=uploadImg&&!!record.image;
         return true;
     }catch(e){console.warn('GSheet fail:',e);record._synced=false;return false;}
@@ -480,12 +397,13 @@ async function sendToGSheet(record){
 async function verifyGSheet(){
     if(!gsheetUrl){toast('Inserisci URL','error');return;}
     toast('Verifica...','success');
-    try{await fetch(gsheetUrl,{mode:'no-cors'});toast('✅ Connesso','success');setSyncStatus('synced');}catch(e){toast('❌ Fallita','error');setSyncStatus('error');}
-    // Dopo verifica, minimizza il campo
-    const mask=document.getElementById('gsheetMask');
-    const inp=document.getElementById('gsheetUrl');
-    gsheetUrl=inp.value.trim()||gsheetUrl;
-    saveGSheetUrl();updateMask();
+    try{
+        // FIX: verifica con POST invece di GET
+        await fetch(gsheetUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({test:true})});
+        toast('✅ Connesso','success');setSyncStatus('synced');
+    }catch(e){toast('❌ Fallita: '+e.message,'error');setSyncStatus('error');}
+    const mask=document.getElementById('gsheetMask');const inp=document.getElementById('gsheetUrl');
+    gsheetUrl=inp.value.trim()||gsheetUrl;saveGSheetUrl();updateMask();
     inp.style.display='none';mask.style.display='block';
 }
 
@@ -507,12 +425,7 @@ async function saveToStorage(){
     try{
         const lean=records.map(r=>{const c={...r};c.image=null;return c;});
         localStorage.setItem(STORAGE_KEY,JSON.stringify({records:lean,scanTotal:scanTotal,operator:document.getElementById('operatorName').value,pedana:document.getElementById('pedana').value,gsheetImgToggle:document.getElementById('gsheetImgToggle').checked,timestamp:Date.now()}));
-        // Salva immagini in IndexedDB
-        for(const r of records){
-            if(r.image&&!r.image.includes('[truncated]')){
-                await saveImg(r.id,r.image);
-            }
-        }
+        for(const r of records){if(r.image&&!r.image.includes('[truncated]')){await saveImg(r.id,r.image);}}
     }catch(e){console.warn(e);}
 }
 
@@ -525,7 +438,6 @@ async function loadFromStorage(){
         if(d.pedana)document.getElementById('pedana').value=d.pedana;
         if(d.gsheetImgToggle!==undefined)document.getElementById('gsheetImgToggle').checked=d.gsheetImgToggle;
         document.getElementById('scanCount').textContent=scanTotal;
-        // Recupera immagini da IndexedDB
         const imgMap=await loadAllImages();
         records.forEach(r=>{if(imgMap[r.id])r.image=imgMap[r.id];});
         return true;
@@ -540,20 +452,7 @@ function checkVersionPassword(){const i=document.getElementById('versionPassword
 document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('passwordModal').classList.contains('visible'))checkVersionPassword();});
 
 // ===== PEDANA =====
-function showPedanaModal(serial,imgData,callback){
-    const current=document.getElementById('pedana').value.trim()||'—';
-    document.getElementById('pedanaSerialRef').textContent='Seriale: '+serial;
-    document.getElementById('pedanaBigRef').textContent=current;
-    document.getElementById('pedanaModalTitle').textContent='📍 Pedana / Posizione';
-    document.getElementById('pedanaModalMsg').textContent='Conferma o modifica';
-    const pw=document.getElementById('pedanaPreviewWrap');
-    if(imgData){pw.innerHTML=`<img src="${imgData}" alt="preview">`;pw.style.display='block';}
-    else{pw.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>';pw.style.display='flex';}
-    document.getElementById('pedanaChangeInput').style.display='none';
-    document.getElementById('newPedanaInput').value='';
-    pedanaCallback=callback;
-    document.getElementById('pedanaModal').classList.add('visible');
-}
+function showPedanaModal(serial,imgData,callback){const current=document.getElementById('pedana').value.trim()||'—';document.getElementById('pedanaSerialRef').textContent='Seriale: '+serial;document.getElementById('pedanaBigRef').textContent=current;document.getElementById('pedanaModalTitle').textContent='📍 Pedana / Posizione';document.getElementById('pedanaModalMsg').textContent='Conferma o modifica';const pw=document.getElementById('pedanaPreviewWrap');if(imgData){pw.innerHTML=`<img src="${imgData}" alt="preview">`;pw.style.display='block';}else{pw.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>';pw.style.display='flex';}document.getElementById('pedanaChangeInput').style.display='none';document.getElementById('newPedanaInput').value='';pedanaCallback=callback;document.getElementById('pedanaModal').classList.add('visible');}
 function pedanaKeep(){document.getElementById('pedanaModal').classList.remove('visible');if(pedanaCallback)pedanaCallback(document.getElementById('pedana').value.trim());pedanaCallback=null;}
 function pedanaChange(){document.getElementById('pedanaChangeInput').style.display='block';const np=document.getElementById('newPedanaInput');np.value=lastScanPedana||'';setTimeout(()=>np.focus(),100);}
 function pedanaCancel(){document.getElementById('pedanaChangeInput').style.display='none';}
@@ -686,7 +585,6 @@ function processSerial(serial,imgData,confidence,corrections){
     const rec={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial,timestamp:ts,operator,pedana,runNumber:'',modified:false,status:'',note:'',image:imgData||null,confidence:confidence||0,corrections:corrections||[],_synced:false,_imgUploaded:false};
     records.unshift(rec);
     scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
-    // Salva immagine in IndexedDB
     if(imgData)saveImg(rec.id,imgData);
     saveToStorage();
     beepOk();vib('ok');renderRecords();toast('✅ '+serial,'success');
@@ -745,48 +643,13 @@ function renderRecords(){
     }).join('');
 }
 
-function editRun(id){
-    const rec=records.find(r=>r.id===id);if(!rec)return;
-    const cell=document.getElementById('runCell-'+id);
-    const cur=rec.runNumber||'';
-    cell.innerHTML=`<input type="text" class="run-input" id="runInput-${id}" value="${cur}" placeholder="RUN" maxlength="10" onblur="saveRun('${id}')" onkeydown="if(event.key==='Enter')this.blur()">`;
-    cell.classList.add('editing');
-    const inp=document.getElementById('runInput-'+id);
-    inp.focus();inp.select();
-}
-function saveRun(id){
-    const rec=records.find(r=>r.id===id);if(!rec)return;
-    const inp=document.getElementById('runInput-'+id);
-    if(!inp)return;
-    const nv=inp.value.trim();
-    rec.runNumber=nv;rec._synced=false;
-    saveToStorage();renderRecords();
-    if(gsheetUrl&&nv)sendToGSheet(rec);
-}
+function editRun(id){const rec=records.find(r=>r.id===id);if(!rec)return;const cell=document.getElementById('runCell-'+id);const cur=rec.runNumber||'';cell.innerHTML=`<input type="text" class="run-input" id="runInput-${id}" value="${cur}" placeholder="RUN" maxlength="10" onblur="saveRun('${id}')" onkeydown="if(event.key==='Enter')this.blur()">`;cell.classList.add('editing');const inp=document.getElementById('runInput-'+id);inp.focus();inp.select();}
+function saveRun(id){const rec=records.find(r=>r.id===id);if(!rec)return;const inp=document.getElementById('runInput-'+id);if(!inp)return;const nv=inp.value.trim();rec.runNumber=nv;rec._synced=false;saveToStorage();renderRecords();if(gsheetUrl&&nv)sendToGSheet(rec);}
 
-function editSerial(id,newVal){
-    const rec=records.find(r=>r.id===id);if(!rec)return;
-    const input=document.querySelector(`#record-${id} .serial-display`);const orig=input?.dataset?.orig||rec.serial;
-    if(newVal===orig)return;
-    let{fixed}=fixOCR(newVal.trim().toUpperCase());
-    const errMsg=validateSerial(fixed);
-    if(errMsg){toast('❌ '+errMsg,'error');beepErr();input.value=orig;return;}
-    showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{
-        if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Seriale già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}
-        rec.serial=fixed;rec.modified=true;rec._synced=false;toast('Seriale modificato: '+fixed,'success');beepOk();renderRecords();saveToStorage();
-    });input.value=orig;
-}
+function editSerial(id,newVal){const rec=records.find(r=>r.id===id);if(!rec)return;const input=document.querySelector(`#record-${id} .serial-display`);const orig=input?.dataset?.orig||rec.serial;if(newVal===orig)return;let{fixed}=fixOCR(newVal.trim().toUpperCase());const errMsg=validateSerial(fixed);if(errMsg){toast('❌ '+errMsg,'error');beepErr();input.value=orig;return;}showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Seriale già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}rec.serial=fixed;rec.modified=true;rec._synced=false;toast('Seriale modificato: '+fixed,'success');beepOk();renderRecords();saveToStorage();});input.value=orig;}
 function setStatus(id,s){const rec=records.find(r=>r.id===id);if(!rec)return;rec.status=s;rec._synced=false;vib('ok');renderRecords();saveToStorage();}
 function setNote(id,n){const rec=records.find(r=>r.id===id);if(rec)rec.note=n;saveToStorage();}
-function deleteRecord(id){
-    const rec=records.find(r=>r.id===id);if(!rec)return;
-    showConfirm('Elimina record',`Eliminare "${rec.serial}"?`,()=>{
-        records=records.filter(r=>r.id!==id);scanTotal=Math.max(0,scanTotal-1);
-        document.getElementById('scanCount').textContent=scanTotal;
-        deleteImg(id);
-        vib('err');beepErr();renderRecords();saveToStorage();toast('Record eliminato','warning');
-    });
-}
+function deleteRecord(id){const rec=records.find(r=>r.id===id);if(!rec)return;showConfirm('Elimina record',`Eliminare "${rec.serial}"?`,()=>{records=records.filter(r=>r.id!==id);scanTotal=Math.max(0,scanTotal-1);document.getElementById('scanCount').textContent=scanTotal;deleteImg(id);vib('err');beepErr();renderRecords();saveToStorage();toast('Record eliminato','warning');});}
 
 function openModal(id){const rec=records.find(r=>r.id===id);if(!rec||!rec.image)return;scanPaused=true;updateScanIndicator();document.getElementById('modalImage').src=rec.image;document.getElementById('imageModal').classList.add('visible');}
 function closeModal(){document.getElementById('imageModal').classList.remove('visible');scanPaused=false;updateScanIndicator();}
