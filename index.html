@@ -65,17 +65,14 @@
         .toggle-switch.active { background:var(--primary); border-color:var(--primary); }
         .toggle-switch::after { content:''; position:absolute; top:2px; left:2px; width:17px; height:17px; background:white; border-radius:50%; transition:transform 0.3s; }
         .toggle-switch.active::after { transform:translateX(19px); }
-        .gsheet-section { padding:0 18px 12px; }
-        .gsheet-bar { display:flex; align-items:center; gap:6px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius); padding:8px 10px; flex-wrap:wrap; min-height:40px; }
-        .gsheet-bar .gsheet-icon { font-size:16px; flex-shrink:0; }
-        .gsheet-bar .gsheet-url-wrap { flex:1; min-width:80px; position:relative; cursor:pointer; }
-        .gsheet-bar .gsheet-mask { display:block; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:5px 8px; color:var(--text-dim); font-size:10px; font-family:'JetBrains Mono',monospace; cursor:pointer; width:100%; text-align:center; letter-spacing:1px; user-select:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .gsheet-bar .gsheet-mask:hover { border-color:var(--primary-light); color:var(--text-muted); }
-        .gsheet-bar .gsheet-mask.has-url { color:var(--accent); border-color:rgba(16,185,129,0.3); }
-        .gsheet-bar input.gsheet-input { width:100%; background:var(--bg); border:1px solid var(--primary); border-radius:6px; color:var(--text); font-size:10px; font-family:'JetBrains Mono',monospace; outline:none; padding:5px 8px; display:none; }
-        .gsheet-verify { background:none; border:none; color:var(--primary-light); cursor:pointer; font-size:11px; font-weight:600; padding:4px 8px; border-radius:4px; transition:all 0.2s; white-space:nowrap; }
-        .gsheet-verify:hover { background:rgba(37,99,235,0.15); }
-        .gsheet-img-toggle { display:inline-flex; align-items:center; gap:4px; font-size:10px; color:var(--text-dim); cursor:pointer; white-space:nowrap; }
+        
+        /* GSheet Config inside Modal */
+        .gsheet-config-area { margin-top:20px; padding-top:20px; border-top:1px solid var(--border); text-align:left; }
+        .gsheet-config-area label { font-size:11px; color:var(--text-dim); display:block; margin-bottom:5px; }
+        .gsheet-input-row { display:flex; gap:8px; margin-bottom:10px; }
+        .gsheet-input-row input { flex:1; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:8px; font-family:'JetBrains Mono',monospace; font-size:11px; }
+        .gsheet-options { display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--text-muted); }
+        
         .scanner-section { padding:0 18px; position:relative; }
         .camera-container { position:relative; border-radius:var(--radius); overflow:hidden; background:#000; display:none; aspect-ratio:4/3; }
         .camera-container.active { display:block; }
@@ -92,7 +89,8 @@
         .results-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:10px; }
         .results-header h2 { font-size:15px; font-weight:600; white-space:nowrap; }
         .btn-apply-status { flex:0 0 auto; padding:6px 12px; font-size:11px; white-space:nowrap; }
-        .record-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:12px; margin-bottom:10px; animation:slideIn 0.3s ease-out; }
+        .record-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:12px; margin-bottom:10px; animation:slideIn 0.3s ease-out; transition:background 0.3s; }
+        .record-card.low-conf { background:rgba(245,158,11,0.15); border-color:var(--warning); }
         @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
         .record-top { display:flex; align-items:center; gap:10px; flex-wrap:nowrap; }
         .record-image-wrap { width:130px; height:50px; border-radius:6px; overflow:hidden; background:#000; flex-shrink:0; cursor:pointer; position:relative; border:1px solid var(--border); }
@@ -192,7 +190,7 @@
         .status-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
         .status-grid .btn { font-size:12px; padding:8px; }
 
-        @media (max-width:380px) { .btn { padding:8px 8px; font-size:11px; } .status-btn { font-size:9px; padding:3px 6px; } .record-image-wrap { width:120px; height:46px; } .serial-display { width:120px; } .record-meta { gap:3px; } .gsheet-bar { flex-wrap:wrap; } }
+        @media (max-width:380px) { .btn { padding:8px 8px; font-size:11px; } .status-btn { font-size:9px; padding:3px 6px; } .record-image-wrap { width:120px; height:46px; } .serial-display { width:120px; } .record-meta { gap:3px; } }
     </style>
 </head>
 <body>
@@ -203,7 +201,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             Scanner Seriali OCR
         </h1>
-        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v3.9.0</span>
+        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v4.0.0</span>
     </div>
     <div class="scan-counter">
         <span class="label">Seriali: <span class="count" id="scanCount">0</span><span id="syncIndicator" class="sync-status synced" title="Stato sync">🟢 Sync</span></span>
@@ -218,17 +216,7 @@
     </div>
 </div>
 
-<div class="gsheet-section">
-    <div class="gsheet-bar">
-        <span class="gsheet-icon">📊</span>
-        <div class="gsheet-url-wrap" onclick="unlockGSheetUrl()" title="Tap per modificare URL">
-            <span class="gsheet-mask" id="gsheetMask">••••••••••</span>
-            <input type="text" class="gsheet-input" id="gsheetUrl" placeholder="URL script..." maxlength="300">
-        </div>
-        <button class="gsheet-verify" onclick="verifyGSheet()">Verifica</button>
-        <label class="gsheet-img-toggle"><input type="checkbox" id="gsheetImgToggle" checked> Upload img</label>
-    </div>
-</div>
+<!-- REMOVED GSHEET SECTION FROM HERE -->
 
 <div class="controls-bar">
     <button class="btn btn-primary" id="btnCamera" onclick="toggleCamera()">
@@ -279,7 +267,30 @@
 
 <div class="confirm-modal" id="passwordModal"><div class="confirm-box"><h3>🔒</h3><p style="margin-top:12px;"></p><input type="password" class="input-field" id="versionPassword" maxlength="4" style="text-align:center;font-family:'JetBrains Mono',monospace;letter-spacing:6px;font-size:20px;width:120px;margin:0 auto;" inputmode="numeric"><div class="confirm-actions" style="margin-top:16px;"><button class="btn btn-outline" onclick="closePasswordModal()">Annulla</button><button class="btn btn-primary" onclick="checkVersionPassword()">OK</button></div></div></div>
 
-<div class="version-modal" id="versionModal" onclick="closeVersionModal()"><div class="version-modal-box" onclick="event.stopPropagation()"><h3>📋 Changelog</h3><div class="ver-date" id="versionBuildDate">Generato il 23/05/2026 — 11:00 UTC+2</div><div id="changelogContent"></div><button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button></div></div>
+<div class="version-modal" id="versionModal" onclick="closeVersionModal()">
+    <div class="version-modal-box" onclick="event.stopPropagation()">
+        <h3>📋 Changelog & Config</h3>
+        <div class="ver-date" id="versionBuildDate">Generato il 23/05/2026 — 12:00 UTC+2</div>
+        <div id="changelogContent"></div>
+        
+        <!-- GSHEET CONFIG MOVED HERE -->
+        <div class="gsheet-config-area">
+            <label>⚙️ Configurazione Google Sheets (Protetta)</label>
+            <div class="gsheet-input-row">
+                <input type="text" id="modalGsheetUrl" placeholder="Incolla qui l'URL dello script...">
+            </div>
+            <div class="gsheet-options">
+                <button class="btn btn-outline" style="padding:4px 8px;font-size:10px;" onclick="saveModalGSheet()">Salva URL</button>
+                <button class="btn btn-outline" style="padding:4px 8px;font-size:10px;" onclick="verifyGSheetFromModal()">Verifica</button>
+                <label style="display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
+                    <input type="checkbox" id="modalGsheetImgToggle" checked> Upload Img
+                </label>
+            </div>
+        </div>
+
+        <button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button>
+    </div>
+</div>
 
 <div class="confirm-modal" id="pedanaModal">
     <div class="confirm-box">
@@ -330,18 +341,17 @@
 </div>
 
 <script>
-const APP_VERSION='3.9.0';
-const APP_BUILD_DATE='23/05/2026 11:00';
+const APP_VERSION='4.0.0';
+const APP_BUILD_DATE='23/05/2026 12:00';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
 const IMG_DB_NAME='ScannerSerialiDB';
 const IMG_DB_VERSION=1;
 const IMG_STORE='images';
 const CHANGELOG=[
-    {ver:'v3.9.0',date:'23/05/2026 11:00',desc:'Fix input Google Sheets. Tasto Apri Sheet. UI mobile ottimizzata per Applica Stato. Popup stati con bottoni.',tags:['fix','ui']},
-    {ver:'v3.8.0',date:'23/05/2026 10:00',desc:'Fix upload Google Sheets. Anteprima +25px. Blocco seriali simili. Note sempre visibili.',tags:['fix','feat']},
+    {ver:'v4.0.0',date:'23/05/2026 12:00',desc:'URL Sheets spostato nel modale Versione (protetto). Soglie confidenza (<35% scarta, <50% alerta). Scansione limitata al ROI per velocità.',tags:['feat','fix']},
+    {ver:'v3.9.0',date:'23/05/2026 11:00',desc:'Fix input Google Sheets. Tasto Apri Sheet. UI mobile ottimizzata.',tags:['fix','ui']},
     {ver:'v3.0.0',date:'23/05/2026 02:00',desc:'Integrazione Google Sheets + Drive.',tags:['feat']},
-    {ver:'v2.0.0',date:'22/05/2026 23:00',desc:'Salvataggio locale.',tags:['feat','ui']},
     {ver:'v1.0.0',date:'22/05/2026 12:00',desc:'Versione iniziale.',tags:['feat']}
 ];
 
@@ -352,7 +362,6 @@ let lastScanPedana='', lastScanImage=null;
 let pedanaCallback=null, pedanaEditRecordId=null;
 let lastScanTime=0;
 let gsheetUrl='', syncStatus='idle';
-const GSHEET_PWD='0000';
 const IDLE_TIMEOUT=30000;
 const SCAN_INTERVAL=800;
 const SERIAL_PATTERN=/^BDBCF00[A-F0-9]{3}$/;
@@ -414,44 +423,28 @@ function scrollToTop(){window.scrollTo({top:0,behavior:'smooth'});}
 function checkScrollPosition(){const btn=document.getElementById('scrollTopBtn');const scrolledDown=window.scrollY>200;if(scrolledDown)btn.classList.add('visible');else btn.classList.remove('visible');}
 window.addEventListener('scroll',checkScrollPosition,{passive:true});
 
-// ===== GSHEET URL =====
-function loadGSheetUrl(){try{const u=localStorage.getItem(GSHEET_KEY);if(u){gsheetUrl=u;updateMask();}}catch(e){}}
-function saveGSheetUrl(){try{localStorage.setItem(GSHEET_KEY,gsheetUrl);}catch(e){}}
-function updateMask(){const mask=document.getElementById('gsheetMask');if(gsheetUrl){const short=gsheetUrl.length>30?gsheetUrl.substring(0,15)+'...'+gsheetUrl.substring(gsheetUrl.length-10):gsheetUrl;mask.textContent='✅ '+short;mask.classList.add('has-url');}else{mask.textContent='••••••••••';mask.classList.remove('has-url');}}
-
-function unlockGSheetUrl(){
-    const p=prompt('Inserisci password:');
-    if(p===GSHEET_PWD){
-        const mask=document.getElementById('gsheetMask');
-        const inp=document.getElementById('gsheetUrl');
-        mask.style.display='none';
-        inp.style.display='block';
-        inp.value=gsheetUrl;
-        inp.focus();
-        inp.select();
-        
-        // FIX: Rimuovi listener precedenti per evitare conflitti
-        inp.onblur = null;
-        inp.onkeydown = null;
-
-        inp.onblur=function(){
-            gsheetUrl=this.value.trim();
-            saveGSheetUrl();
-            updateMask();
-            this.style.display='none';
-            mask.style.display='block';
-        };
-        inp.onkeydown=function(e){
-            if(e.key==='Enter'){
-                gsheetUrl=this.value.trim();
-                saveGSheetUrl();
-                updateMask();
-                this.style.display='none';
-                mask.style.display='block';
-                toast('URL salvato','success');
-            }
-        };
-    } else if(p!==null){ toast('❌ Errata','error'); beepErr(); vib('err'); }
+// ===== GSHEET URL (MOVED TO MODAL) =====
+function loadGSheetUrl(){
+    try{
+        const u=localStorage.getItem(GSHEET_KEY);
+        if(u){
+            gsheetUrl=u;
+            document.getElementById('modalGsheetUrl').value=u;
+        }
+    }catch(e){}
+}
+function saveModalGSheet(){
+    const val=document.getElementById('modalGsheetUrl').value.trim();
+    gsheetUrl=val;
+    localStorage.setItem(GSHEET_KEY,val);
+    toast('URL Salvato','success');
+    setSyncStatus(syncStatus); // Update buttons
+}
+function verifyGSheetFromModal(){
+    const val=document.getElementById('modalGsheetUrl').value.trim();
+    if(!val){toast('Inserisci URL','error');return;}
+    gsheetUrl=val;
+    verifyGSheet();
 }
 
 // ===== SYNC =====
@@ -474,10 +467,6 @@ function setSyncStatus(status){
 
 function openGoogleSheet(){
     if(gsheetUrl){
-        // Transform exec URL to sheet URL if possible, or just open the script project
-        // Usually users want to see the Sheet, not the script. 
-        // But we only have the Script URL. 
-        // Best effort: Open the script URL which redirects or shows the project.
         window.open(gsheetUrl, '_blank');
     }
 }
@@ -486,7 +475,7 @@ async function sendToGSheet(record){
     if(!gsheetUrl)return false;
     try{
         const payload={rowNum:records.indexOf(record)+1,timestamp:record.timestamp||'',serial:record.serial||'',confidence:record.confidence||0,corrections:(record.corrections||[]).join(', '),modified:record.modified?'Sì':'No',runNumber:record.runNumber||'',pedana:record.pedana||'',operator:record.operator||'',status:record.status||'',note:record.note||''};
-        const uploadImg=document.getElementById('gsheetImgToggle').checked;
+        const uploadImg=document.getElementById('modalGsheetImgToggle').checked;
         if(uploadImg&&record.image)payload.imageData=record.image;
         
         await fetch(gsheetUrl,{
@@ -508,13 +497,10 @@ async function verifyGSheet(){
         await fetch(gsheetUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:'{"test":true}'});
         toast('✅ Connesso','success');setSyncStatus('synced');
     }catch(e){toast('❌ Fallita','error');setSyncStatus('error');}
-    const mask=document.getElementById('gsheetMask');const inp=document.getElementById('gsheetUrl');
-    gsheetUrl=inp.value.trim()||gsheetUrl;saveGSheetUrl();updateMask();
-    inp.style.display='none';mask.style.display='block';
 }
 
 async function syncPendingToGSheet(){
-    if(!gsheetUrl){toast('Configura URL','error');return;}
+    if(!gsheetUrl){toast('Configura URL nel menu Versione','error');return;}
     const unsynced=records.filter(r=>!r._synced);
     if(unsynced.length===0){toast('Tutto sincronizzato ✅','success');return;}
     setSyncStatus('syncing');toast(`🔄 Invio ${unsynced.length} record...`,'success');
@@ -563,7 +549,7 @@ function executeApplyStatus(status){
 async function saveToStorage(){
     try{
         const lean=records.map(r=>{const c={...r};c.image=null;return c;});
-        localStorage.setItem(STORAGE_KEY,JSON.stringify({records:lean,scanTotal:scanTotal,operator:document.getElementById('operatorName').value,pedana:document.getElementById('pedana').value,gsheetImgToggle:document.getElementById('gsheetImgToggle').checked,timestamp:Date.now()}));
+        localStorage.setItem(STORAGE_KEY,JSON.stringify({records:lean,scanTotal:scanTotal,operator:document.getElementById('operatorName').value,pedana:document.getElementById('pedana').value,gsheetImgToggle:document.getElementById('modalGsheetImgToggle').checked,timestamp:Date.now()}));
         for(const r of records){if(r.image&&!r.image.includes('[truncated]')){await saveImg(r.id,r.image);}}
     }catch(e){console.warn(e);}
 }
@@ -575,7 +561,7 @@ async function loadFromStorage(){
         records=d.records||[];scanTotal=d.scanTotal||0;
         if(d.operator)document.getElementById('operatorName').value=d.operator;
         if(d.pedana)document.getElementById('pedana').value=d.pedana;
-        if(d.gsheetImgToggle!==undefined)document.getElementById('gsheetImgToggle').checked=d.gsheetImgToggle;
+        if(d.gsheetImgToggle!==undefined)document.getElementById('modalGsheetImgToggle').checked=d.gsheetImgToggle;
         document.getElementById('scanCount').textContent=scanTotal;
         const imgMap=await loadAllImages();
         records.forEach(r=>{if(imgMap[r.id])r.image=imgMap[r.id];});
@@ -583,12 +569,38 @@ async function loadFromStorage(){
     }catch(e){return false;}
 }
 
-// ===== VERSION =====
+// ===== VERSION & PASSWORD =====
 let versionPwdTimeout=null;
-function requestVersionAccess(){const n=new Date();versionPwdTimeout=String(n.getHours()).padStart(2,'0')+String(n.getMinutes()).padStart(2,'0');document.getElementById('versionPassword').value='';document.getElementById('passwordModal').classList.add('visible');setTimeout(()=>{const i=document.getElementById('versionPassword');if(i)i.focus();},200);}
+function requestVersionAccess(){
+    const n=new Date();
+    versionPwdTimeout=String(n.getHours()).padStart(2,'0')+String(n.getMinutes()).padStart(2,'0');
+    document.getElementById('versionPassword').value='';
+    document.getElementById('passwordModal').classList.add('visible');
+    setTimeout(()=>{const i=document.getElementById('versionPassword');if(i)i.focus();},200);
+}
 function closePasswordModal(){document.getElementById('passwordModal').classList.remove('visible');versionPwdTimeout=null;}
-function checkVersionPassword(){const i=document.getElementById('versionPassword').value.trim();if(i===versionPwdTimeout){closePasswordModal();openVersionModal();}else{toast('❌ Errata','error');beepErr();vib('err');document.getElementById('versionPassword').value='';document.getElementById('versionPassword').focus();}}
+function checkVersionPassword(){
+    const i=document.getElementById('versionPassword').value.trim();
+    if(i===versionPwdTimeout){
+        closePasswordModal();
+        // Pre-fill modal inputs
+        document.getElementById('modalGsheetUrl').value=gsheetUrl;
+        openVersionModal();
+    }else{
+        toast('❌ Errata','error');beepErr();vib('err');
+        document.getElementById('versionPassword').value='';
+        document.getElementById('versionPassword').focus();
+    }
+}
 document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('passwordModal').classList.contains('visible'))checkVersionPassword();});
+
+function openVersionModal(){
+    const el=document.getElementById('changelogContent');
+    el.innerHTML=CHANGELOG.map(c=>`<div class="changelog-item"><span class="ch-ver">${c.ver}</span><span class="ch-date">${c.date}</span><div class="ch-desc">${c.desc}</div><div class="ch-tags">${c.tags.map(t=>`<span class="ch-tag ${t}">${t.toUpperCase()}</span>`).join('')}</div></div>`).join('');
+    document.getElementById('versionModal').classList.add('visible');
+}
+function closeVersionModal(){document.getElementById('versionModal').classList.remove('visible');}
+
 
 // ===== PEDANA =====
 function showPedanaModal(serial,imgData,callback){const current=document.getElementById('pedana').value.trim()||'—';document.getElementById('pedanaSerialRef').textContent='Seriale: '+serial;document.getElementById('pedanaBigRef').textContent=current;document.getElementById('pedanaModalTitle').textContent='📍 Pedana / Posizione';document.getElementById('pedanaModalMsg').textContent='Conferma o modifica';const pw=document.getElementById('pedanaPreviewWrap');if(imgData){pw.innerHTML=`<img src="${imgData}" alt="preview">`;pw.style.display='block';}else{pw.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>';pw.style.display='flex';}document.getElementById('pedanaChangeInput').style.display='none';document.getElementById('newPedanaInput').value='';pedanaCallback=callback;document.getElementById('pedanaModal').classList.add('visible');}
@@ -662,32 +674,53 @@ async function scanFrame(){
     const rx=Math.floor((vw-rw)/2),ry=Math.floor((vh-rh)/2);
     canvas.width=rw;canvas.height=rh;
     ctx.drawImage(videoEl,rx,ry,rw,rh,0,0,rw,rh);
+    
+    // Pre-process for better OCR
     const imageData=ctx.getImageData(0,0,rw,rh),data=imageData.data,contrast=1.4;
     for(let i=0;i<data.length;i+=4){data[i]=Math.min(255,Math.max(0,((data[i]/255-0.5)*contrast+0.5)*255));data[i+1]=Math.min(255,Math.max(0,((data[i+1]/255-0.5)*contrast+0.5)*255));data[i+2]=Math.min(255,Math.max(0,((data[i+2]/255-0.5)*contrast+0.5)*255));}
     ctx.putImageData(imageData,0,0);
-    const canvas2=document.createElement('canvas');canvas2.width=rw;canvas2.height=rh;
-    const ctx2=canvas2.getContext('2d');ctx2.drawImage(canvas,0,0);
-    const imgData2=ctx2.getImageData(0,0,rw,rh),d2=imgData2.data;
-    for(let i=0;i<d2.length;i+=4){const avg=(d2[i]+d2[i+1]+d2[i+2])/3;const val=avg>120?255:0;d2[i]=val;d2[i+1]=val;d2[i+2]=val;}
-    ctx2.putImageData(imgData2,0,0);
+    
     try{
-        const results=await Promise.all([ocrWorker.recognize(canvas),ocrWorker.recognize(canvas2)]);
+        const result=await ocrWorker.recognize(canvas);
+        const words=result.data.words||[];
+        
+        // ROI Coordinates (relative to canvas size rw,rh)
+        // The ROI overlay is 85% width, 30% height, centered.
+        const roiX = rw * 0.075;
+        const roiY = rh * 0.35;
+        const roiW = rw * 0.85;
+        const roiH = rh * 0.30;
+        
         const foundSerials=[];
-        for(const result of results){
-            const words=result.data.words||[];
-            for(const word of words){
-                let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
-                if(cleaned.length<10)continue;
-                let{fixed,corrections}=fixOCR(cleaned);
-                const wordConf=Math.round(word.confidence);
-                if(fixed.length===10&&isValidSerial(fixed)&&!foundSerials.includes(fixed)){
-                    const fc=detectCorrections(cleaned,fixed);
-                    const imgData=cropFromBbox(canvas,rw,rh,word.bbox,IMG_MARGIN);
-                    foundSerials.push(fixed);
-                    processSerial(fixed,imgData,wordConf,fc);
-                    if(!multiDetect)return;
-                    continue;
-                }
+        
+        for(const word of words){
+            // FIX: Filter by ROI geometry to speed up and avoid background noise
+            const bbox=word.bbox; // {x0,y0,x1,y1}
+            const wordCx=(bbox.x0+bbox.x1)/2;
+            const wordCy=(bbox.y0+bbox.y1)/2;
+            
+            // Check if word center is inside ROI
+            if(wordCx < roiX || wordCx > roiX+roiW || wordCy < roiY || wordCy > roiY+roiH) continue;
+
+            let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
+            if(cleaned.length<10)continue;
+            let{fixed,corrections}=fixOCR(cleaned);
+            const wordConf=Math.round(word.confidence);
+            
+            // Confidence Thresholds
+            if(wordConf < 35) continue; // Discard low confidence silently
+            
+            if(fixed.length===10&&isValidSerial(fixed)&&!foundSerials.includes(fixed)){
+                const fc=detectCorrections(cleaned,fixed);
+                const imgData=cropFromBbox(canvas,rw,rh,word.bbox,IMG_MARGIN);
+                foundSerials.push(fixed);
+                processSerial(fixed,imgData,wordConf,fc);
+                if(!multiDetect)return;
+                continue;
+            }
+            
+            // Sliding window for embedded serials (only if high confidence)
+            if(wordConf > 50) {
                 for(let i=0;i<=cleaned.length-10;i++){
                     const sub=cleaned.substring(i,i+10);
                     let{fixed:sf}=fixOCR(sub);
@@ -695,7 +728,7 @@ async function scanFrame(){
                         const fc=detectCorrections(sub,sf);
                         const imgData=cropFromBbox(canvas,rw,rh,word.bbox,IMG_MARGIN);
                         foundSerials.push(sf);
-                        processSerial(sf,imgData,Math.round(word.confidence),fc);
+                        processSerial(sf,imgData,wordConf,fc);
                         if(!multiDetect)return;
                         break;
                     }
@@ -710,7 +743,7 @@ async function scanFrame(){
 function getConfClass(c){if(c>=80)return'conf-high';if(c>=60)return'conf-mid';return'conf-low';}
 
 function processSerial(serial,imgData,confidence,corrections){
-    // FIX: Controllo duplicati simili (Levenshtein <= 2) negli ultimi 5 record
+    // Check similar duplicates
     const recentRecords = records.slice(0, 5);
     const isSimilar = recentRecords.some(r => {
         const dist = levenshtein(serial, r.serial);
@@ -725,22 +758,40 @@ function processSerial(serial,imgData,confidence,corrections){
 
     const isDup=records.some(r=>r.serial===serial);
     if(isDup){toast('⚠️ Duplicato: '+serial,'warning');beepDup();vib('dup');return;}
+    
     resetIdleTimer();
     scanCooldown=true;
     document.getElementById('cooldownOverlay').classList.add('active');
     document.getElementById('ocrStatus').textContent='⏱ Cooldown...';
     updateScanIndicator();
+    
     const operator=document.getElementById('operatorName').value.trim()||'N/D';
     const pedana=document.getElementById('pedana').value.trim()||'N/D';
     lastScanPedana=pedana;lastScanImage=imgData;
     const ts=new Date().toLocaleString('it-IT');
-    const rec={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial,timestamp:ts,operator,pedana,runNumber:'',modified:false,status:'',note:'',image:imgData||null,confidence:confidence||0,corrections:corrections||[],_synced:false,_imgUploaded:false};
+    
+    const rec={
+        id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+        serial,timestamp:ts,operator,pedana,runNumber:'',
+        modified:false,status:'',note:'',
+        image:imgData||null,
+        confidence:confidence,
+        corrections:corrections||[],
+        _synced:false,_imgUploaded:false
+    };
+    
     records.unshift(rec);
     scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
     if(imgData)saveImg(rec.id,imgData);
     saveToStorage();
-    beepOk();vib('ok');renderRecords();toast('✅ '+serial,'success');
+    
+    beepOk();vib('ok');renderRecords();
+    
+    if(confidence < 50) toast('⚠️ Bassa confidenza ('+confidence+'%)','warning');
+    else toast('✅ '+serial,'success');
+    
     if(gsheetUrl){sendToGSheet(rec).then(()=>{saveToStorage();setSyncStatus('synced');renderRecords();}).catch(()=>{setSyncStatus('pending');renderRecords();});}
+    
     setTimeout(()=>{
         showPedanaModal(serial,imgData,()=>{
             scanCooldown=false;
@@ -762,7 +813,11 @@ function renderRecords(){
         else if(r._synced)syncTag='<span class="meta-tag synced-tag" title="Sincronizzato">☁️</span>';
         else syncTag='<span class="meta-tag pending-tag" title="In coda">📤</span>';
         const runVal=r.runNumber||'';
-        return `<div class="record-card" id="record-${r.id}">
+        
+        // Low confidence highlight
+        const lowConfClass = r.confidence < 50 ? 'low-conf' : '';
+        
+        return `<div class="record-card ${lowConfClass}" id="record-${r.id}">
             <div class="record-top">
                 <div class="record-image-wrap" onclick="openModal('${r.id}')">
                     ${r.image?`<img src="${r.image}" alt="img">`:`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>`}
@@ -805,8 +860,6 @@ function deleteRecord(id){const rec=records.find(r=>r.id===id);if(!rec)return;sh
 
 function openModal(id){const rec=records.find(r=>r.id===id);if(!rec||!rec.image)return;scanPaused=true;updateScanIndicator();document.getElementById('modalImage').src=rec.image;document.getElementById('imageModal').classList.add('visible');}
 function closeModal(){document.getElementById('imageModal').classList.remove('visible');scanPaused=false;updateScanIndicator();}
-function openVersionModal(){const el=document.getElementById('changelogContent');el.innerHTML=CHANGELOG.map(c=>`<div class="changelog-item"><span class="ch-ver">${c.ver}</span><span class="ch-date">${c.date}</span><div class="ch-desc">${c.desc}</div><div class="ch-tags">${c.tags.map(t=>`<span class="ch-tag ${t}">${t.toUpperCase()}</span>`).join('')}</div></div>`).join('');document.getElementById('versionModal').classList.add('visible');}
-function closeVersionModal(){document.getElementById('versionModal').classList.remove('visible');}
 
 function exportExcel(){if(records.length===0){toast('Nessun record','warning');return;}const data=records.map((r,i)=>({'#':i+1,'Timestamp':r.timestamp,'Seriale':r.serial,'Run':r.runNumber||'—','Confidenza %':r.confidence,'Correzioni OCR':r.corrections&&r.corrections.length?r.corrections.join(', '):'—','Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,'Operatore':r.operator,'Stato':r.status||'—','Note':r.note}));const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:8},{wch:12},{wch:20},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Scansioni');XLSX.writeFile(wb,`Scansioni_${new Date().toISOString().slice(0,10)}.xlsx`);toast(`📊 Excel: ${records.length} record`,'success');vib('ok');}
 
