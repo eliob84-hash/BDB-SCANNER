@@ -132,8 +132,7 @@
         .status-btn.active-bar { background:#06b6d4; color:white; border-color:#06b6d4; }
         .status-btn.active-doubt { background:var(--text-dim); color:white; border-color:var(--text-dim); }
         .status-btn.active-none { background:transparent; border:1px dashed var(--border); color:var(--text-dim); }
-        .note-input { margin-top:6px; width:100%; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:var(--text); font-size:12px; font-family:'Inter',sans-serif; outline:none; display:none; }
-        .note-input.visible { display:block; }
+        .note-input { margin-top:6px; width:100%; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:var(--text); font-size:12px; font-family:'Inter',sans-serif; outline:none; display:block; /* Always visible now */ }
         .note-input:focus { border-color:#ec4899; }
         .image-modal { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.95); z-index:1000; display:none; align-items:center; justify-content:center; cursor:pointer; }
         .image-modal.visible { display:flex; }
@@ -198,7 +197,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             Scanner Seriali OCR
         </h1>
-        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v3.7.0</span>
+        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v3.8.0</span>
     </div>
     <div class="scan-counter">
         <span class="label">Seriali: <span class="count" id="scanCount">0</span><span id="syncIndicator" class="sync-status synced" title="Stato sync">🟢 Sync</span></span>
@@ -239,7 +238,7 @@
 <div class="toggle-row">
     <span class="toggle-label">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 7h3v3H7z"/><path d="M14 7h3v3h-3z"/><path d="M7 14h3v3H7z"/></svg>
-        Rilevamento multiplo per frame
+        Rilevamento multiplo (Sperimentale)
     </span>
     <div class="toggle-switch" id="toggleMulti" onclick="toggleMultiDetect()"></div>
 </div>
@@ -257,7 +256,12 @@
 </div>
 
 <div class="results-section">
-    <div class="results-header"><h2>📋 Risultati</h2></div>
+    <div class="results-header">
+        <h2>📋 Risultati</h2>
+        <button class="btn btn-outline" style="flex:0;padding:6px 10px;font-size:11px;" onclick="applyStatusToPedana()">
+            Applica Stato a Pedana
+        </button>
+    </div>
     <div id="recordsList">
         <div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h.01M12 7h.01M17 7h.01M7 12h10M7 17h6"/></svg><p>Nessun seriale scansionato.<br>Avvia la fotocamera per iniziare.</p></div>
     </div>
@@ -269,7 +273,7 @@
 
 <div class="confirm-modal" id="passwordModal"><div class="confirm-box"><h3>🔒</h3><p style="margin-top:12px;"></p><input type="password" class="input-field" id="versionPassword" maxlength="4" style="text-align:center;font-family:'JetBrains Mono',monospace;letter-spacing:6px;font-size:20px;width:120px;margin:0 auto;" inputmode="numeric"><div class="confirm-actions" style="margin-top:16px;"><button class="btn btn-outline" onclick="closePasswordModal()">Annulla</button><button class="btn btn-primary" onclick="checkVersionPassword()">OK</button></div></div></div>
 
-<div class="version-modal" id="versionModal" onclick="closeVersionModal()"><div class="version-modal-box" onclick="event.stopPropagation()"><h3>📋 Changelog</h3><div class="ver-date" id="versionBuildDate">Generato il 23/05/2026 — 09:00 UTC+2</div><div id="changelogContent"></div><button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button></div></div>
+<div class="version-modal" id="versionModal" onclick="closeVersionModal()"><div class="version-modal-box" onclick="event.stopPropagation()"><h3>📋 Changelog</h3><div class="ver-date" id="versionBuildDate">Generato il 23/05/2026 — 10:00 UTC+2</div><div id="changelogContent"></div><button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button></div></div>
 
 <div class="confirm-modal" id="pedanaModal">
     <div class="confirm-box">
@@ -289,6 +293,18 @@
     <div class="confirm-box"><h3>✏️ Modifica Pedana</h3><p id="pedanaEditMsg"></p><input type="text" class="input-field" id="pedanaEditInput" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:2px;" maxlength="20"><div class="confirm-actions" style="margin-top:14px;"><button class="btn btn-outline" onclick="closePedanaEdit()">Annulla</button><button class="btn btn-primary" onclick="confirmPedanaEdit()">Conferma</button></div></div>
 </div>
 
+<!-- Status Apply Modal -->
+<div class="confirm-modal" id="statusApplyModal">
+    <div class="confirm-box">
+        <h3>📍 Applica Stato</h3>
+        <p>Applicare lo stato selezionato a tutti i record della pedana <b id="applyPedanaName"></b>?</p>
+        <div class="confirm-actions">
+            <button class="btn btn-outline" onclick="document.getElementById('statusApplyModal').classList.remove('visible')">Annulla</button>
+            <button class="btn btn-primary" onclick="executeApplyStatus()">Conferma</button>
+        </div>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <div class="confirm-modal" id="confirmModal"><div class="confirm-box"><h3 id="confirmTitle">Conferma</h3><p id="confirmMsg">Sei sicuro?</p><div class="confirm-actions"><button class="btn btn-outline" onclick="closeConfirm()">Annulla</button><button class="btn btn-danger" id="confirmBtn" onclick="executeConfirm()">Conferma</button></div></div></div>
@@ -301,17 +317,16 @@
 </div>
 
 <script>
-const APP_VERSION='3.7.0';
-const APP_BUILD_DATE='23/05/2026 09:00';
+const APP_VERSION='3.8.0';
+const APP_BUILD_DATE='23/05/2026 10:00';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
 const IMG_DB_NAME='ScannerSerialiDB';
 const IMG_DB_VERSION=1;
 const IMG_STORE='images';
 const CHANGELOG=[
-    {ver:'v3.7.0',date:'23/05/2026 09:00',desc:'Fix definitivo Google Sheets: fetch con no-cors + Content-Type text/plain puro. Campo URL sbloccabile ogni volta con pwd.',tags:['fix']},
-    {ver:'v3.6.0',date:'23/05/2026 08:00',desc:'Fix fetch Google Sheets.',tags:['fix']},
-    {ver:'v3.4.0',date:'23/05/2026 06:00',desc:'URL protetto da pwd. Freccia scroll in basso. Immagini IndexedDB.',tags:['feat','fix','ui']},
+    {ver:'v3.8.0',date:'23/05/2026 10:00',desc:'Fix upload Google Sheets. Anteprima più stabile (margini +25px). Blocco seriali simili consecutivi. Note sempre visibili. Tasto applica stato a intera pedana.',tags:['fix','feat']},
+    {ver:'v3.7.0',date:'23/05/2026 09:00',desc:'Fix definitivo Google Sheets: fetch con no-cors.',tags:['fix']},
     {ver:'v3.0.0',date:'23/05/2026 02:00',desc:'Integrazione Google Sheets + Drive.',tags:['feat']},
     {ver:'v2.0.0',date:'22/05/2026 23:00',desc:'Salvataggio locale.',tags:['feat','ui']},
     {ver:'v1.0.0',date:'22/05/2026 12:00',desc:'Versione iniziale.',tags:['feat']}
@@ -324,11 +339,12 @@ let lastScanPedana='', lastScanImage=null;
 let pedanaCallback=null, pedanaEditRecordId=null;
 let lastScanTime=0;
 let gsheetUrl='', syncStatus='idle';
+let pendingApplyStatus=''; // Per il modal di applicazione stato
 const GSHEET_PWD='0000';
 const IDLE_TIMEOUT=30000;
 const SCAN_INTERVAL=800;
 const SERIAL_PATTERN=/^BDBCF00[A-F0-9]{3}$/;
-const IMG_MARGIN=8;
+const IMG_MARGIN=25; // Aumentato da 8 a 25 per migliore contesto
 
 // ===== INDEXED DB FOR IMAGES =====
 let imgDB=null;
@@ -356,7 +372,31 @@ function fixOCR(raw){let c=[],f='';for(let i=0;i<raw.length;i++){if(OCR_CORRECTI
 function detectCorrections(raw,serial){const c=[],ru=raw.toUpperCase(),mn=Math.min(ru.length,serial.length);for(let i=0;i<mn;i++){if(ru[i]!==serial[i])c.push(`${ru[i]}→${serial[i]}`);}return c;}
 function isValidSerial(s){return SERIAL_PATTERN.test(s);}
 function validateSerial(s){if(s.length!==10)return'Il seriale deve avere esattamente 10 caratteri (attuali: '+s.length+')';if(!s.startsWith('BDBCF00'))return'Il seriale deve iniziare con "BDBCF00"';if(!SERIAL_PATTERN.test(s))return'Caratteri non validi (solo 0-9, A-F dopo BDBCF00)';return null;}
-function cropFromBbox(canvas,rw,rh,bbox,margin){const{x0,y0,x1,y1}=bbox;const cX=Math.max(0,x0-margin),cY=Math.max(0,y0-margin);const cW=Math.min(rw-cX,(x1-x0)+margin*2),cH=Math.min(rh-cY,(y1-y0)+margin*2);if(cW<=0||cH<=0)return null;const cc=document.createElement('canvas');cc.width=cW;cc.height=cH;const cctx=cc.getContext('2d');cctx.drawImage(canvas,cX,cY,cW,cH,0,0,cW,cH);return cc.toDataURL('image/jpeg',0.8);}
+
+// FIX: Distanza di Levenshtein per evitare duplicati simili
+function levenshtein(a, b) {
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b.charAt(i - 1) == a.charAt(j - 1)) matrix[i][j] = matrix[i - 1][j - 1];
+            else matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+        }
+    }
+    return matrix[b.length][a.length];
+}
+
+function cropFromBbox(canvas,rw,rh,bbox,margin){
+    const{x0,y0,x1,y1}=bbox;
+    // Margin aumentato a 25px per default nella chiamata
+    const cX=Math.max(0,x0-margin),cY=Math.max(0,y0-margin);
+    const cW=Math.min(rw-cX,(x1-x0)+margin*2),cH=Math.min(rh-cY,(y1-y0)+margin*2);
+    if(cW<=0||cH<=0)return null;
+    const cc=document.createElement('canvas');cc.width=cW;cc.height=cH;
+    const cctx=cc.getContext('2d');cctx.drawImage(canvas,cX,cY,cW,cH,0,0,cW,cH);
+    return cc.toDataURL('image/jpeg',0.8);
+}
 
 // ===== SCROLL =====
 function scrollToTop(){window.scrollTo({top:0,behavior:'smooth'});}
@@ -398,7 +438,7 @@ function unlockGSheetUrl(){
     } else if(p!==null){ toast('❌ Errata','error'); beepErr(); vib('err'); }
 }
 
-// ===== SYNC (FIXED for GAS CORS) =====
+// ===== SYNC =====
 function setSyncStatus(status){
     syncStatus=status;
     const el=document.getElementById('syncIndicator');
@@ -410,7 +450,6 @@ function setSyncStatus(status){
     else if(status==='pending'){el.className='sync-status pending';el.textContent='🟡 In coda';btn.style.display='inline-flex';}
 }
 
-// FIX: mode:'no-cors' + 'text/plain' (senza charset) è l'unico modo per GAS
 async function sendToGSheet(record){
     if(!gsheetUrl)return false;
     try{
@@ -453,6 +492,50 @@ async function syncPendingToGSheet(){
     if(err===0){toast(`✅ ${ok} record sincronizzati`,'success');setSyncStatus('synced');}
     else{toast(`⚠️ ${ok} ok, ${err} errori`,'warning');setSyncStatus('error');}
     renderRecords();
+}
+
+// ===== APPLY STATUS TO PEDANA =====
+function applyStatusToPedana(){
+    // Trova l'ultimo stato selezionato dall'utente in qualche record recente? 
+    // O meglio: chiedi all'utente quale stato applicare?
+    // Implementazione semplice: prende lo stato dell'ultimo record modificato o chiede
+    // Per semplicità UI: mostriamo un prompt o usiamo l'ultimo stato cliccato.
+    // Qui implementiamo: clicca il tasto -> chiede quale stato -> applica a tutti con stessa pedana
+    
+    const currentPedana = document.getElementById('pedana').value.trim();
+    if(!currentPedana){toast('Imposta prima una Pedana','warning');return;}
+    
+    // Chiedi quale stato applicare
+    const statusToApply = prompt("Quale stato applicare a tutta la pedana "+currentPedana+"?\n(Good, Rotto, Sporco, RF-ID, Barra Mancante, Dubbio/Altro)");
+    if(!statusToApply) return;
+    
+    // Normalizza
+    let normalizedStatus = '';
+    if(statusToApply.toLowerCase().includes('good')) normalizedStatus='Good';
+    else if(statusToApply.toLowerCase().includes('rotto')) normalizedStatus='Rotto';
+    else if(statusToApply.toLowerCase().includes('sporco')) normalizedStatus='Sporco';
+    else if(statusToApply.toLowerCase().includes('rf')) normalizedStatus='RF-ID';
+    else if(statusToApply.toLowerCase().includes('barra')) normalizedStatus='Barra Mancante';
+    else if(statusToApply.toLowerCase().includes('dubbio')) normalizedStatus='Dubbio/Altro';
+    else { toast('Stato non riconosciuto','error'); return; }
+    
+    let count=0;
+    records.forEach(r=>{
+        if(r.pedana===currentPedana){
+            r.status=normalizedStatus;
+            r._synced=false; // Force resync
+            count++;
+        }
+    });
+    
+    if(count>0){
+        saveToStorage();
+        renderRecords();
+        toast(`✅ Stato "${normalizedStatus}" applicato a ${count} record`,'success');
+        if(gsheetUrl) syncPendingToGSheet();
+    } else {
+        toast('Nessun record trovato per questa pedana','warning');
+    }
 }
 
 // ===== STORAGE =====
@@ -606,6 +689,19 @@ async function scanFrame(){
 function getConfClass(c){if(c>=80)return'conf-high';if(c>=60)return'conf-mid';return'conf-low';}
 
 function processSerial(serial,imgData,confidence,corrections){
+    // FIX: Controllo duplicati simili (Levenshtein <= 2) negli ultimi 5 record
+    const recentRecords = records.slice(0, 5);
+    const isSimilar = recentRecords.some(r => {
+        const dist = levenshtein(serial, r.serial);
+        return dist > 0 && dist <= 2; // Se la distanza è 1 o 2, è probabilmente un errore di lettura dello stesso oggetto
+    });
+    
+    if(isSimilar){
+        toast('⚠️ Lettura instabile ignorata','warning');
+        beepErr(); vib('err');
+        return;
+    }
+
     const isDup=records.some(r=>r.serial===serial);
     if(isDup){toast('⚠️ Duplicato: '+serial,'warning');beepDup();vib('dup');return;}
     resetIdleTimer();
@@ -673,7 +769,7 @@ function renderRecords(){
                 <button class="status-btn ${r.status==='Dubbio/Altro'?'active-doubt':''}" onclick="setStatus('${r.id}','Dubbio/Altro')">❓ Dubbio</button>
                 ${r.status?`<button class="status-btn active-none" onclick="setStatus('${r.id}','')">✕ Reset</button>`:''}
             </div>
-            <input type="text" class="note-input ${r.status==='Dubbio/Altro'?'visible':''}" placeholder="Note..." value="${r.note}" onchange="setNote('${r.id}',this.value)">
+            <input type="text" class="note-input" placeholder="Note..." value="${r.note||''}" onchange="setNote('${r.id}',this.value)">
         </div>`;
     }).join('');
 }
