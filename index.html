@@ -20,7 +20,7 @@
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         body {
             font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text);
-            min-height:100vh; overflow-x:hidden; padding-bottom:120px;
+            min-height:100vh; overflow-x:hidden; padding-bottom:120px; scroll-behavior:smooth;
         }
         .header {
             background:linear-gradient(135deg,var(--bg-card),#1a2332); padding:16px 20px;
@@ -245,6 +245,32 @@
         .progress-bar { position:absolute; bottom:0; left:0; height:3px; background:var(--accent); transition:width 0.3s; z-index:5; }
         .cooldown-overlay { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(16,185,129,0.08); pointer-events:none; z-index:4; display:none; }
         .cooldown-overlay.active { display:block; }
+
+        /* SCROLL TO TOP BUTTON */
+        .scroll-top-btn {
+            position:fixed;
+            top:16px;
+            right:16px;
+            width:40px; height:40px;
+            background:#64748b;
+            border:1px solid var(--accent);
+            border-radius:50%;
+            display:none;
+            align-items:center; justify-content:center;
+            cursor:pointer;
+            z-index:200;
+            box-shadow:0 2px 12px rgba(0,0,0,0.4);
+            animation:borderPulse 1.2s ease-in-out infinite;
+            transition:transform 0.15s;
+        }
+        .scroll-top-btn.visible { display:flex; }
+        .scroll-top-btn:active { transform:scale(0.9); }
+        .scroll-top-btn svg { width:20px; height:20px; color:white; }
+        @keyframes borderPulse {
+            0%,100%{border-color:var(--accent);box-shadow:0 2px 12px rgba(0,0,0,0.4), 0 0 0 0 rgba(16,185,129,0.3)}
+            50%{border-color:rgba(16,185,129,0.5);box-shadow:0 2px 12px rgba(0,0,0,0.4), 0 0 0 6px rgba(16,185,129,0)}
+        }
+
         @media (max-width:380px) { .btn { padding:8px 8px; font-size:11px; } .status-btn { font-size:9px; padding:3px 6px; } .record-image-wrap { width:120px; height:46px; } .serial-display { width:120px; } .record-meta { gap:3px; } }
     </style>
 </head>
@@ -256,7 +282,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             Scanner Seriali OCR
         </h1>
-        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v2.0.0</span>
+        <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v2.1.0</span>
     </div>
     <div class="scan-counter">
         <span class="label">Seriali: <span class="count" id="scanCount">0</span></span>
@@ -290,7 +316,7 @@
     <div class="toggle-switch" id="toggleMulti" onclick="toggleMultiDetect()"></div>
 </div>
 
-<div class="scanner-section">
+<div class="scanner-section" id="scannerSection">
     <div class="camera-container" id="cameraContainer">
         <video id="videoFeed" autoplay playsinline muted></video>
         <div class="roi-overlay"></div>
@@ -312,6 +338,11 @@
     </div>
 </div>
 
+<!-- Scroll to top button -->
+<div class="scroll-top-btn" id="scrollTopBtn" onclick="scrollToTop()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</div>
+
 <div class="image-modal" id="imageModal" onclick="closeModal()">
     <button class="close-modal-btn" onclick="closeModal()">✕</button>
     <img id="modalImage" src="" alt="Zoom">
@@ -331,7 +362,7 @@
 <div class="version-modal" id="versionModal" onclick="closeVersionModal()">
     <div class="version-modal-box" onclick="event.stopPropagation()">
         <h3>📋 Changelog</h3>
-        <div class="ver-date" id="versionBuildDate">Generato il 22/05/2026 — 23:00 UTC+2</div>
+        <div class="ver-date" id="versionBuildDate">Generato il 23/05/2026 — 00:00 UTC+2</div>
         <div id="changelogContent"></div>
         <button class="version-modal-close" onclick="closeVersionModal()">Chiudi</button>
     </div>
@@ -398,12 +429,13 @@
 </div>
 
 <script>
-const APP_VERSION='2.0.0';
-const APP_BUILD_DATE='22/05/2026 23:00';
+const APP_VERSION='2.1.0';
+const APP_BUILD_DATE='23/05/2026 00:00';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const CHANGELOG=[
-    {ver:'v2.0.0',date:'22/05/2026 23:00',desc:'Salvataggio dati locale (localStorage). Angoli anteprima arrotondati. Margine seriale ridotto. Icona stato OCR (loading/ready). Frequenza scan velocizzata. Pulsanti pedana invertiti (Mantieni a destra).',tags:['feat','ui','fix']},
-    {ver:'v1.9.0',date:'22/05/2026 22:00',desc:'Pulsanti invertiti nel modal pedana. Tap su posizione nei record. Colori icone stato. Auto-close fotocamera 30s.',tags:['ui','feat']},
+    {ver:'v2.1.0',date:'23/05/2026 00:00',desc:'Freccia scroll-to-top flottante con bordo verde lampeggiante. Appare quando la fotocamera esce dalla vista.',tags:['ui']},
+    {ver:'v2.0.0',date:'22/05/2026 23:00',desc:'Salvataggio dati locale. Angoli anteprima arrotondati. Margine seriale ridotto (8px). Icona stato OCR. Frequenza scan 800ms. Pulsanti pedana invertiti.',tags:['feat','ui','fix']},
+    {ver:'v1.9.0',date:'22/05/2026 22:00',desc:'Tap su posizione nei record. Colori icone stato. Auto-close fotocamera 30s.',tags:['ui','feat']},
     {ver:'v1.8.0',date:'22/05/2026 21:00',desc:'Fix seriali parziali. Messaggi errore specifici.',tags:['fix']},
     {ver:'v1.7.0',date:'22/05/2026 20:00',desc:'Anteprima cropata. Pedana modal mostra seriale.',tags:['ui']},
     {ver:'v1.6.0',date:'22/05/2026 19:00',desc:'Pedana obbligatoria. Conferma mantieni/cambia.',tags:['feat']},
@@ -424,9 +456,9 @@ let pedanaCallback=null;
 let pedanaEditRecordId=null;
 let lastScanTime=0;
 const IDLE_TIMEOUT=30000;
-const SCAN_INTERVAL=800; // Velocizzato da 1200 a 800ms
+const SCAN_INTERVAL=800;
 const SERIAL_PATTERN=/^BDBCF00[A-F0-9]{3}$/;
-const IMG_MARGIN=8; // Ridotto da 15 a 8px
+const IMG_MARGIN=8;
 
 function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx;}
 function playTone(f,d,t='square',v=0.12){try{const c=getAudioCtx(),o=c.createOscillator(),g=c.createGain();o.type=t;o.frequency.value=f;g.gain.value=v;g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d/1000);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d/1000);}catch(e){}}
@@ -457,25 +489,48 @@ function cropFromBbox(canvas,rw,rh,bbox,margin){
     return cc.toDataURL('image/jpeg',0.8);
 }
 
+// ===== SCROLL TO TOP =====
+function scrollToTop(){
+    window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function checkScrollPosition(){
+    const btn=document.getElementById('scrollTopBtn');
+    const cameraContainer=document.getElementById('cameraContainer');
+    if(!cameraContainer || !cameraContainer.classList.contains('active')){
+        btn.classList.remove('visible');
+        return;
+    }
+    const rect=cameraContainer.getBoundingClientRect();
+    // Show when camera bottom is above viewport (scrolled past)
+    if(rect.bottom < 60){
+        btn.classList.add('visible');
+    } else {
+        btn.classList.remove('visible');
+    }
+}
+
+window.addEventListener('scroll', checkScrollPosition, {passive:true});
+
 // ===== LOCAL STORAGE =====
 function saveToStorage(){
     try{
+        // Save records without full images to avoid localStorage size limits
+        const leanRecords=records.map(r=>{
+            const copy={...r};
+            if(copy.image && copy.image.length > 200){
+                copy.image=copy.image.substring(0,100)+'...[truncated]';
+            }
+            return copy;
+        });
         const data={
-            records:records,
+            records:leanRecords,
             scanTotal:scanTotal,
             operator:document.getElementById('operatorName').value,
             pedana:document.getElementById('pedana').value,
             timestamp:Date.now()
         };
-        // Limit image size in storage
-        const leanData={
-            records:records.map(r=>({...r, image: r.image? r.image.substring(0,50)+'...'+r.image.substring(r.image.length-50) : null})),
-            scanTotal:scanTotal,
-            operator:data.operator,
-            pedana:data.pedana,
-            timestamp:Date.now()
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(leanData));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }catch(e){console.warn('Storage save error:',e);}
 }
 
@@ -484,7 +539,6 @@ function loadFromStorage(){
         const raw=localStorage.getItem(STORAGE_KEY);
         if(!raw)return false;
         const data=JSON.parse(raw);
-        // Check if data is older than 7 days
         if(Date.now()-data.timestamp > 7*24*60*60*1000) {
             localStorage.removeItem(STORAGE_KEY);
             return false;
@@ -494,6 +548,12 @@ function loadFromStorage(){
         if(data.operator) document.getElementById('operatorName').value=data.operator;
         if(data.pedana) document.getElementById('pedana').value=data.pedana;
         document.getElementById('scanCount').textContent=scanTotal;
+        // Restore images as null (they're truncated in storage)
+        records.forEach(r=>{
+            if(r.image && r.image.includes('[truncated]')){
+                r.image=null;
+            }
+        });
         return true;
     }catch(e){console.warn('Storage load error:',e);return false;}
 }
@@ -587,29 +647,17 @@ async function startCamera(){
         await new Promise(r=>{videoEl.onloadedmetadata=()=>r();});
         document.getElementById('cameraContainer').classList.add('active');
         document.getElementById('btnFlash').disabled=false;
-
-        // Show loading state
         document.getElementById('scanIndicator').innerHTML='<span class="loading-indicator"><span class="spinner"></span> Caricamento OCR...</span>';
         document.getElementById('ocrStatus').textContent='Inizializzazione motore OCR...';
-
         cameraActive=true;
-        ocrWorker=await Tesseract.createWorker('eng',1,{
-            logger:(m)=>{
-                if(m.status==='recognizing text'){
-                    document.getElementById('progressBar').style.width=Math.round(m.progress*100)+'%';
-                    document.getElementById('ocrStatus').textContent=`OCR ${Math.round(m.progress*100)}%`;
-                }
-            }
-        });
+        ocrWorker=await Tesseract.createWorker('eng',1,{logger:(m)=>{if(m.status==='recognizing text'){document.getElementById('progressBar').style.width=Math.round(m.progress*100)+'%';document.getElementById('ocrStatus').textContent=`OCR ${Math.round(m.progress*100)}%`;}}});
         await ocrWorker.setParameters({tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',preserve_interword_spaces:'0'});
-
-        // Show ready state
         document.getElementById('scanIndicator').innerHTML='<span class="scanning-indicator"><span class="dot"></span> OCR pronto — Scansione attiva</span>';
         document.getElementById('ocrStatus').textContent='✓ Pronto — Scansione in corso';
         document.getElementById('progressBar').style.width='0%';
-
         scanTimer=setInterval(scanFrame,SCAN_INTERVAL);
         resetIdleTimer();
+        checkScrollPosition();
         toast('📷 Fotocamera OCR avviata','success');vib('ok');
     }catch(err){console.error(err);toast('Errore: '+err.message,'error');beepErr();vib('err');resetBtnCamera();}
 }
@@ -625,7 +673,7 @@ function stopCamera(){
     document.getElementById('btnFlash').classList.remove('btn-accent');document.getElementById('btnFlash').classList.add('btn-warning');
     document.getElementById('progressBar').style.width='0%';
     document.getElementById('cooldownOverlay').classList.remove('active');
-    updateScanIndicator();resetBtnCamera();toast('📷 Fotocamera spenta','warning');
+    updateScanIndicator();resetBtnCamera();checkScrollPosition();toast('📷 Fotocamera spenta','warning');
 }
 
 function resetBtnCamera(){const btn=document.getElementById('btnCamera');btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Avvia OCR</span>`;btn.classList.add('btn-primary');btn.classList.remove('btn-danger');}
@@ -717,13 +765,11 @@ function getConfClass(c){if(c>=80)return'conf-high';if(c>=60)return'conf-mid';re
 function processSerial(serial,imgData,confidence,corrections){
     const isDup=records.some(r=>r.serial===serial);
     if(isDup){toast('⚠️ Duplicato: '+serial,'warning');beepDup();vib('dup');return;}
-
     resetIdleTimer();
     scanCooldown=true;
     document.getElementById('cooldownOverlay').classList.add('active');
     document.getElementById('ocrStatus').textContent='⏱ Cooldown...';
     updateScanIndicator();
-
     const operator=document.getElementById('operatorName').value.trim()||'N/D';
     const pedana=document.getElementById('pedana').value.trim()||'N/D';
     lastScanPedana=pedana;
@@ -736,7 +782,6 @@ function processSerial(serial,imgData,confidence,corrections){
     scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
     saveToStorage();
     beepOk();vib('ok');renderRecords();toast('✅ '+serial,'success');
-
     setTimeout(()=>{
         showPedanaModal(serial,()=>{
             scanCooldown=false;
@@ -844,7 +889,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
 });
 
-// Save on page unload
 window.addEventListener('beforeunload',()=>{saveToStorage();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveToStorage();});
 
