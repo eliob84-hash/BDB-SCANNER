@@ -148,7 +148,7 @@
         .help-icon svg { width:14px; height:14px; }
         .help-icon.text-icon { font-size:14px; font-weight:bold; }
         .help-text strong { color:var(--text); }
-        .help-text p { margin-top:2px; font-size:11px; }
+        .help-text p { margin-top:2px; }
         .help-badge { display:inline-block; padding:1px 5px; border-radius:3px; font-size:10px; font-weight:600; }
         .help-badge.good { background:rgba(16,185,129,0.2); color:var(--accent); }
         .help-badge.warn { background:rgba(245,158,11,0.2); color:var(--warning); }
@@ -220,7 +220,7 @@
             <button class="icon-btn" onclick="openHelpModal()" title="Guida">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </button>
-            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v5.0.0</span>
+            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v5.1.0</span>
         </div>
     </div>
     <div class="scan-counter">
@@ -293,47 +293,34 @@
         
         <div class="help-section">
             <h4>📷 Area Fotocamera</h4>
-            <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div class="help-text"><strong>Avvia / Ferma OCR:</strong> Accende la fotocamera posteriore e avvia la scansione automatica continua. Premere di nuovo per fermare e risparmiare batteria. La fotocamera si chiude automaticamente dopo 30 secondi di inattività.</div></div>
-            <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div class="help-text"><strong>Flash:</strong> Attiva la torcia del dispositivo. Utile in ambienti poco illuminati o per migliorare il contrasto dei seriali sbiaditi.</div></div>
-            <div class="help-item"><div class="help-icon" style="border:2px solid var(--accent);border-radius:4px;"></div><div class="help-text"><strong>Riquadro Verde (ROI):</strong> La zona di analisi. Posizionare il seriale all'interno del rettangolo. Il sistema analizza solo questa area per velocizzare la lettura ed evitare falsi positivi dallo sfondo.</div></div>
+            <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div class="help-text"><strong>Avvia / Ferma OCR:</strong> Accende la fotocamera e avvia la scansione automatica. La fotocamera si chiude dopo 30s di inattività.</div></div>
+            <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div class="help-text"><strong>Flash:</strong> Torcia per ambienti scuri o seriali sbiaditi.</div></div>
+            <div class="help-item"><div class="help-icon" style="border:2px solid var(--accent);border-radius:4px;"></div><div class="help-text"><strong>Riquadro Verde (ROI):</strong> Zona di analisi. Posiziona il seriale qui. Il sistema rileva automaticamente se è sottosopra e salva l'anteprima ruotata correttamente.</div></div>
         </div>
 
         <div class="help-section">
             <h4>⚙️ Configurazione Iniziale</h4>
-            <div class="help-item"><div class="help-icon text-icon">👤</div><div class="help-text"><strong>Operatore:</strong> Inserire il nome dell'operatore. Questo valore verrà associato a ogni seriale scansionato e apparirà nel report esportato.</div></div>
-            <div class="help-item"><div class="help-icon text-icon">📍</div><div class="help-text"><strong>Pedana / Posizione:</strong> Campo obbligatorio. Indica la posizione fisica del seriale. Dopo ogni scansione viene richiesto se mantenere o cambiare la pedana corrente.</div></div>
-            <div class="help-item"><div class="help-icon" style="font-size:16px;">🔄</div><div class="help-text"><strong>Rilevamento Multiplo:</strong> Modalità sperimentale. Se attivo, tenta di leggere più codici nello stesso frame. Consigliato solo per scansioni di gruppo.</div></div>
+            <div class="help-item"><div class="help-icon text-icon">👤</div><div class="help-text"><strong>Operatore:</strong> Nome associato a ogni seriale scansionato.</div></div>
+            <div class="help-item"><div class="help-icon text-icon">📍</div><div class="help-text"><strong>Pedana:</strong> Campo obbligatorio. Dopo ogni scansione viene chiesto se mantenere o cambiare posizione.</div></div>
         </div>
 
         <div class="help-section">
             <h4>🎯 Confidenza e Validazione</h4>
-            <div class="help-item"><div class="help-icon text-icon">%</div><div class="help-text"><strong>Percentuale di Confidenza:</strong> Indica la sicurezza della lettura OCR.<br><span class="help-badge err">&lt; 35%</span> <strong>Scartata automaticamente.</strong> Il seriale non viene registrato per evitare errori.<br><span class="help-badge warn">35% - 50%</span> <strong>Bassa confidenza.</strong> Il riquadro diventa arancione e appare il pulsante "Conferma Seriale" per validare manualmente.<br><span class="help-badge good">&gt; 50%</span> <strong>Accettata.</strong> Il seriale viene registrato automaticamente.</div></div>
-            <div class="help-item"><div class="help-icon text-icon">⚡</div><div class="help-text"><strong>Correzioni OCR:</strong> Se il sistema ha corretto automaticamente un carattere ambiguo (es. O→0, S→5), appare l'etichetta viola con le correzioni applicate.</div></div>
-            <div class="help-item"><div class="help-icon text-icon">📝</div><div class="help-text"><strong>Inserimento Manuale:</strong> Se lo stesso seriale viene rilevato 5 volte in 10 secondi con confidenza &lt;35%, si apre automaticamente un popup per l'inserimento manuale del codice (la parte fissa è già precompilata).</div></div>
+            <div class="help-item"><div class="help-icon text-icon">%</div><div class="help-text"><strong>Percentuale:</strong> <span class="help-badge err">&lt;35%</span> Scartata | <span class="help-badge warn">35-50%</span> Richiede conferma | <span class="help-badge good">&gt;50%</span> Accettata</div></div>
+            <div class="help-item"><div class="help-icon text-icon">⚡</div><div class="help-text"><strong>Correzioni OCR:</strong> Badge viola se il sistema ha corretto caratteri ambigui (es. O→0).</div></div>
+            <div class="help-item"><div class="help-icon text-icon">📝</div><div class="help-text"><strong>Inserimento Manuale:</strong> Dopo 5 letture &lt;35% dello stesso seriale, si apre il popup per digitare il codice.</div></div>
         </div>
 
         <div class="help-section">
-            <h4>📋 Gestione dei Record</h4>
-            <div class="help-item"><div class="help-icon" style="font-size:16px;">👆</div><div class="help-text"><strong>Tap sull'immagine:</strong> Apre lo zoom full-screen per verificare visivamente il seriale. Durante la visualizzazione, la scansione viene messa in pausa per evitare letture accidentali.</div></div>
-            <div class="help-item"><div class="help-icon text-icon">✏️</div><div class="help-text"><strong>Modifica Seriale:</strong> Toccare il campo del seriale per correggerlo manualmente. Richiede conferma e controlla che il formato sia valido (10 caratteri, inizia con BDBCF00).</div></div>
-            <div class="help-item"><div class="help-icon text-icon">🏃</div><div class="help-text"><strong>N° Run:</strong> Campo editabile per ogni record. Cliccare per inserire o modificare il numero di run associato al seriale.</div></div>
-            <div class="help-item"><div class="help-icon text-icon">📍</div><div class="help-text"><strong>Modifica Pedana:</strong> Toccare il numero pedana in un record specifico per modificarlo singolarmente senza influenzare gli altri.</div></div>
-            <div class="help-item"><div class="help-icon text-icon">📦</div><div class="help-text"><strong>Applica Stato a Pedana:</strong> Assegna lo stesso stato (Good, Rotto, ecc.) a tutti i record della pedana corrente con un solo tap.</div></div>
-            <div class="help-item"><div class="help-icon" style="font-size:16px;">🗑️</div><div class="help-text"><strong>Elimina Record:</strong> Rimuove il seriale dall'elenco. Viene richiesta conferma per evitare cancellazioni accidentali.</div></div>
+            <h4>📋 Gestione Record</h4>
+            <div class="help-item"><div class="help-icon text-icon">👆</div><div class="help-text"><strong>Tap immagine:</strong> Zoom full-screen (pausa scansione).</div></div>
+            <div class="help-item"><div class="help-icon text-icon">✏️</div><div class="help-text"><strong>Modifica Seriale/Pedana:</strong> Tocca i campi per correggere. Richiede conferma.</div></div>
+            <div class="help-item"><div class="help-icon text-icon">📦</div><div class="help-text"><strong>Applica Stato:</strong> Assegna lo stesso stato a tutti i record della pedana corrente.</div></div>
         </div>
-
         <div class="help-section">
-            <h4>📊 Esportazione Dati</h4>
-            <div class="help-item"><div class="help-icon text-icon" style="background:#217346;color:white;">X</div><div class="help-text"><strong>Excel (.xlsx):</strong> Scarica un file Excel con tutti i dati in tabella. Ideale per analisi e archiviazione.</div></div>
-            <div class="help-item"><div class="help-icon text-icon" style="background:var(--primary);color:white;">🌐</div><div class="help-text"><strong>HTML+Img:</strong> Crea un report web con le immagini delle anteprime embeddate direttamente nel file. Ideale per controlli visivi rapidi senza connessione.</div></div>
-            <div class="help-item"><div class="help-icon text-icon" style="background:var(--text-dim);color:white;">📦</div><div class="help-text"><strong>ZIP:</strong> Archivio compresso contenente tutte le immagini dei seriali scansionati + un file CSV di riepilogo. Utile per backup completi.</div></div>
+            <h4>☁️ Esportazione</h4>
+            <div class="help-item"><div class="help-icon text-icon" style="background:#217346;color:white;">X</div><div class="help-text"><strong>Excel/HTML/ZIP:</strong> Esporta i dati in vari formati. L'HTML include le anteprime embeddate.</div></div>
         </div>
-
-        <div class="help-section">
-            <h4>☁️ Sincronizzazione Cloud</h4>
-            <div class="help-item"><div class="help-icon text-icon" style="font-family:monospace;">vX.X</div><div class="help-text"><strong>Menu Versione (Config):</strong> Toccare il badge versione per accedere alle impostazioni avanzate. Qui è possibile configurare l'URL di Google Sheets per la sincronizzazione cloud. I dati vengono salvati automaticamente in locale e sincronizzati con il cloud quando disponibile.<br><span style="color:var(--accent);">Icone di stato:</span> 🟢 Sincronizzato | 🟡 In coda | 🔴 Errore</div></div>
-        </div>
-        
         <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="document.getElementById('helpModal').classList.remove('visible')">Ho capito</button>
     </div>
 </div>
@@ -341,74 +328,31 @@
 <div class="modal-overlay" id="versionModal">
     <div class="modal-box version-modal-box" onclick="event.stopPropagation()">
         <button class="modal-close" onclick="closeVersionModal()">✕</button>
-        <h3>⚙️ Configurazione Avanzata</h3>
+        <h3>⚙️ Configurazione</h3>
         <div class="ver-date" id="versionBuildDate"></div>
-        
-        <h4 style="font-size:14px;color:var(--primary-light);margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:6px;">📋 Changelog Completo</h4>
+        <h4 style="font-size:14px;color:var(--primary-light);margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:6px;">📋 Changelog</h4>
         <div id="changelogContent" style="max-height:250px;overflow-y:auto;margin-bottom:20px;"></div>
-        
         <div class="gsheet-config-area">
             <h4 style="font-size:14px;color:var(--primary-light);margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:6px;">🔗 Google Sheets</h4>
-            <label>URL Google Apps Script (Deve terminare con /exec)</label>
+            <label>URL Script (/exec)</label>
             <div class="gsheet-input-row"><input type="text" id="modalGsheetUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
             <div class="gsheet-options">
-                <button class="btn btn-outline" style="padding:4px 8px;font-size:10px;" onclick="saveModalGSheet()">💾 Salva URL</button>
+                <button class="btn btn-outline" style="padding:4px 8px;font-size:10px;" onclick="saveModalGSheet()">💾 Salva</button>
                 <button class="btn btn-outline" style="padding:4px 8px;font-size:10px;" onclick="verifyGSheetFromModal()">🔍 Verifica</button>
                 <label style="display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;"><input type="checkbox" id="modalGsheetImgToggle" checked> Upload Img</label>
             </div>
             <div class="gsheet-diagnostic" id="gsheetDiag" style="display:none;"></div>
-            <p style="font-size:10px;color:var(--text-dim);margin-top:8px;">Nota: Dopo ogni modifica al codice Google Script, eseguire "Nuovo Deployment".</p>
         </div>
     </div>
 </div>
 
-<div class="confirm-modal" id="pedanaModal">
-    <div class="confirm-box">
-        <h3 id="pedanaModalTitle">📍 Pedana / Posizione</h3>
-        <div class="serial-ref" id="pedanaSerialRef"></div>
-        <div class="pedana-preview" id="pedanaPreviewWrap"></div>
-        <div class="pedana-big" id="pedanaBigRef"></div>
-        <p id="pedanaModalMsg"></p>
-        <div class="pedana-actions">
-            <div class="btn-row"><button class="btn btn-warning" onclick="pedanaChange()">✏️ Cambia</button><button class="btn btn-accent" onclick="pedanaKeep()">✓ Mantieni</button></div>
-            <div id="pedanaChangeInput" style="display:none;"><input type="text" class="input-field" id="newPedanaInput" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:2px;" maxlength="20"><div class="btn-row" style="margin-top:10px;"><button class="btn btn-outline" onclick="pedanaCancel()">Annulla</button><button class="btn btn-primary" onclick="pedanaConfirm()">Conferma</button></div></div>
-        </div>
-    </div>
-</div>
+<div class="confirm-modal" id="pedanaModal"><div class="confirm-box"><h3 id="pedanaModalTitle">📍 Pedana</h3><div class="serial-ref" id="pedanaSerialRef"></div><div class="pedana-preview" id="pedanaPreviewWrap"></div><div class="pedana-big" id="pedanaBigRef"></div><p id="pedanaModalMsg"></p><div class="pedana-actions"><div class="btn-row"><button class="btn btn-warning" onclick="pedanaChange()">✏️ Cambia</button><button class="btn btn-accent" onclick="pedanaKeep()">✓ Mantieni</button></div><div id="pedanaChangeInput" style="display:none;"><input type="text" class="input-field" id="newPedanaInput" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:2px;" maxlength="20"><div class="btn-row" style="margin-top:10px;"><button class="btn btn-outline" onclick="pedanaCancel()">Annulla</button><button class="btn btn-primary" onclick="pedanaConfirm()">Conferma</button></div></div></div></div></div>
 
-<div class="confirm-modal" id="pedanaEditModal">
-    <div class="confirm-box"><h3>✏️ Modifica Pedana</h3><p id="pedanaEditMsg"></p><input type="text" class="input-field" id="pedanaEditInput" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:2px;" maxlength="20"><div class="confirm-actions" style="margin-top:14px;"><button class="btn btn-outline" onclick="closePedanaEdit()">Annulla</button><button class="btn btn-primary" onclick="confirmPedanaEdit()">Conferma</button></div></div>
-</div>
+<div class="confirm-modal" id="pedanaEditModal"><div class="confirm-box"><h3>✏️ Modifica Pedana</h3><p id="pedanaEditMsg"></p><input type="text" class="input-field" id="pedanaEditInput" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:2px;" maxlength="20"><div class="confirm-actions" style="margin-top:14px;"><button class="btn btn-outline" onclick="closePedanaEdit()">Annulla</button><button class="btn btn-primary" onclick="confirmPedanaEdit()">Conferma</button></div></div></div>
 
-<div class="confirm-modal" id="statusApplyModal">
-    <div class="confirm-box">
-        <h3>📍 Applica Stato</h3>
-        <p>Pedana: <b id="applyPedanaName" style="color:var(--warning)"></b></p>
-        <p style="font-size:11px;color:var(--text-dim)">Seleziona lo stato da applicare a tutti i record di questa pedana:</p>
-        <div class="status-grid">
-            <button class="btn btn-accent" onclick="executeApplyStatus('Good')">✓ Good</button>
-            <button class="btn btn-danger" onclick="executeApplyStatus('Rotto')">✕ Rotto</button>
-            <button class="btn btn-warning" onclick="executeApplyStatus('Sporco')">◆ Sporco</button>
-            <button class="btn" style="background:#8b5cf6;color:white" onclick="executeApplyStatus('RF-ID')">📡 RF-ID</button>
-            <button class="btn" style="background:#06b6d4;color:white" onclick="executeApplyStatus('Barra Mancante')">▤ Barra Manc.</button>
-            <button class="btn" style="background:var(--text-dim);color:white" onclick="executeApplyStatus('Dubbio/Altro')">❓ Dubbio</button>
-        </div>
-        <button class="btn btn-outline" style="margin-top:12px;width:100%" onclick="document.getElementById('statusApplyModal').classList.remove('visible')">Annulla</button>
-    </div>
-</div>
+<div class="confirm-modal" id="statusApplyModal"><div class="confirm-box"><h3>📍 Applica Stato</h3><p>Pedana: <b id="applyPedanaName" style="color:var(--warning)"></b></p><div class="status-grid"><button class="btn btn-accent" onclick="executeApplyStatus('Good')">✓ Good</button><button class="btn btn-danger" onclick="executeApplyStatus('Rotto')">✕ Rotto</button><button class="btn btn-warning" onclick="executeApplyStatus('Sporco')">◆ Sporco</button><button class="btn" style="background:#8b5cf6;color:white" onclick="executeApplyStatus('RF-ID')">📡 RF-ID</button><button class="btn" style="background:#06b6d4;color:white" onclick="executeApplyStatus('Barra Mancante')">▤ Barra Manc.</button><button class="btn" style="background:var(--text-dim);color:white" onclick="executeApplyStatus('Dubbio/Altro')">❓ Dubbio</button></div><button class="btn btn-outline" style="margin-top:12px;width:100%" onclick="document.getElementById('statusApplyModal').classList.remove('visible')">Annulla</button></div></div>
 
-<div class="confirm-modal" id="manualEntryModal">
-    <div class="confirm-box">
-        <h3 id="manualEntryTitle">✏️ Inserimento Manuale</h3>
-        <p id="manualEntryDesc">Rilevamenti ripetuti a bassa confidenza.</p>
-        <div class="pedana-preview" id="manualPreviewWrap" style="margin:10px auto;"></div>
-        <input type="text" class="manual-input" id="manualSerialInput" value="BDBCF00" maxlength="10">
-        <div class="confirm-actions">
-            <button class="btn btn-outline" onclick="closeManualEntry()">Annulla</button>
-            <button class="btn btn-primary" onclick="confirmManualEntry()">Conferma</button>
-        </div>
-    </div>
-</div>
+<div class="confirm-modal" id="manualEntryModal"><div class="confirm-box"><h3 id="manualEntryTitle">✏️ Inserimento Manuale</h3><p id="manualEntryDesc">Rilevamenti ripetuti a bassa confidenza.</p><div class="pedana-preview" id="manualPreviewWrap" style="margin:10px auto;"></div><input type="text" class="manual-input" id="manualSerialInput" value="BDBCF00" maxlength="10"><div class="confirm-actions"><button class="btn btn-outline" onclick="closeManualEntry()">Annulla</button><button class="btn btn-primary" onclick="confirmManualEntry()">Conferma</button></div></div></div>
 
 <div class="toast" id="toast"></div>
 
@@ -423,46 +367,20 @@
 </div>
 
 <script>
-const APP_VERSION='5.0.0';
+const APP_VERSION='5.1.0';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
 const IMG_DB_NAME='ScannerSerialiDB';
 const IMG_DB_VERSION=1;
 const IMG_STORE='images';
-
 const CHANGELOG=[
-    {ver:'v5.0.0',date:new Date().toLocaleString('it-IT'),desc:'Guida completa espansa. Tutti i changelog ripristinati. Rimossi debug mode e funzioni nascoste. Fix avvio fotocamera.',tags:['fix','ui']},
-    {ver:'v4.6.0',date:'23/05/2026 16:00',desc:'Debug mode con anteprima salvata. Tap counter visibile. Prompt verifica confidenza <35%. Fix Google Sheets via iframe.',tags:['feat','fix']},
-    {ver:'v4.5.1',date:'23/05/2026 15:00',desc:'Fix Export HTML (allineamento colonne). Fix upload Google Sheets.',tags:['fix']},
-    {ver:'v4.5.0',date:'23/05/2026 15:00',desc:'Changelog completo restaurato. Data/ora dinamica. Badge colorati.',tags:['feat','ui']},
-    {ver:'v4.4.0',date:'23/05/2026 14:00',desc:'Guida dettagliata e completa.',tags:['feat','ui']},
-    {ver:'v4.3.0',date:'23/05/2026 13:00',desc:'Tasto conferma bassa confidenza. Inserimento manuale automatico.',tags:['feat','fix']},
-    {ver:'v4.2.0',date:'23/05/2026 12:00',desc:'Guida in-app. Contrasto adattivo. Rimossa spiegazione password.',tags:['feat','fix']},
-    {ver:'v4.1.0',date:'23/05/2026 11:00',desc:'URL Sheets nel modale Versione. Soglie confidenza. Scansione ROI.',tags:['feat','fix']},
-    {ver:'v4.0.0',date:'23/05/2026 10:00',desc:'URL spostato in config protetta. Soglie confidenza.',tags:['feat']},
-    {ver:'v3.9.0',date:'23/05/2026 09:00',desc:'Fix input Google Sheets. Tasto Apri Sheet.',tags:['fix','ui']},
-    {ver:'v3.8.0',date:'23/05/2026 08:00',desc:'Fix upload Sheets. Anteprima margini +25px.',tags:['fix']},
-    {ver:'v3.7.0',date:'23/05/2026 07:00',desc:'Tasto conferma seriale bassa confidenza.',tags:['feat']},
-    {ver:'v3.6.0',date:'23/05/2026 06:00',desc:'Fix input Sheets. Rimossa spiegazione password.',tags:['fix']},
-    {ver:'v3.5.0',date:'23/05/2026 05:00',desc:'Guida in-app. Contrasto adattivo.',tags:['feat','fix']},
-    {ver:'v3.4.0',date:'23/05/2026 04:00',desc:'Contrasto adattivo. Soglia instabilità rimossa.',tags:['feat','fix']},
-    {ver:'v3.3.0',date:'23/05/2026 03:00',desc:'URL Sheets nel modale Versione. Soglie confidenza.',tags:['feat']},
-    {ver:'v3.2.0',date:'23/05/2026 02:00',desc:'Fix Sheets: no-cors + text/plain.',tags:['fix']},
-    {ver:'v3.1.0',date:'23/05/2026 01:00',desc:'Integrazione Google Sheets + Drive.',tags:['feat']},
-    {ver:'v3.0.0',date:'23/05/2026 00:00',desc:'Salvataggio locale IndexedDB.',tags:['feat','ui']},
-    {ver:'v2.2.0',date:'22/05/2026 23:00',desc:'Freccia scroll-to-top. Export HTML.',tags:['feat','ui']},
-    {ver:'v2.1.0',date:'22/05/2026 22:00',desc:'Applica Stato a pedana.',tags:['feat']},
-    {ver:'v2.0.0',date:'22/05/2026 21:00',desc:'URL rimosso da interfaccia principale.',tags:['ui']},
-    {ver:'v1.9.0',date:'22/05/2026 20:00',desc:'Tap su pedana nei record. Colori icone.',tags:['ui']},
-    {ver:'v1.8.0',date:'22/05/2026 19:00',desc:'Auto-close 30s. Note sempre visibili.',tags:['feat']},
-    {ver:'v1.7.0',date:'22/05/2026 18:00',desc:'Blocco seriali simili. Soglia ridotta.',tags:['fix']},
-    {ver:'v1.6.0',date:'22/05/2026 17:00',desc:'Anteprima crop +25px. ROI scan.',tags:['feat']},
-    {ver:'v1.5.0',date:'22/05/2026 16:00',desc:'Password HHMM per config.',tags:['feat']},
-    {ver:'v1.4.0',date:'22/05/2026 15:00',desc:'Confidenza OCR. Correzioni OCR.',tags:['feat']},
-    {ver:'v1.3.0',date:'22/05/2026 14:00',desc:'Rimossa lente anteprima. Immagine 130px.',tags:['ui']},
-    {ver:'v1.2.0',date:'22/05/2026 13:00',desc:'Anteprima ridotta. Pausa zoom.',tags:['ui','feat']},
-    {ver:'v1.1.0',date:'22/05/2026 12:30',desc:'Solo 10 caratteri. Timeout 1s.',tags:['feat','fix']},
-    {ver:'v1.0.0',date:'22/05/2026 12:00',desc:'Versione iniziale: OCR Tesseract.js.',tags:['feat']}
+    {ver:'v5.1.0',date:new Date().toLocaleString('it-IT'),desc:'Rilevamento seriale sottosopra con rotazione automatica anteprima. Guida espansa.',tags:['feat']},
+    {ver:'v5.0.0',date:new Date().toLocaleString('it-IT'),desc:'Guida completa. Changelog ripristinati. Fix avvio fotocamera.',tags:['fix','ui']},
+    {ver:'v4.6.0',date:'23/05/2026 16:00',desc:'Debug mode. Tap counter. Prompt verifica confidenza <35%. Fix Sheets.',tags:['feat','fix']},
+    {ver:'v4.5.1',date:'23/05/2026 15:00',desc:'Fix Export HTML. Fix upload Sheets.',tags:['fix']},
+    {ver:'v4.0.0',date:'23/05/2026 10:00',desc:'Config protetta. Soglie confidenza.',tags:['feat']},
+    {ver:'v3.0.0',date:'23/05/2026 00:00',desc:'Salvataggio locale IndexedDB. Esportazioni.',tags:['feat','ui']},
+    {ver:'v1.0.0',date:'22/05/2026 12:00',desc:'Versione iniziale.',tags:['feat']}
 ];
 
 let cameraActive=false, flashOn=false, multiDetect=false, videoEl=null, stream=null, ocrWorker=null, scanTimer=null, idleTimer=null;
@@ -538,30 +456,23 @@ function openGoogleSheet(){window.open(GOOGLE_SHEET_LINK,'_blank');}
 let gsheetIframe=null;
 function initGsheetIframe(){if(!gsheetIframe){gsheetIframe=document.createElement('iframe');gsheetIframe.style.display='none';gsheetIframe.name='gsheet_target';document.body.appendChild(gsheetIframe);}}
 function showGsheetDiag(msg){const el=document.getElementById('gsheetDiag');if(el){el.style.display='block';el.textContent=msg;}}
-
 async function sendToGSheet(record){
     if(!gsheetUrl)return false;
-    if(!gsheetUrl.includes('/exec')){showGsheetDiag('⚠️ URL errato (manca /exec)');return false;}
-    showGsheetDiag('📤 Invio in corso...');
-    initGsheetIframe();
+    if(!gsheetUrl.includes('/exec')){showGsheetDiag('⚠️ URL errato');return false;}
+    showGsheetDiag('📤 Invio...');initGsheetIframe();
     try{
         const payload={rowNum:records.indexOf(record)+1,timestamp:record.timestamp||'',serial:record.serial||'',confidence:record.confidence||0,corrections:(record.corrections||[]).join(', '),modified:record.modified?'Sì':'No',runNumber:record.runNumber||'',pedana:record.pedana||'',operator:record.operator||'',status:record.status||'',note:record.note||''};
         const uploadImg=document.getElementById('modalGsheetImgToggle').checked;
         if(uploadImg&&record.image)payload.imageData=record.image;
         const encoded=encodeURIComponent(JSON.stringify(payload));
-        const form=document.createElement('form');
-        form.method='POST';form.action=gsheetUrl;form.target='gsheet_target';
+        const form=document.createElement('form');form.method='POST';form.action=gsheetUrl;form.target='gsheet_target';
         const input=document.createElement('input');input.type='hidden';input.name='payload';input.value=encoded;
         form.appendChild(input);document.body.appendChild(form);form.submit();document.body.removeChild(form);
         record._synced=true;record._imgUploaded=uploadImg&&!!record.image;
         showGsheetDiag('✅ Inviato');return true;
-    }catch(e){showGsheetDiag('❌ Errore: '+e.message);record._synced=false;return false;}
+    }catch(e){showGsheetDiag('❌ Errore');record._synced=false;return false;}
 }
-async function verifyGSheet(){
-    if(!gsheetUrl){toast('Inserisci URL','error');return;}
-    toast('Verifica...','success');
-    try{await fetch(gsheetUrl,{method:'GET',mode:'no-cors'});toast('✅ Connesso','success');setSyncStatus('synced');}catch(e){toast('❌ Fallita','error');setSyncStatus('error');}
-}
+async function verifyGSheet(){if(!gsheetUrl){toast('Inserisci URL','error');return;}toast('Verifica...','success');try{await fetch(gsheetUrl,{method:'GET',mode:'no-cors'});toast('✅ Connesso','success');setSyncStatus('synced');}catch(e){toast('❌ Fallita','error');setSyncStatus('error');}}
 async function syncPendingToGSheet(){
     if(!gsheetUrl){toast('Configura URL','error');return;}
     const unsynced=records.filter(r=>!r._synced);
@@ -569,7 +480,7 @@ async function syncPendingToGSheet(){
     setSyncStatus('syncing');toast(`🔄 Invio ${unsynced.length} record...`,'success');
     let ok=0,err=0;for(const r of unsynced){const s=await sendToGSheet(r);if(s)ok++;else err++;}
     saveToStorage();
-    if(err===0){toast(`✅ ${ok} record inviati`,'success');setSyncStatus('synced');}
+    if(err===0){toast(`✅ ${ok} inviati`,'success');setSyncStatus('synced');}
     else{toast(`⚠️ ${ok} ok, ${err} errori`,'warning');setSyncStatus('error');}
     renderRecords();
 }
@@ -582,23 +493,20 @@ function executeApplyStatus(status){const c=document.getElementById('pedana').va
 let imgDB=null;
 function openImgDB(){return new Promise((resolve,reject)=>{if(imgDB){resolve(imgDB);return;}const req=indexedDB.open(IMG_DB_NAME,IMG_DB_VERSION);req.onupgradeneeded=(e)=>{const db=e.target.result;if(!db.objectStoreNames.contains(IMG_STORE))db.createObjectStore(IMG_STORE,{keyPath:'id'});};req.onsuccess=(e)=>{imgDB=e.target.result;resolve(imgDB);};req.onerror=(e)=>reject(e);});}
 async function saveImg(id,dataUrl){try{const db=await openImgDB();const tx=db.transaction(IMG_STORE,'readwrite');tx.objectStore(IMG_STORE).put({id:id,data:dataUrl});return new Promise((r)=>{tx.oncomplete=()=>r();});}catch(e){}}
-async function getImg(id){try{const db=await openImgDB();const tx=db.transaction(IMG_STORE,'readonly');const store=tx.objectStore(IMG_STORE);return new Promise((r)=>{const req=store.get(id);req.onsuccess=()=>r(req.result?req.result.data:null);req.onerror=()=>r(null);});}catch(e){return null;}}
-async function deleteImg(id){try{const db=await openImgDB();const tx=db.transaction(IMG_STORE,'readwrite');tx.objectStore(IMG_STORE).delete(id);}catch(e){}}
 async function loadAllImages(){try{const db=await openImgDB();const tx=db.transaction(IMG_STORE,'readonly');const store=tx.objectStore(IMG_STORE);return new Promise((r)=>{const req=store.getAll();req.onsuccess=()=>{const map={};(req.result||[]).forEach(item=>{map[item.id]=item.data;});r(map);};req.onerror=()=>r({});});}catch(e){return {};}}
-
+async function deleteImg(id){try{const db=await openImgDB();const tx=db.transaction(IMG_STORE,'readwrite');tx.objectStore(IMG_STORE).delete(id);}catch(e){}}
 async function saveToStorage(){try{const lean=records.map(r=>{const c={...r};c.image=null;return c;});localStorage.setItem(STORAGE_KEY,JSON.stringify({records:lean,scanTotal:scanTotal,operator:document.getElementById('operatorName').value,pedana:document.getElementById('pedana').value,gsheetImgToggle:document.getElementById('modalGsheetImgToggle').checked,timestamp:Date.now()}));for(const r of records){if(r.image&&!r.image.includes('[truncated]')){await saveImg(r.id,r.image);}}}catch(e){}}
 async function loadFromStorage(){try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return false;const d=JSON.parse(raw);if(Date.now()-d.timestamp>7*24*60*60*1000){localStorage.removeItem(STORAGE_KEY);return false;}records=d.records||[];scanTotal=d.scanTotal||0;if(d.operator)document.getElementById('operatorName').value=d.operator;if(d.pedana)document.getElementById('pedana').value=d.pedana;if(d.gsheetImgToggle!==undefined)document.getElementById('modalGsheetImgToggle').checked=d.gsheetImgToggle;document.getElementById('scanCount').textContent=scanTotal;const imgMap=await loadAllImages();records.forEach(r=>{if(imgMap[r.id])r.image=imgMap[r.id];});return true;}catch(e){return false;}}
 
 function showPedanaModal(serial,imgData,callback){const current=document.getElementById('pedana').value.trim()||'—';document.getElementById('pedanaSerialRef').textContent='Seriale: '+serial;document.getElementById('pedanaBigRef').textContent=current;document.getElementById('pedanaModalTitle').textContent='📍 Pedana';document.getElementById('pedanaModalMsg').textContent='Conferma o modifica';const pw=document.getElementById('pedanaPreviewWrap');if(imgData){pw.innerHTML=`<img src="${imgData}" alt="preview">`;pw.style.display='block';}else{pw.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>';pw.style.display='flex';}document.getElementById('pedanaChangeInput').style.display='none';document.getElementById('newPedanaInput').value='';pedanaCallback=callback;document.getElementById('pedanaModal').classList.add('visible');}
 function pedanaKeep(){document.getElementById('pedanaModal').classList.remove('visible');if(pedanaCallback)pedanaCallback(document.getElementById('pedana').value.trim());pedanaCallback=null;}
-function pedanaChange(){document.getElementById('pedanaChangeInput').style.display='block';const np=document.getElementById('newPedanaInput');np.value=lastScanPedana||'';setTimeout(()=>np.focus(),100);}
+function pedanaChange(){document.getElementById('pedanaChangeInput').style.display='block';document.getElementById('newPedanaInput').value=lastScanPedana||'';setTimeout(()=>document.getElementById('newPedanaInput').focus(),100);}
 function pedanaCancel(){document.getElementById('pedanaChangeInput').style.display='none';}
-function pedanaConfirm(){const nv=document.getElementById('newPedanaInput').value.trim();if(!nv){toast('Campo obbligatorio','error');return;}document.getElementById('pedana').value=nv;document.getElementById('pedanaModal').classList.remove('visible');document.getElementById('pedana').classList.remove('missing');lastScanPedana=nv;saveToStorage();if(pedanaCallback)pedanaCallback(nv);pedanaCallback=null;}
+function pedanaConfirm(){const nv=document.getElementById('newPedanaInput').value.trim();if(!nv){toast('Obbligatorio','error');return;}document.getElementById('pedana').value=nv;document.getElementById('pedanaModal').classList.remove('visible');document.getElementById('pedana').classList.remove('missing');lastScanPedana=nv;saveToStorage();if(pedanaCallback)pedanaCallback(nv);pedanaCallback=null;}
 document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('pedanaChangeInput').style.display==='block')pedanaConfirm();});
-
 function openPedanaEdit(id){const rec=records.find(r=>r.id===id);if(!rec)return;pedanaEditRecordId=id;document.getElementById('pedanaEditMsg').textContent=`Seriale: ${rec.serial}`;document.getElementById('pedanaEditInput').value=rec.pedana;document.getElementById('pedanaEditModal').classList.add('visible');setTimeout(()=>{const i=document.getElementById('pedanaEditInput');if(i){i.focus();i.select();}},200);}
 function closePedanaEdit(){document.getElementById('pedanaEditModal').classList.remove('visible');pedanaEditRecordId=null;}
-function confirmPedanaEdit(){const nv=document.getElementById('pedanaEditInput').value.trim();if(!nv){toast('Campo obbligatorio','error');return;}const rec=records.find(r=>r.id===pedanaEditRecordId);if(rec){rec.pedana=nv;rec._synced=false;renderRecords();saveToStorage();toast('Pedana aggiornata','success');}closePedanaEdit();}
+function confirmPedanaEdit(){const nv=document.getElementById('pedanaEditInput').value.trim();if(!nv){toast('Obbligatorio','error');return;}const rec=records.find(r=>r.id===pedanaEditRecordId);if(rec){rec.pedana=nv;rec._synced=false;renderRecords();saveToStorage();toast('Aggiornata','success');}closePedanaEdit();}
 document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('pedanaEditModal').classList.contains('visible'))confirmPedanaEdit();});
 
 // ===== CAMERA & SCAN =====
@@ -615,17 +523,17 @@ async function startCamera(){
         await new Promise(r=>{videoEl.onloadedmetadata=()=>r();});
         document.getElementById('cameraContainer').classList.add('active');
         document.getElementById('btnFlash').disabled=false;
-        document.getElementById('scanIndicator').innerHTML='<span class="loading-indicator"><span class="spinner"></span> Caricamento OCR...</span>';
-        document.getElementById('ocrStatus').textContent='Inizializzazione motore OCR...';
+        document.getElementById('scanIndicator').innerHTML='<span class="loading-indicator"><span class="spinner"></span> Caricamento...</span>';
+        document.getElementById('ocrStatus').textContent='Inizializzazione OCR...';
         cameraActive=true;
         ocrWorker=await Tesseract.createWorker('eng',1,{logger:(m)=>{if(m.status==='recognizing text'){document.getElementById('progressBar').style.width=Math.round(m.progress*100)+'%';document.getElementById('ocrStatus').textContent=`OCR ${Math.round(m.progress*100)}%`;}}});
         await ocrWorker.setParameters({tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',preserve_interword_spaces:'0'});
-        document.getElementById('scanIndicator').innerHTML='<span class="scanning-indicator"><span class="dot"></span> OCR pronto — Scansione attiva</span>';
-        document.getElementById('ocrStatus').textContent='✓ Pronto — Scansione in corso';
+        document.getElementById('scanIndicator').innerHTML='<span class="scanning-indicator"><span class="dot"></span> Pronto</span>';
+        document.getElementById('ocrStatus').textContent='✓ Scansione attiva';
         document.getElementById('progressBar').style.width='0%';
         scanTimer=setInterval(scanFrame,SCAN_INTERVAL);
         resetIdleTimer();checkScrollPosition();
-        toast('📷 Fotocamera OCR avviata','success');vib('ok');
+        toast('📷 Avviata','success');vib('ok');
     }catch(err){console.error(err);toast('Errore: '+err.message,'error');beepErr();vib('err');resetBtnCamera();}
 }
 function stopCamera(){
@@ -639,44 +547,47 @@ function stopCamera(){
     document.getElementById('btnFlash').classList.remove('btn-accent');document.getElementById('btnFlash').classList.add('btn-warning');
     document.getElementById('progressBar').style.width='0%';
     document.getElementById('cooldownOverlay').classList.remove('active');
-    updateScanIndicator();resetBtnCamera();checkScrollPosition();toast('📷 Fotocamera spenta','warning');
+    updateScanIndicator();resetBtnCamera();checkScrollPosition();toast('📷 Spenta','warning');
 }
 function resetBtnCamera(){const btn=document.getElementById('btnCamera');btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Avvia OCR</span>`;btn.classList.add('btn-primary');btn.classList.remove('btn-danger');}
-function updateScanIndicator(){const el=document.getElementById('scanIndicator');if(!cameraActive){el.innerHTML='';return;}if(scanPaused){el.innerHTML='<span class="paused-indicator"><span class="dot"></span> In pausa</span>';return;}if(scanCooldown){el.innerHTML='<span class="paused-indicator"><span class="dot"></span> Cooldown...</span>';return;}el.innerHTML='<span class="scanning-indicator"><span class="dot"></span> Scansione attiva</span>';}
-async function toggleFlash(){if(!stream)return;try{const track=stream.getVideoTracks()[0];if(!track)return;const caps=track.getCapabilities();if(!caps||!caps.torch){toast('Flash non supportato','error');return;}flashOn=!flashOn;await track.applyConstraints({advanced:[{torch:flashOn}]});const btn=document.getElementById('btnFlash');if(flashOn){btn.classList.remove('btn-warning');btn.classList.add('btn-accent');toast('🔦 Flash ON','success');}else{btn.classList.remove('btn-accent');btn.classList.add('btn-warning');toast('🔦 Flash OFF','warning');}}catch(e){toast('Errore flash','error');}}
+function updateScanIndicator(){const el=document.getElementById('scanIndicator');if(!cameraActive){el.innerHTML='';return;}if(scanPaused){el.innerHTML='<span class="paused-indicator"><span class="dot"></span> Pausa</span>';return;}if(scanCooldown){el.innerHTML='<span class="paused-indicator"><span class="dot"></span> Cooldown</span>';return;}el.innerHTML='<span class="scanning-indicator"><span class="dot"></span> Scansione</span>';}
+async function toggleFlash(){if(!stream)return;try{const track=stream.getVideoTracks()[0];if(!track)return;const caps=track.getCapabilities();if(!caps||!caps.torch){toast('Flash non supportato','error');return;}flashOn=!flashOn;await track.applyConstraints({advanced:[{torch:flashOn}]});const btn=document.getElementById('btnFlash');if(flashOn){btn.classList.remove('btn-warning');btn.classList.add('btn-accent');toast('🔦 ON','success');}else{btn.classList.remove('btn-accent');btn.classList.add('btn-warning');toast('🔦 OFF','warning');}}catch(e){toast('Errore flash','error');}}
 function toggleMultiDetect(){multiDetect=!multiDetect;document.getElementById('toggleMulti').classList.toggle('active',multiDetect);}
-function checkPedanaRequired(){const p=document.getElementById('pedana').value.trim();if(!p){document.getElementById('pedana').classList.add('missing');toast('⚠️ Inserisci Pedana/Posizione','error');beepErr();vib('err');return false;}document.getElementById('pedana').classList.remove('missing');return true;}
+function checkPedanaRequired(){const p=document.getElementById('pedana').value.trim();if(!p){document.getElementById('pedana').classList.add('missing');toast('⚠️ Pedana richiesta','error');beepErr();vib('err');return false;}document.getElementById('pedana').classList.remove('missing');return true;}
 
+// ===== OCR & UPSIDE DOWN DETECTION =====
 function applyAdaptiveThreshold(ctx,w,h){const imageData=ctx.getImageData(0,0,w,h);const data=imageData.data;const gray=new Uint8Array(w*h);for(let i=0;i<data.length;i+=4)gray[i/4]=0.299*data[i]+0.587*data[i+1]+0.114*data[i+2];let min=255,max=0;for(let i=0;i<gray.length;i++){if(gray[i]<min)min=gray[i];if(gray[i]>max)max=gray[i];}const range=max-min;if(range===0)return;const threshold=min+range*0.5;for(let i=0;i<data.length;i+=4){const val=gray[i/4];const binary=val<threshold?0:255;data[i]=binary;data[i+1]=binary;data[i+2]=binary;}ctx.putImageData(imageData,0,0);}
 
-// ===== MANUAL ENTRY =====
-function trackLowConfidence(serial,timestamp){if(!lowConfTracker[serial])lowConfTracker[serial]=[];lowConfTracker[serial].push(timestamp);const now=Date.now();lowConfTracker[serial]=lowConfTracker[serial].filter(t=>now-t<10000);return lowConfTracker[serial].length;}
-function openManualEntryModal(serial,imgData,isLowConf=false){
-    manualEntrySerial=serial.substring(0,7)||'BDBCF00';manualEntryImage=imgData;
-    document.getElementById('manualEntryTitle').textContent=isLowConf?'⚠️ Verifica Seriale':'✏️ Inserimento Manuale';
-    document.getElementById('manualEntryDesc').textContent=isLowConf?'Bassa confidenza. Verifica o modifica:':'Rilevamenti ripetuti a bassa confidenza.';
-    const input=document.getElementById('manualSerialInput');
-    input.value=isLowConf?(serial||'BDBCF00'):'BDBCF00';
-    const wrap=document.getElementById('manualPreviewWrap');
-    if(imgData){wrap.innerHTML=`<img src="${imgData}" alt="preview">`;wrap.style.display='block';}else{wrap.innerHTML='';wrap.style.display='none';}
-    document.getElementById('manualEntryModal').classList.add('visible');
-    setTimeout(()=>input.focus(),300);
+function extractBestFromOCR(result, sourceCanvas) {
+    let best = null;
+    for(const word of result.data.words||[]){
+        let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
+        if(cleaned.length<10)continue;
+        let{fixed,corrections}=fixOCR(cleaned);
+        const conf=Math.round(word.confidence);
+        if(fixed.length===10&&isValidSerial(fixed)){
+            const img=cropFromBbox(sourceCanvas,sourceCanvas.width,sourceCanvas.height,word.bbox,IMG_MARGIN);
+            best={serial:fixed,confidence:conf,corrections,image:img};
+        }
+    }
+    return best;
 }
-function closeManualEntry(){document.getElementById('manualEntryModal').classList.remove('visible');scanPaused=false;for(let k in lowConfTracker)delete lowConfTracker[k];}
-function confirmManualEntry(){
-    const val=document.getElementById('manualSerialInput').value.trim().toUpperCase();
-    const err=validateSerial(val);
-    if(err){toast('❌ '+err,'error');return;}
-    closeManualEntry();
-    const operator=document.getElementById('operatorName').value.trim()||'N/D';
-    const pedana=document.getElementById('pedana').value.trim()||'N/D';
-    const ts=new Date().toLocaleString('it-IT');
-    const rec={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial:val,timestamp:ts,operator,pedana,runNumber:'',modified:false,status:'',note:'',image:manualEntryImage||null,confidence:100,corrections:[],_synced:false,_imgUploaded:false,_confirmed:true};
-    records.unshift(rec);scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
-    if(manualEntryImage)saveImg(rec.id,manualEntryImage);
-    saveToStorage();beepOk();vib('ok');renderRecords();toast('✅ '+val,'success');
-    if(gsheetUrl)sendToGSheet(rec).then(()=>{saveToStorage();setSyncStatus('synced');renderRecords();});
-    setTimeout(()=>{showPedanaModal(val,manualEntryImage,()=>{if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},400);
+
+async function processROIAndOCR(roiCanvas) {
+    // Passata 1: Orientamento normale
+    let best = extractBestFromOCR(await ocrWorker.recognize(roiCanvas), roiCanvas);
+    if(best && best.confidence >= 35) return best;
+
+    // Passata 2: Ruotato 180° (solo se la prima fallisce o ha confidenza bassa)
+    const flipCanvas = document.createElement('canvas');
+    flipCanvas.width = roiCanvas.width; flipCanvas.height = roiCanvas.height;
+    const fCtx = flipCanvas.getContext('2d');
+    fCtx.translate(flipCanvas.width, flipCanvas.height);
+    fCtx.rotate(Math.PI);
+    fCtx.drawImage(roiCanvas, 0, 0);
+
+    const flippedBest = extractBestFromOCR(await ocrWorker.recognize(flipCanvas), flipCanvas);
+    return flippedBest;
 }
 
 async function scanFrame(){
@@ -684,6 +595,7 @@ async function scanFrame(){
     if(videoEl.readyState<2)return;
     if(scanCooldown||scanPaused)return;
     if(!checkPedanaRequired())return;
+
     const canvas=document.getElementById('captureCanvas'),ctx=canvas.getContext('2d');
     const vw=videoEl.videoWidth,vh=videoEl.videoHeight;
     const rw=Math.floor(vw*0.85),rh=Math.floor(vh*0.3);
@@ -691,54 +603,30 @@ async function scanFrame(){
     canvas.width=rw;canvas.height=rh;
     ctx.drawImage(videoEl,rx,ry,rw,rh,0,0,rw,rh);
     applyAdaptiveThreshold(ctx,rw,rh);
+
     try{
-        const result=await ocrWorker.recognize(canvas);
-        const words=result.data.words||[];
         const roiX=rw*0.075,roiY=rh*0.35,roiW=rw*0.85,roiH=rh*0.30;
-        const foundSerials=[];
-        for(const word of words){
-            const bbox=word.bbox;const wordCx=(bbox.x0+bbox.x1)/2;const wordCy=(bbox.y0+bbox.y1)/2;
-            if(wordCx<roiX||wordCx>roiX+roiW||wordCy<roiY||wordCy>roiY+roiH)continue;
-            let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
-            if(cleaned.length<10)continue;
-            let{fixed,corrections}=fixOCR(cleaned);
-            const wordConf=Math.round(word.confidence);
-            if(wordConf<35){
-                const trackText=(fixed&&fixed.length>=7)?fixed:cleaned.substring(0,7);
-                const count=trackLowConfidence(trackText,Date.now());
-                if(count>=5){openManualEntryModal(trackText,cropFromBbox(canvas,rw,rh,word.bbox,IMG_MARGIN));scanPaused=true;}
-                continue;
-            }
-            if(fixed.length===10&&isValidSerial(fixed)&&!foundSerials.includes(fixed)){
-                const fc=detectCorrections(cleaned,fixed);
-                const imgData=cropFromBbox(canvas,rw,rh,word.bbox,IMG_MARGIN);
-                foundSerials.push(fixed);
-                processSerial(fixed,imgData,wordConf,fc);
-                if(!multiDetect)return;
-                continue;
-            }
-            if(wordConf>50){
-                for(let i=0;i<=cleaned.length-10;i++){
-                    const sub=cleaned.substring(i,i+10);
-                    let{fixed:sf}=fixOCR(sub);
-                    if(isValidSerial(sf)&&!foundSerials.includes(sf)){
-                        const fc=detectCorrections(sub,sf);
-                        const imgData=cropFromBbox(canvas,rw,rh,word.bbox,IMG_MARGIN);
-                        foundSerials.push(sf);
-                        processSerial(sf,imgData,wordConf,fc);
-                        if(!multiDetect)return;
-                        break;
-                    }
-                }
+        const roiCanvas=document.createElement('canvas');roiCanvas.width=roiW;roiCanvas.height=roiH;
+        const roiCtx=roiCanvas.getContext('2d');roiCtx.drawImage(canvas,roiX,roiY,roiW,roiH,0,0,roiW,roiH);
+
+        const best = await processROIAndOCR(roiCanvas);
+        if(best){
+            if(isValidSerial(best.serial)){
+                processSerial(best.serial,best.image,best.confidence,best.corrections);
+            } else if(best.confidence < 35) {
+                const trackText=(best.serial&&best.serial.length>=7)?best.serial.substring(0,7):'';
+                if(trackText){const c=trackLowConfidence(trackText,Date.now());if(c>=5){openManualEntryModal(trackText,best.image);scanPaused=true;}}
             }
         }
     }catch(e){console.error('OCR error:',e);}
+    document.getElementById('ocrStatus').textContent='✓ Pronto';
+    document.getElementById('progressBar').style.width='0%';
 }
 
 function getConfClass(c){if(c>=80)return'conf-high';if(c>=60)return'conf-mid';return'conf-low';}
 function processSerial(serial,imgData,confidence,corrections){
     const isDup=records.some(r=>r.serial===serial);
-    if(isDup){toast('⚠️ Duplicato: '+serial,'warning');beepDup();vib('dup');return;}
+    if(isDup){toast('⚠️ Duplicato','warning');beepDup();vib('dup');return;}
     resetIdleTimer();scanCooldown=true;
     document.getElementById('cooldownOverlay').classList.add('active');
     document.getElementById('ocrStatus').textContent='⏱ Cooldown...';
@@ -751,36 +639,41 @@ function processSerial(serial,imgData,confidence,corrections){
     records.unshift(rec);scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
     if(imgData)saveImg(rec.id,imgData);saveToStorage();
     beepOk();vib('ok');renderRecords();
-    if(confidence<50)toast('⚠️ Bassa confidenza ('+confidence+'%)','warning');
+    if(confidence<50)toast('⚠️ Bassa confidenza','warning');
     else toast('✅ '+serial,'success');
     if(gsheetUrl)sendToGSheet(rec).then(()=>{saveToStorage();setSyncStatus('synced');renderRecords();}).catch(()=>{setSyncStatus('pending');renderRecords();});
     setTimeout(()=>{showPedanaModal(serial,imgData,()=>{scanCooldown=false;document.getElementById('cooldownOverlay').classList.remove('active');if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},400);
 }
 
-function confirmLowConf(id){const rec=records.find(r=>r.id===id);if(rec){rec._confirmed=true;renderRecords();toast('Seriale confermato','success');}}
+function trackLowConfidence(serial,timestamp){if(!lowConfTracker[serial])lowConfTracker[serial]=[];lowConfTracker[serial].push(timestamp);const now=Date.now();lowConfTracker[serial]=lowConfTracker[serial].filter(t=>now-t<10000);return lowConfTracker[serial].length;}
+function openManualEntryModal(serial,imgData){
+    manualEntrySerial=serial;manualEntryImage=imgData;
+    document.getElementById('manualSerialInput').value='BDBCF00';
+    const wrap=document.getElementById('manualPreviewWrap');
+    if(imgData){wrap.innerHTML=`<img src="${imgData}" alt="preview">`;wrap.style.display='block';}else{wrap.innerHTML='';wrap.style.display='none';}
+    document.getElementById('manualEntryModal').classList.add('visible');setTimeout(()=>document.getElementById('manualSerialInput').focus(),300);
+}
+function closeManualEntry(){document.getElementById('manualEntryModal').classList.remove('visible');scanPaused=false;for(let k in lowConfTracker)delete lowConfTracker[k];}
+function confirmManualEntry(){const val=document.getElementById('manualSerialInput').value.trim().toUpperCase();if(validateSerial(val)){toast('❌ '+validateSerial(val),'error');return;}closeManualEntry();const operator=document.getElementById('operatorName').value.trim()||'N/D';const pedana=document.getElementById('pedana').value.trim()||'N/D';const ts=new Date().toLocaleString('it-IT');const rec={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial:val,timestamp:ts,operator,pedana,runNumber:'',modified:false,status:'',note:'',image:manualEntryImage||null,confidence:100,corrections:[],_synced:false,_imgUploaded:false,_confirmed:true};records.unshift(rec);scanTotal++;document.getElementById('scanCount').textContent=scanTotal;if(manualEntryImage)saveImg(rec.id,manualEntryImage);saveToStorage();beepOk();vib('ok');renderRecords();toast('✅ '+val,'success');if(gsheetUrl)sendToGSheet(rec).then(()=>{saveToStorage();setSyncStatus('synced');renderRecords();});setTimeout(()=>{showPedanaModal(val,manualEntryImage,()=>{if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},400);}
+function confirmLowConf(id){const rec=records.find(r=>r.id===id);if(rec){rec._confirmed=true;renderRecords();toast('Confermato','success');}}
 
 function renderRecords(){
     const el=document.getElementById('recordsList');
-    if(records.length===0){el.innerHTML=`<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h.01M12 7h.01M17 7h.01M7 12h10M7 17h6"/></svg><p>Nessun seriale scansionato.<br>Avvia la fotocamera per iniziare.</p></div>`;return;}
+    if(records.length===0){el.innerHTML=`<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h.01M12 7h.01M17 7h.01M7 12h10M7 17h6"/></svg><p>Nessun seriale.<br>Avvia la fotocamera.</p></div>`;return;}
     el.innerHTML=records.map(r=>{
         const cc=getConfClass(r.confidence);
-        const ch=r.corrections&&r.corrections.length>0?`<span class="meta-tag correction" title="Correzioni OCR">⚡ ${r.corrections.join(', ')}</span>`:'';
-        let syncTag='';
-        if(r._synced&&r._imgUploaded)syncTag='<span class="meta-tag synced-tag" title="Sync: Sheets+Drive">☁️🖼</span>';
-        else if(r._synced)syncTag='<span class="meta-tag synced-tag" title="Sincronizzato">☁️</span>';
-        else syncTag='<span class="meta-tag pending-tag" title="In coda">📤</span>';
+        const ch=r.corrections&&r.corrections.length>0?`<span class="meta-tag correction">⚡ ${r.corrections.join(', ')}</span>`:'';
+        let syncTag='';if(r._synced&&r._imgUploaded)syncTag='<span class="meta-tag synced-tag">☁️🖼</span>';else if(r._synced)syncTag='<span class="meta-tag synced-tag">☁️</span>';else syncTag='<span class="meta-tag pending-tag">📤</span>';
         const runVal=r.runNumber||'';
         const lowConfClass=r.confidence<50&&!r._confirmed?'low-conf':'';
-        const confirmBtn=r.confidence<50&&!r._confirmed?`<button class="confirm-low-btn" onclick="confirmLowConf('${r.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Conferma Seriale</button>`:'';
+        const confirmBtn=r.confidence<50&&!r._confirmed?`<button class="confirm-low-btn" onclick="confirmLowConf('${r.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Conferma</button>`:'';
         return `<div class="record-card ${lowConfClass}" id="record-${r.id}">
             <div class="record-top">
-                <div class="record-image-wrap" onclick="openModal('${r.id}')">
-                    ${r.image?`<img src="${r.image}" alt="img">`:`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>`}
-                </div>
+                <div class="record-image-wrap" onclick="openModal('${r.id}')">${r.image?`<img src="${r.image}" alt="img">`:`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>`}</div>
                 <div class="record-info">
                     <input type="text" class="serial-display ${r.modified?'modified':''}" value="${r.serial}" onchange="editSerial('${r.id}',this.value)" onfocus="this.dataset.orig=this.value" spellcheck="false" autocomplete="off" maxlength="12">
                     <div class="record-meta">
-                        <span class="meta-tag ${cc}" title="Confidenza OCR">🎯 ${r.confidence}%</span>
+                        <span class="meta-tag ${cc}">🎯 ${r.confidence}%</span>
                         ${ch}${syncTag}
                         <span>🕐 ${r.timestamp}</span>
                         <span class="run-cell" id="runCell-${r.id}" onclick="editRun('${r.id}')">${runVal?runVal:'<span style="color:var(--text-dim)">RUN</span>'}</span>
@@ -790,7 +683,7 @@ function renderRecords(){
                     </div>
                     ${confirmBtn}
                 </div>
-                <button class="delete-btn" onclick="deleteRecord('${r.id}')" title="Elimina"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                <button class="delete-btn" onclick="deleteRecord('${r.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
             </div>
             <div class="status-selector">
                 <button class="status-btn ${r.status==='Good'?'active-good':''}" onclick="setStatus('${r.id}','Good')"><span class="st-good">✓</span> Good</button>
@@ -808,30 +701,18 @@ function renderRecords(){
 
 function editRun(id){const rec=records.find(r=>r.id===id);if(!rec)return;const cell=document.getElementById('runCell-'+id);const cur=rec.runNumber||'';cell.innerHTML=`<input type="text" class="run-input" id="runInput-${id}" value="${cur}" placeholder="RUN" maxlength="10" onblur="saveRun('${id}')" onkeydown="if(event.key==='Enter')this.blur()">`;cell.classList.add('editing');const inp=document.getElementById('runInput-'+id);inp.focus();inp.select();}
 function saveRun(id){const rec=records.find(r=>r.id===id);if(!rec)return;const inp=document.getElementById('runInput-'+id);if(!inp)return;const nv=inp.value.trim();rec.runNumber=nv;rec._synced=false;saveToStorage();renderRecords();if(gsheetUrl&&nv)sendToGSheet(rec);}
-function editSerial(id,newVal){const rec=records.find(r=>r.id===id);if(!rec)return;const input=document.querySelector(`#record-${id} .serial-display`);const orig=input?.dataset?.orig||rec.serial;if(newVal===orig)return;let{fixed}=fixOCR(newVal.trim().toUpperCase());const errMsg=validateSerial(fixed);if(errMsg){toast('❌ '+errMsg,'error');beepErr();input.value=orig;return;}showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Seriale già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}rec.serial=fixed;rec.modified=true;rec._synced=false;toast('Seriale modificato: '+fixed,'success');beepOk();renderRecords();saveToStorage();});input.value=orig;}
+function editSerial(id,newVal){const rec=records.find(r=>r.id===id);if(!rec)return;const input=document.querySelector(`#record-${id} .serial-display`);const orig=input?.dataset?.orig||rec.serial;if(newVal===orig)return;let{fixed}=fixOCR(newVal.trim().toUpperCase());const errMsg=validateSerial(fixed);if(errMsg){toast('❌ '+errMsg,'error');beepErr();input.value=orig;return;}showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}rec.serial=fixed;rec.modified=true;rec._synced=false;toast('Modificato: '+fixed,'success');beepOk();renderRecords();saveToStorage();});input.value=orig;}
 function setStatus(id,s){const rec=records.find(r=>r.id===id);if(!rec)return;rec.status=s;rec._synced=false;vib('ok');renderRecords();saveToStorage();}
 function setNote(id,n){const rec=records.find(r=>r.id===id);if(rec)rec.note=n;saveToStorage();}
-function deleteRecord(id){const rec=records.find(r=>r.id===id);if(!rec)return;showConfirm('Elimina record',`Eliminare "${rec.serial}"?`,()=>{records=records.filter(r=>r.id!==id);scanTotal=Math.max(0,scanTotal-1);document.getElementById('scanCount').textContent=scanTotal;deleteImg(id);vib('err');beepErr();renderRecords();saveToStorage();toast('Record eliminato','warning');});}
+function deleteRecord(id){const rec=records.find(r=>r.id===id);if(!rec)return;showConfirm('Elimina record',`Eliminare "${rec.serial}"?`,()=>{records=records.filter(r=>r.id!==id);scanTotal=Math.max(0,scanTotal-1);document.getElementById('scanCount').textContent=scanTotal;deleteImg(id);vib('err');beepErr();renderRecords();saveToStorage();toast('Eliminato','warning');});}
 function openModal(id){const rec=records.find(r=>r.id===id);if(!rec||!rec.image)return;scanPaused=true;updateScanIndicator();document.getElementById('modalImage').src=rec.image;document.getElementById('imageModal').classList.add('visible');}
 function closeModal(){document.getElementById('imageModal').classList.remove('visible');scanPaused=false;updateScanIndicator();}
 
-function exportHtmlWithImages(){
-    if(records.length===0){toast('Nessun record','warning');return;}
-    let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Report Scansioni ${new Date().toLocaleDateString('it-IT')}</title><style>body{font-family:Arial,sans-serif;margin:20px;background:#f5f5f5;color:#333;}h1{font-size:20px;margin-bottom:4px;}.meta{font-size:12px;color:#666;margin-bottom:16px;}table{width:100%;border-collapse:collapse;background:white;box-shadow:0 1px 3px rgba(0,0,0,0.1);font-size:12px;}th{background:#1e293b;color:white;padding:8px 6px;text-align:left;font-size:11px;position:sticky;top:0;}td{padding:6px;border-bottom:1px solid #e2e8f0;vertical-align:middle;}tr:hover{background:#f0f9ff;}.img-cell{width:140px;text-align:center;vertical-align:middle;}.img-cell img{max-width:130px;max-height:50px;border-radius:4px;border:1px solid #ddd;}.serial{font-family:monospace;font-weight:bold;font-size:14px;letter-spacing:1px;}.good{color:#10b981;font-weight:bold;}.rotto{color:#ef4444;font-weight:bold;}.sporco{color:#a16207;font-weight:bold;}.rfid{color:#8b5cf6;font-weight:bold;}.bar{color:#06b6d4;font-weight:bold;}.dubbio{color:#64748b;font-weight:bold;}.conf-high{color:#10b981;}.conf-mid{color:#f59e0b;}.conf-low{color:#ef4444;}@media print{body{margin:10px;}table{font-size:10px;}}</style></head><body><h1>📋 Report Scansioni Seriali</h1><div class="meta">Generato: ${new Date().toLocaleString('it-IT')} | Totale: ${records.length}</div><table><thead><tr><th>#</th><th>Timestamp</th><th>Seriale</th><th>Run</th><th>Anteprima</th><th>Conf.</th><th>Correzioni</th><th>Pedana</th><th>Operatore</th><th>Stato</th><th>Note</th></tr></thead><tbody>`;
-    records.forEach((r,i)=>{
-        const cc=r.confidence>=80?'conf-high':r.confidence>=60?'conf-mid':'conf-low';
-        let stClass='',stText=r.status||'—';
-        if(r.status==='Good')stClass='good';else if(r.status==='Rotto')stClass='rotto';else if(r.status==='Sporco')stClass='sporco';else if(r.status==='RF-ID')stClass='rfid';else if(r.status==='Barra Mancante')stClass='bar';else if(r.status==='Dubbio/Altro')stClass='dubbio';
-        const imgHtml=r.image?`<td class="img-cell"><img src="${r.image}" alt="serial"></td>`:`<td class="img-cell">—</td>`;
-        html+=`<tr><td>${i+1}</td><td>${r.timestamp}</td><td class="serial">${r.serial}${r.modified?' <small style="color:#f59e0b;">(mod)</small>':''}</td><td>${r.runNumber||'—'}</td>${imgHtml}<td class="${cc}">${r.confidence}%</td><td>${(r.corrections||[]).join(', ')||'—'}</td><td>${r.pedana}</td><td>${r.operator}</td><td class="${stClass}">${stText}</td><td>${r.note||''}</td></tr>`;
-    });
-    html+=`</tbody></table></body></html>`;
-    const blob=new Blob([html],{type:'text/html;charset=utf-8'});saveAs(blob,`Report_Scansioni_${new Date().toISOString().slice(0,10)}.html`);toast(`📄 HTML: ${records.length} record`,'success');vib('ok');
-}
-function exportExcel(){if(records.length===0){toast('Nessun record','warning');return;}const data=records.map((r,i)=>({'#':i+1,'Timestamp':r.timestamp,'Seriale':r.serial,'Run':r.runNumber||'—','Confidenza %':r.confidence,'Correzioni OCR':r.corrections&&r.corrections.length?r.corrections.join(', '):'—','Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,'Operatore':r.operator,'Stato':r.status||'—','Note':r.note}));const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:8},{wch:12},{wch:20},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Scansioni');XLSX.writeFile(wb,`Scansioni_${new Date().toISOString().slice(0,10)}.xlsx`);toast(`📊 Excel: ${records.length} record`,'success');vib('ok');}
+function exportHtmlWithImages(){if(records.length===0){toast('Nessun record','warning');return;}let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Report Scansioni ${new Date().toLocaleDateString('it-IT')}</title><style>body{font-family:Arial,sans-serif;margin:20px;background:#f5f5f5;color:#333;}h1{font-size:20px;margin-bottom:4px;}.meta{font-size:12px;color:#666;margin-bottom:16px;}table{width:100%;border-collapse:collapse;background:white;box-shadow:0 1px 3px rgba(0,0,0,0.1);font-size:12px;}th{background:#1e293b;color:white;padding:8px 6px;text-align:left;font-size:11px;position:sticky;top:0;}td{padding:6px;border-bottom:1px solid #e2e8f0;vertical-align:middle;}tr:hover{background:#f0f9ff;}.img-cell{width:140px;text-align:center;vertical-align:middle;}.img-cell img{max-width:130px;max-height:50px;border-radius:4px;border:1px solid #ddd;}.serial{font-family:monospace;font-weight:bold;font-size:14px;letter-spacing:1px;}.good{color:#10b981;font-weight:bold;}.rotto{color:#ef4444;font-weight:bold;}.sporco{color:#a16207;font-weight:bold;}.rfid{color:#8b5cf6;font-weight:bold;}.bar{color:#06b6d4;font-weight:bold;}.dubbio{color:#64748b;font-weight:bold;}.conf-high{color:#10b981;}.conf-mid{color:#f59e0b;}.conf-low{color:#ef4444;}@media print{body{margin:10px;}table{font-size:10px;}}</style></head><body><h1>📋 Report Scansioni Seriali</h1><div class="meta">Generato: ${new Date().toLocaleString('it-IT')} | Totale: ${records.length}</div><table><thead><tr><th>#</th><th>Timestamp</th><th>Seriale</th><th>Run</th><th>Anteprima</th><th>Conf.</th><th>Correzioni</th><th>Pedana</th><th>Operatore</th><th>Stato</th><th>Note</th></tr></thead><tbody>`;records.forEach((r,i)=>{const cc=r.confidence>=80?'conf-high':r.confidence>=60?'conf-mid':'conf-low';let stClass='',stText=r.status||'—';if(r.status==='Good')stClass='good';else if(r.status==='Rotto')stClass='rotto';else if(r.status==='Sporco')stClass='sporco';else if(r.status==='RF-ID')stClass='rfid';else if(r.status==='Barra Mancante')stClass='bar';else if(r.status==='Dubbio/Altro')stClass='dubbio';const imgHtml=r.image?`<td class="img-cell"><img src="${r.image}" alt="serial"></td>`:`<td class="img-cell">—</td>`;html+=`<tr><td>${i+1}</td><td>${r.timestamp}</td><td class="serial">${r.serial}${r.modified?' <small style="color:#f59e0b;">(mod)</small>':''}</td><td>${r.runNumber||'—'}</td>${imgHtml}<td class="${cc}">${r.confidence}%</td><td>${(r.corrections||[]).join(', ')||'—'}</td><td>${r.pedana}</td><td>${r.operator}</td><td class="${stClass}">${stText}</td><td>${r.note||''}</td></tr>`;});html+=`</tbody></table></body></html>`;const blob=new Blob([html],{type:'text/html;charset=utf-8'});saveAs(blob,`Report_Scansioni_${new Date().toISOString().slice(0,10)}.html`);toast(`📄 HTML: ${records.length} record`,'success');vib('ok');}
+function exportExcel(){if(records.length===0){toast('Nessun record','warning');return;}const data=records.map((r,i)=>({'#':i+1,'Timestamp':r.timestamp,'Seriale':r.serial,'Run':r.runNumber||'—','Confidenza %':r.confidence,'Correzioni OCR':r.corrections&&r.corrections.length?r.corrections.join(', '):'—','Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,'Operatore':r.operator,'Stato':r.status||'—','Note':r.note}));const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:8},{wch:12},{wch:20},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Scansioni');XLSX.writeFile(wb,`Scansioni_${new Date().toISOString().slice(0,10)}.xlsx`);toast(`📊 Excel: ${records.length}`,'success');vib('ok');}
 async function exportZip(){if(records.length===0){toast('Nessun record','warning');return;}toast('📦 ZIP...','success');try{const zip=new JSZip(),imgF=zip.folder('immagini');let cnt=0;for(const r of records){if(r.image){imgF.file(`${r.serial}_${r.id}.jpg`,r.image.split(',')[1],{base64:true});cnt++;}}const csv='N,Timestamp,Seriale,Run,Conf%,Correzioni,Modificato,Lotto,Operatore,Stato,Note\n'+records.map((r,i)=>`${i+1},${r.timestamp},${r.serial},${r.runNumber||''},${r.confidence},"${(r.corrections||[]).join(', ')}",${r.modified?'Sì':'No'},${r.pedana},${r.operator},${r.status||'—'},"${r.note}"`).join('\n');zip.file('riepilogo.csv',csv);const blob=await zip.generateAsync({type:'blob'});saveAs(blob,`Archivio_${new Date().toISOString().slice(0,10)}.zip`);toast(`📦 ZIP: ${cnt} img`,'success');vib('ok');}catch(e){console.error(e);toast('Errore ZIP','error');beepErr();}}
 
-document.addEventListener('DOMContentLoaded',async()=>{await openImgDB();loadGSheetUrl();const loaded=await loadFromStorage();if(loaded&&records.length>0){renderRecords();toast(`📂 ${records.length} record recuperati`,'success');const unsynced=records.filter(r=>!r._synced);if(unsynced.length>0){setSyncStatus('pending');if(gsheetUrl)setTimeout(()=>syncPendingToGSheet(),2000);}else{setSyncStatus('synced');}}else{renderRecords();setSyncStatus('idle');}setSyncStatus(syncStatus);});
+document.addEventListener('DOMContentLoaded',async()=>{await openImgDB();loadGSheetUrl();const loaded=await loadFromStorage();if(loaded&&records.length>0){renderRecords();toast(`📂 ${records.length} recuperati`,'success');const unsynced=records.filter(r=>!r._synced);if(unsynced.length>0){setSyncStatus('pending');if(gsheetUrl)setTimeout(()=>syncPendingToGSheet(),2000);}else{setSyncStatus('synced');}}else{renderRecords();setSyncStatus('idle');}setSyncStatus(syncStatus);});
 window.addEventListener('beforeunload',()=>{saveToStorage();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveToStorage();});
 document.addEventListener('touchstart',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
