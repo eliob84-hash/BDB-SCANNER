@@ -1,4 +1,4 @@
-<!-- Versione: 5.3.0 | Data: 24/05/2026 | Changelog completo mantenuto -->
+<!-- Versione: 5.4.0 | Data: 24/05/2026 | Modifiche: Fix duplicati (ora blocca registrazione), cooldown 1s, changelog completo -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -212,7 +212,6 @@
 </head>
 <body>
 
-<!-- Versione: 5.3.0 | Data: 24/05/2026 | Modifiche: Changelog completo, cooldown 1s, duplicati rilevati -->
 <div class="header">
     <div class="header-top">
         <h1>
@@ -223,7 +222,7 @@
             <button class="icon-btn" onclick="openHelpModal()" title="Guida">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </button>
-            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v5.3.0</span>
+            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v5.4.0</span>
         </div>
     </div>
     <div class="scan-counter">
@@ -293,27 +292,23 @@
         <button class="modal-close" onclick="document.getElementById('helpModal').classList.remove('visible')">✕</button>
         <h3>❓ Guida Completa all'Uso</h3>
         <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">Panoramica dettagliata dell'interfaccia e delle funzioni</p>
-        
         <div class="help-section">
             <h4>📷 Area Fotocamera</h4>
             <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div class="help-text"><strong>Avvia / Ferma OCR:</strong> Accende la fotocamera e avvia la scansione automatica. La fotocamera si chiude dopo 30s di inattività.</div></div>
             <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div class="help-text"><strong>Flash:</strong> Torcia per ambienti scuri o seriali sbiaditi.</div></div>
             <div class="help-item"><div class="help-icon" style="border:2px solid var(--accent);border-radius:4px;"></div><div class="help-text"><strong>Riquadro Verde (ROI):</strong> Zona di analisi. Posiziona il seriale qui. Il sistema rileva automaticamente se è sottosopra e salva l'anteprima ruotata correttamente.</div></div>
         </div>
-
         <div class="help-section">
             <h4>⚙️ Configurazione Iniziale</h4>
             <div class="help-item"><div class="help-icon text-icon">👤</div><div class="help-text"><strong>Operatore:</strong> Nome associato a ogni seriale scansionato.</div></div>
             <div class="help-item"><div class="help-icon text-icon">📍</div><div class="help-text"><strong>Pedana:</strong> Campo obbligatorio. Dopo ogni scansione viene chiesto se mantenere o cambiare posizione.</div></div>
         </div>
-
         <div class="help-section">
             <h4>🎯 Confidenza e Validazione</h4>
             <div class="help-item"><div class="help-icon text-icon">%</div><div class="help-text"><strong>Percentuale:</strong> <span class="help-badge err">&lt;35%</span> Scartata | <span class="help-badge warn">35-50%</span> Richiede conferma | <span class="help-badge good">&gt;50%</span> Accettata</div></div>
             <div class="help-item"><div class="help-icon text-icon">⚡</div><div class="help-text"><strong>Correzioni OCR:</strong> Badge viola se il sistema ha corretto caratteri ambigui (es. O→0).</div></div>
             <div class="help-item"><div class="help-icon text-icon">📝</div><div class="help-text"><strong>Inserimento Manuale:</strong> Dopo 5 letture &lt;35% dello stesso seriale, si apre il popup per digitare il codice.</div></div>
         </div>
-
         <div class="help-section">
             <h4>📋 Gestione Record</h4>
             <div class="help-item"><div class="help-icon text-icon">👆</div><div class="help-text"><strong>Tap immagine:</strong> Zoom full-screen (pausa scansione).</div></div>
@@ -392,7 +387,7 @@
 </div>
 
 <script>
-const APP_VERSION='5.3.0';
+const APP_VERSION='5.4.0';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
 const IMG_DB_NAME='ScannerSerialiDB';
@@ -401,7 +396,8 @@ const IMG_STORE='images';
 
 // CHANGELOG COMPLETO - NON MODIFICARE QUESTA LISTA
 const CHANGELOG=[
-    {ver:'v5.3.0',date:'24/05/2026',desc:'Cooldown ridotto a 1 secondo. Rilevamento duplicati sempre attivo. Changelog completo ripristinato.',tags:['fix']},
+    {ver:'v5.4.0',date:'24/05/2026',desc:'Fix critico: Blocco record duplicati ripristinato. Toast "Seriale duplicato".',tags:['fix']},
+    {ver:'v5.3.0',date:'24/05/2026',desc:'Cooldown ridotto a 1 secondo. Changelog completo ripristinato.',tags:['fix']},
     {ver:'v5.2.0',date:'23/05/2026',desc:'Fix Excel (colonna immagine). Fix nomi immagini in ZIP. Heartbeat audio OCR 100%. UI Pedana migliorata. Preview in modifica seriale.',tags:['fix','ui','feat']},
     {ver:'v5.1.0',date:'23/05/2026',desc:'Rilevamento sottosopra con rotazione immagine.',tags:['feat']},
     {ver:'v5.0.0',date:'23/05/2026',desc:'Guida completa. Changelog ripristinati. Fix avvio fotocamera.',tags:['fix','ui']},
@@ -704,12 +700,19 @@ async function scanFrame(){
 }
 
 function getConfClass(c){if(c>=80)return'conf-high';if(c>=60)return'conf-mid';return'conf-low';}
+
+// FIX CRITICO: BLOCCO DUPLICATI RIPRISTINATO
 function processSerial(serial,imgData,confidence,corrections){
-    // RILEVA SEMPRE I DUPLICATI
     const isDup=records.some(r=>r.serial===serial);
     if(isDup){
-        toast('🔄 Duplicato rilevato: '+serial,'warning');
+        toast('⚠️ Seriale duplicato','warning');
         beepDup();vib('dup');
+        // Reset UI state così non resta bloccato in cooldown
+        scanCooldown=false;
+        document.getElementById('cooldownOverlay').classList.remove('active');
+        if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';
+        updateScanIndicator();
+        return; // ESCO dalla funzione, NON registro il duplicato
     }
     
     resetIdleTimer();scanCooldown=true;
