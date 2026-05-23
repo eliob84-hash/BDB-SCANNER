@@ -174,12 +174,13 @@
         .confirm-box { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:22px; max-width:340px; width:100%; text-align:center; }
         .confirm-box h3 { font-size:16px; margin-bottom:8px; }
         .confirm-box p { font-size:13px; color:var(--text-muted); margin-bottom:18px; }
+        .confirm-box img.confirm-preview { max-width:100%; height:80px; object-fit:contain; border-radius:6px; border:1px solid var(--border); margin-bottom:12px; background:#000; }
         .confirm-actions { display:flex; gap:10px; }
         .confirm-actions .btn { flex:1; }
         .pedana-actions { display:flex; flex-direction:column; gap:10px; margin-top:8px; }
         .pedana-actions .btn-row { display:flex; gap:10px; }
         .pedana-actions .btn-row .btn { flex:1; }
-        .serial-ref { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; color:var(--text-dim); letter-spacing:1px; padding:4px 8px; background:rgba(100,116,139,0.1); border-radius:6px; display:inline-block; margin:4px 0; border:1px solid rgba(100,116,139,0.2); }
+        .serial-ref { font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:600; color:var(--text); letter-spacing:2px; padding:6px 10px; background:var(--bg-input); border-radius:6px; display:inline-block; margin:4px 0; border:1px solid var(--border); }
         .pedana-big { font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; color:var(--warning); letter-spacing:2px; padding:8px 12px; background:rgba(245,158,11,0.08); border-radius:8px; display:block; margin:6px 0 2px; border:1px solid rgba(245,158,11,0.3); }
         .pedana-preview { width:120px; height:44px; border-radius:6px; overflow:hidden; background:#000; margin:6px auto; border:1px solid var(--border); }
         .pedana-preview img { width:100%; height:100%; object-fit:contain; }
@@ -220,7 +221,7 @@
             <button class="icon-btn" onclick="openHelpModal()" title="Guida">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </button>
-            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v5.1.0</span>
+            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v5.2.0</span>
         </div>
     </div>
     <div class="scan-counter">
@@ -319,7 +320,8 @@
         </div>
         <div class="help-section">
             <h4>☁️ Esportazione</h4>
-            <div class="help-item"><div class="help-icon text-icon" style="background:#217346;color:white;">X</div><div class="help-text"><strong>Excel/HTML/ZIP:</strong> Esporta i dati in vari formati. L'HTML include le anteprime embeddate.</div></div>
+            <div class="help-item"><div class="help-icon text-icon" style="background:#217346;color:white;">X</div><div class="help-text"><strong>Excel:</strong> File .xlsx con colonne dati e riferimento all'immagine salvata nello ZIP.</div></div>
+            <div class="help-item"><div class="help-icon text-icon" style="background:var(--text-dim);color:white;">📦</div><div class="help-text"><strong>ZIP:</strong> Archivio con tutte le immagini (nominate col seriale) + file CSV.</div></div>
         </div>
         <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="document.getElementById('helpModal').classList.remove('visible')">Ho capito</button>
     </div>
@@ -346,7 +348,22 @@
     </div>
 </div>
 
-<div class="confirm-modal" id="pedanaModal"><div class="confirm-box"><h3 id="pedanaModalTitle">📍 Pedana</h3><div class="serial-ref" id="pedanaSerialRef"></div><div class="pedana-preview" id="pedanaPreviewWrap"></div><div class="pedana-big" id="pedanaBigRef"></div><p id="pedanaModalMsg"></p><div class="pedana-actions"><div class="btn-row"><button class="btn btn-warning" onclick="pedanaChange()">✏️ Cambia</button><button class="btn btn-accent" onclick="pedanaKeep()">✓ Mantieni</button></div><div id="pedanaChangeInput" style="display:none;"><input type="text" class="input-field" id="newPedanaInput" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:2px;" maxlength="20"><div class="btn-row" style="margin-top:10px;"><button class="btn btn-outline" onclick="pedanaCancel()">Annulla</button><button class="btn btn-primary" onclick="pedanaConfirm()">Conferma</button></div></div></div></div></div>
+<div class="confirm-modal" id="pedanaModal">
+    <div class="confirm-box">
+        <h3 id="pedanaModalTitle">📍 Pedana</h3>
+        <div class="serial-ref" id="pedanaSerialRef"></div>
+        <div class="pedana-preview" id="pedanaPreviewWrap"></div>
+        <div class="pedana-big" id="pedanaBigRef"></div>
+        <p id="pedanaModalMsg"></p>
+        <div class="pedana-actions">
+            <div class="btn-row"><button class="btn btn-warning" onclick="pedanaChange()">✏️ Cambia</button><button class="btn btn-accent" onclick="pedanaKeep()">✓ Mantieni</button></div>
+            <div id="pedanaChangeInput" style="display:none;">
+                <input type="text" class="input-field" id="newPedanaInput" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:2px;" maxlength="20" placeholder="Nuovo numero pedana">
+                <div class="btn-row" style="margin-top:10px;"><button class="btn btn-outline" onclick="pedanaCancel()">Annulla</button><button class="btn btn-primary" onclick="pedanaConfirm()">Conferma</button></div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="confirm-modal" id="pedanaEditModal"><div class="confirm-box"><h3>✏️ Modifica Pedana</h3><p id="pedanaEditMsg"></p><input type="text" class="input-field" id="pedanaEditInput" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:2px;" maxlength="20"><div class="confirm-actions" style="margin-top:14px;"><button class="btn btn-outline" onclick="closePedanaEdit()">Annulla</button><button class="btn btn-primary" onclick="confirmPedanaEdit()">Conferma</button></div></div></div>
 
@@ -356,30 +373,32 @@
 
 <div class="toast" id="toast"></div>
 
-<div class="confirm-modal" id="confirmModal"><div class="confirm-box"><h3 id="confirmTitle">Conferma</h3><p id="confirmMsg">Sei sicuro?</p><div class="confirm-actions"><button class="btn btn-outline" onclick="closeConfirm()">Annulla</button><button class="btn btn-danger" id="confirmBtn" onclick="executeConfirm()">Conferma</button></div></div></div>
+<div class="confirm-modal" id="confirmModal">
+    <div class="confirm-box">
+        <h3 id="confirmTitle">Conferma</h3>
+        <img id="confirmPreviewImage" src="" style="display:none; width:100%; max-height:100px; object-fit:contain; border-radius:6px; margin-bottom:15px; border:1px solid var(--border); background:#000;">
+        <p id="confirmMsg">Sei sicuro?</p>
+        <div class="confirm-actions"><button class="btn btn-outline" onclick="closeConfirm()">Annulla</button><button class="btn btn-danger" id="confirmBtn" onclick="executeConfirm()">Conferma</button></div>
+    </div>
+</div>
 
 <div class="bottom-bar">
     <button class="btn btn-accent" onclick="exportExcel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>Excel</button>
-    <button class="btn btn-primary" onclick="exportHtmlWithImages()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>HTML+Img</button>
-    <button class="btn btn-outline" onclick="exportZip()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>ZIP</button>
+    <button class="btn btn-primary" onclick="exportZip()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>ZIP</button>
     <button class="btn btn-warning" onclick="syncPendingToGSheet()" id="btnSync" style="display:none;flex:0;min-width:60px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
     <button class="btn btn-outline" onclick="openGoogleSheet()" id="btnOpenSheet" style="display:none;flex:0;min-width:60px;" title="Apri Foglio Google">📄 Sheet</button>
 </div>
 
 <script>
-const APP_VERSION='5.1.0';
+const APP_VERSION='5.2.0';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
 const IMG_DB_NAME='ScannerSerialiDB';
 const IMG_DB_VERSION=1;
 const IMG_STORE='images';
 const CHANGELOG=[
-    {ver:'v5.1.0',date:new Date().toLocaleString('it-IT'),desc:'Rilevamento seriale sottosopra con rotazione automatica anteprima. Guida espansa.',tags:['feat']},
-    {ver:'v5.0.0',date:new Date().toLocaleString('it-IT'),desc:'Guida completa. Changelog ripristinati. Fix avvio fotocamera.',tags:['fix','ui']},
-    {ver:'v4.6.0',date:'23/05/2026 16:00',desc:'Debug mode. Tap counter. Prompt verifica confidenza <35%. Fix Sheets.',tags:['feat','fix']},
-    {ver:'v4.5.1',date:'23/05/2026 15:00',desc:'Fix Export HTML. Fix upload Sheets.',tags:['fix']},
-    {ver:'v4.0.0',date:'23/05/2026 10:00',desc:'Config protetta. Soglie confidenza.',tags:['feat']},
-    {ver:'v3.0.0',date:'23/05/2026 00:00',desc:'Salvataggio locale IndexedDB. Esportazioni.',tags:['feat','ui']},
+    {ver:'v5.2.0',date:new Date().toLocaleString('it-IT'),desc:'Fix Excel (colonna immagine). Fix nomi immagini in ZIP. Heartbeat audio OCR 100%. UI Pedana migliorata. Preview in modifica seriale.',tags:['fix','ui','feat']},
+    {ver:'v5.1.0',date:new Date().toLocaleString('it-IT'),desc:'Rilevamento sottosopra con rotazione immagine.',tags:['feat']},
     {ver:'v1.0.0',date:'22/05/2026 12:00',desc:'Versione iniziale.',tags:['feat']}
 ];
 
@@ -405,7 +424,15 @@ function beepDup(){playTone(400,120,'sawtooth');setTimeout(()=>playTone(300,120,
 function beepErr(){playTone(200,250,'sawtooth');}
 function vib(p='ok'){if(navigator.vibrate){if(p==='ok')navigator.vibrate([40,25,40]);else if(p==='dup')navigator.vibrate([180]);else if(p==='err')navigator.vibrate([80,40,80,40,80]);}}
 function toast(m,t='success'){const e=document.getElementById('toast');e.textContent=m;e.className='toast '+t;setTimeout(()=>e.classList.add('visible'),10);setTimeout(()=>e.classList.remove('visible'),2800);}
-function showConfirm(title,msg,cb){document.getElementById('confirmTitle').textContent=title;document.getElementById('confirmMsg').textContent=msg;confirmCallback=cb;document.getElementById('confirmModal').classList.add('visible');}
+function showConfirm(title,msg,cb,imageUrl=null){
+    document.getElementById('confirmTitle').textContent=title;
+    document.getElementById('confirmMsg').textContent=msg;
+    const preview = document.getElementById('confirmPreviewImage');
+    if(imageUrl){preview.src=imageUrl;preview.style.display='block';}
+    else{preview.style.display='none';}
+    confirmCallback=cb;
+    document.getElementById('confirmModal').classList.add('visible');
+}
 function closeConfirm(){document.getElementById('confirmModal').classList.remove('visible');confirmCallback=null;}
 function executeConfirm(){if(confirmCallback)confirmCallback();closeConfirm();}
 
@@ -500,10 +527,21 @@ async function loadFromStorage(){try{const raw=localStorage.getItem(STORAGE_KEY)
 
 function showPedanaModal(serial,imgData,callback){const current=document.getElementById('pedana').value.trim()||'—';document.getElementById('pedanaSerialRef').textContent='Seriale: '+serial;document.getElementById('pedanaBigRef').textContent=current;document.getElementById('pedanaModalTitle').textContent='📍 Pedana';document.getElementById('pedanaModalMsg').textContent='Conferma o modifica';const pw=document.getElementById('pedanaPreviewWrap');if(imgData){pw.innerHTML=`<img src="${imgData}" alt="preview">`;pw.style.display='block';}else{pw.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>';pw.style.display='flex';}document.getElementById('pedanaChangeInput').style.display='none';document.getElementById('newPedanaInput').value='';pedanaCallback=callback;document.getElementById('pedanaModal').classList.add('visible');}
 function pedanaKeep(){document.getElementById('pedanaModal').classList.remove('visible');if(pedanaCallback)pedanaCallback(document.getElementById('pedana').value.trim());pedanaCallback=null;}
-function pedanaChange(){document.getElementById('pedanaChangeInput').style.display='block';document.getElementById('newPedanaInput').value=lastScanPedana||'';setTimeout(()=>document.getElementById('newPedanaInput').focus(),100);}
+function pedanaChange(){
+    const container = document.getElementById('pedanaModal');
+    const box = container.querySelector('.confirm-box');
+    box.scrollTop = 0; // Scroll to top
+    document.getElementById('pedanaChangeInput').style.display='block';
+    document.getElementById('newPedanaInput').value='';
+    setTimeout(()=>{
+        document.getElementById('newPedanaInput').focus();
+        container.scrollTo({ top: 0, behavior: 'smooth' });
+    },100);
+}
 function pedanaCancel(){document.getElementById('pedanaChangeInput').style.display='none';}
 function pedanaConfirm(){const nv=document.getElementById('newPedanaInput').value.trim();if(!nv){toast('Obbligatorio','error');return;}document.getElementById('pedana').value=nv;document.getElementById('pedanaModal').classList.remove('visible');document.getElementById('pedana').classList.remove('missing');lastScanPedana=nv;saveToStorage();if(pedanaCallback)pedanaCallback(nv);pedanaCallback=null;}
 document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('pedanaChangeInput').style.display==='block')pedanaConfirm();});
+
 function openPedanaEdit(id){const rec=records.find(r=>r.id===id);if(!rec)return;pedanaEditRecordId=id;document.getElementById('pedanaEditMsg').textContent=`Seriale: ${rec.serial}`;document.getElementById('pedanaEditInput').value=rec.pedana;document.getElementById('pedanaEditModal').classList.add('visible');setTimeout(()=>{const i=document.getElementById('pedanaEditInput');if(i){i.focus();i.select();}},200);}
 function closePedanaEdit(){document.getElementById('pedanaEditModal').classList.remove('visible');pedanaEditRecordId=null;}
 function confirmPedanaEdit(){const nv=document.getElementById('pedanaEditInput').value.trim();if(!nv){toast('Obbligatorio','error');return;}const rec=records.find(r=>r.id===pedanaEditRecordId);if(rec){rec.pedana=nv;rec._synced=false;renderRecords();saveToStorage();toast('Aggiornata','success');}closePedanaEdit();}
@@ -526,7 +564,15 @@ async function startCamera(){
         document.getElementById('scanIndicator').innerHTML='<span class="loading-indicator"><span class="spinner"></span> Caricamento...</span>';
         document.getElementById('ocrStatus').textContent='Inizializzazione OCR...';
         cameraActive=true;
-        ocrWorker=await Tesseract.createWorker('eng',1,{logger:(m)=>{if(m.status==='recognizing text'){document.getElementById('progressBar').style.width=Math.round(m.progress*100)+'%';document.getElementById('ocrStatus').textContent=`OCR ${Math.round(m.progress*100)}%`;}}});
+        ocrWorker=await Tesseract.createWorker('eng',1,{logger:(m)=>{
+            if(m.status==='recognizing text'){
+                document.getElementById('progressBar').style.width=Math.round(m.progress*100)+'%';
+                document.getElementById('ocrStatus').textContent=`OCR ${Math.round(m.progress*100)}%`;
+                if(Math.round(m.progress*100) >= 100) {
+                    playTone(1000, 50, 'sine', 0.05); // Heartbeat
+                }
+            }
+        }});
         await ocrWorker.setParameters({tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',preserve_interword_spaces:'0'});
         document.getElementById('scanIndicator').innerHTML='<span class="scanning-indicator"><span class="dot"></span> Pronto</span>';
         document.getElementById('ocrStatus').textContent='✓ Scansione attiva';
@@ -578,7 +624,7 @@ async function processROIAndOCR(roiCanvas) {
     let best = extractBestFromOCR(await ocrWorker.recognize(roiCanvas), roiCanvas);
     if(best && best.confidence >= 35) return best;
 
-    // Passata 2: Ruotato 180° (solo se la prima fallisce o ha confidenza bassa)
+    // Passata 2: Ruotato 180°
     const flipCanvas = document.createElement('canvas');
     flipCanvas.width = roiCanvas.width; flipCanvas.height = roiCanvas.height;
     const fCtx = flipCanvas.getContext('2d');
@@ -636,16 +682,19 @@ function processSerial(serial,imgData,confidence,corrections){
     lastScanPedana=pedana;lastScanImage=imgData;
     const ts=new Date().toLocaleString('it-IT');
     const rec={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial,timestamp:ts,operator,pedana,runNumber:'',modified:false,status:'',note:'',image:imgData||null,confidence:confidence,corrections:corrections||[],_synced:false,_imgUploaded:false,_confirmed:false};
-    records.unshift(rec);scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
-    if(imgData)saveImg(rec.id,imgData);saveToStorage();
+    records.unshift(rec);
+    scanTotal++;
+    document.getElementById('scanCount').textContent=scanTotal;
+    if(imgData)saveImg(rec.id,imgData);
+    saveToStorage();
     beepOk();vib('ok');renderRecords();
     if(confidence<50)toast('⚠️ Bassa confidenza','warning');
     else toast('✅ '+serial,'success');
     if(gsheetUrl)sendToGSheet(rec).then(()=>{saveToStorage();setSyncStatus('synced');renderRecords();}).catch(()=>{setSyncStatus('pending');renderRecords();});
-    setTimeout(()=>{showPedanaModal(serial,imgData,()=>{scanCooldown=false;document.getElementById('cooldownOverlay').classList.remove('active');if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},400);
+    setTimeout(()=>{showPedanaModal(serial,imgData,()=>{if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},400);
 }
 
-function trackLowConfidence(serial,timestamp){if(!lowConfTracker[serial])lowConfTracker[serial]=[];lowConfTracker[serial].push(timestamp);const now=Date.now();lowConfTracker[serial]=lowConfTracker[serial].filter(t=>now-t<10000);return lowConfTracker[serial].length;}
+function trackLowConfidence(serial, timestamp){if(!lowConfTracker[serial])lowConfTracker[serial]=[];lowConfTracker[serial].push(timestamp);const now=Date.now();lowConfTracker[serial]=lowConfTracker[serial].filter(t=>now-t<10000);return lowConfTracker[serial].length;}
 function openManualEntryModal(serial,imgData){
     manualEntrySerial=serial;manualEntryImage=imgData;
     document.getElementById('manualSerialInput').value='BDBCF00';
@@ -701,16 +750,76 @@ function renderRecords(){
 
 function editRun(id){const rec=records.find(r=>r.id===id);if(!rec)return;const cell=document.getElementById('runCell-'+id);const cur=rec.runNumber||'';cell.innerHTML=`<input type="text" class="run-input" id="runInput-${id}" value="${cur}" placeholder="RUN" maxlength="10" onblur="saveRun('${id}')" onkeydown="if(event.key==='Enter')this.blur()">`;cell.classList.add('editing');const inp=document.getElementById('runInput-'+id);inp.focus();inp.select();}
 function saveRun(id){const rec=records.find(r=>r.id===id);if(!rec)return;const inp=document.getElementById('runInput-'+id);if(!inp)return;const nv=inp.value.trim();rec.runNumber=nv;rec._synced=false;saveToStorage();renderRecords();if(gsheetUrl&&nv)sendToGSheet(rec);}
-function editSerial(id,newVal){const rec=records.find(r=>r.id===id);if(!rec)return;const input=document.querySelector(`#record-${id} .serial-display`);const orig=input?.dataset?.orig||rec.serial;if(newVal===orig)return;let{fixed}=fixOCR(newVal.trim().toUpperCase());const errMsg=validateSerial(fixed);if(errMsg){toast('❌ '+errMsg,'error');beepErr();input.value=orig;return;}showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}rec.serial=fixed;rec.modified=true;rec._synced=false;toast('Modificato: '+fixed,'success');beepOk();renderRecords();saveToStorage();});input.value=orig;}
+
+function editSerial(id,newVal){
+    const rec=records.find(r=>r.id===id);
+    if(!rec)return;
+    const input=document.querySelector(`#record-${id} .serial-display`);
+    const orig=input?.dataset?.orig||rec.serial;
+    if(newVal===orig)return;
+    let{fixed}=fixOCR(newVal.trim().toUpperCase());
+    const errMsg=validateSerial(fixed);
+    if(errMsg){toast('❌ '+errMsg,'error');beepErr();input.value=orig;return;}
+    // Show confirm with image preview
+    showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{
+        if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}
+        rec.serial=fixed;rec.modified=true;rec._synced=false;toast('Modificato: '+fixed,'success');beepOk();renderRecords();saveToStorage();
+    }, rec.image || null);
+    input.value=orig;
+}
+
 function setStatus(id,s){const rec=records.find(r=>r.id===id);if(!rec)return;rec.status=s;rec._synced=false;vib('ok');renderRecords();saveToStorage();}
 function setNote(id,n){const rec=records.find(r=>r.id===id);if(rec)rec.note=n;saveToStorage();}
-function deleteRecord(id){const rec=records.find(r=>r.id===id);if(!rec)return;showConfirm('Elimina record',`Eliminare "${rec.serial}"?`,()=>{records=records.filter(r=>r.id!==id);scanTotal=Math.max(0,scanTotal-1);document.getElementById('scanCount').textContent=scanTotal;deleteImg(id);vib('err');beepErr();renderRecords();saveToStorage();toast('Eliminato','warning');});}
+function deleteRecord(id){const rec=records.find(r=>r.id===id);if(!rec)return;showConfirm('Elimina record',`Eliminare "${rec.serial}"?`,()=>{records=records.filter(r=>r.id!==id);scanTotal=Math.max(0,scanTotal-1);document.getElementById('scanCount').textContent=scanTotal;deleteImg(id);vib('err');beepErr();renderRecords();saveToStorage();toast('Eliminato','warning');},rec.image||null);}
+
 function openModal(id){const rec=records.find(r=>r.id===id);if(!rec||!rec.image)return;scanPaused=true;updateScanIndicator();document.getElementById('modalImage').src=rec.image;document.getElementById('imageModal').classList.add('visible');}
 function closeModal(){document.getElementById('imageModal').classList.remove('visible');scanPaused=false;updateScanIndicator();}
 
-function exportHtmlWithImages(){if(records.length===0){toast('Nessun record','warning');return;}let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Report Scansioni ${new Date().toLocaleDateString('it-IT')}</title><style>body{font-family:Arial,sans-serif;margin:20px;background:#f5f5f5;color:#333;}h1{font-size:20px;margin-bottom:4px;}.meta{font-size:12px;color:#666;margin-bottom:16px;}table{width:100%;border-collapse:collapse;background:white;box-shadow:0 1px 3px rgba(0,0,0,0.1);font-size:12px;}th{background:#1e293b;color:white;padding:8px 6px;text-align:left;font-size:11px;position:sticky;top:0;}td{padding:6px;border-bottom:1px solid #e2e8f0;vertical-align:middle;}tr:hover{background:#f0f9ff;}.img-cell{width:140px;text-align:center;vertical-align:middle;}.img-cell img{max-width:130px;max-height:50px;border-radius:4px;border:1px solid #ddd;}.serial{font-family:monospace;font-weight:bold;font-size:14px;letter-spacing:1px;}.good{color:#10b981;font-weight:bold;}.rotto{color:#ef4444;font-weight:bold;}.sporco{color:#a16207;font-weight:bold;}.rfid{color:#8b5cf6;font-weight:bold;}.bar{color:#06b6d4;font-weight:bold;}.dubbio{color:#64748b;font-weight:bold;}.conf-high{color:#10b981;}.conf-mid{color:#f59e0b;}.conf-low{color:#ef4444;}@media print{body{margin:10px;}table{font-size:10px;}}</style></head><body><h1>📋 Report Scansioni Seriali</h1><div class="meta">Generato: ${new Date().toLocaleString('it-IT')} | Totale: ${records.length}</div><table><thead><tr><th>#</th><th>Timestamp</th><th>Seriale</th><th>Run</th><th>Anteprima</th><th>Conf.</th><th>Correzioni</th><th>Pedana</th><th>Operatore</th><th>Stato</th><th>Note</th></tr></thead><tbody>`;records.forEach((r,i)=>{const cc=r.confidence>=80?'conf-high':r.confidence>=60?'conf-mid':'conf-low';let stClass='',stText=r.status||'—';if(r.status==='Good')stClass='good';else if(r.status==='Rotto')stClass='rotto';else if(r.status==='Sporco')stClass='sporco';else if(r.status==='RF-ID')stClass='rfid';else if(r.status==='Barra Mancante')stClass='bar';else if(r.status==='Dubbio/Altro')stClass='dubbio';const imgHtml=r.image?`<td class="img-cell"><img src="${r.image}" alt="serial"></td>`:`<td class="img-cell">—</td>`;html+=`<tr><td>${i+1}</td><td>${r.timestamp}</td><td class="serial">${r.serial}${r.modified?' <small style="color:#f59e0b;">(mod)</small>':''}</td><td>${r.runNumber||'—'}</td>${imgHtml}<td class="${cc}">${r.confidence}%</td><td>${(r.corrections||[]).join(', ')||'—'}</td><td>${r.pedana}</td><td>${r.operator}</td><td class="${stClass}">${stText}</td><td>${r.note||''}</td></tr>`;});html+=`</tbody></table></body></html>`;const blob=new Blob([html],{type:'text/html;charset=utf-8'});saveAs(blob,`Report_Scansioni_${new Date().toISOString().slice(0,10)}.html`);toast(`📄 HTML: ${records.length} record`,'success');vib('ok');}
-function exportExcel(){if(records.length===0){toast('Nessun record','warning');return;}const data=records.map((r,i)=>({'#':i+1,'Timestamp':r.timestamp,'Seriale':r.serial,'Run':r.runNumber||'—','Confidenza %':r.confidence,'Correzioni OCR':r.corrections&&r.corrections.length?r.corrections.join(', '):'—','Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,'Operatore':r.operator,'Stato':r.status||'—','Note':r.note}));const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:8},{wch:12},{wch:20},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Scansioni');XLSX.writeFile(wb,`Scansioni_${new Date().toISOString().slice(0,10)}.xlsx`);toast(`📊 Excel: ${records.length}`,'success');vib('ok');}
-async function exportZip(){if(records.length===0){toast('Nessun record','warning');return;}toast('📦 ZIP...','success');try{const zip=new JSZip(),imgF=zip.folder('immagini');let cnt=0;for(const r of records){if(r.image){imgF.file(`${r.serial}_${r.id}.jpg`,r.image.split(',')[1],{base64:true});cnt++;}}const csv='N,Timestamp,Seriale,Run,Conf%,Correzioni,Modificato,Lotto,Operatore,Stato,Note\n'+records.map((r,i)=>`${i+1},${r.timestamp},${r.serial},${r.runNumber||''},${r.confidence},"${(r.corrections||[]).join(', ')}",${r.modified?'Sì':'No'},${r.pedana},${r.operator},${r.status||'—'},"${r.note}"`).join('\n');zip.file('riepilogo.csv',csv);const blob=await zip.generateAsync({type:'blob'});saveAs(blob,`Archivio_${new Date().toISOString().slice(0,10)}.zip`);toast(`📦 ZIP: ${cnt} img`,'success');vib('ok');}catch(e){console.error(e);toast('Errore ZIP','error');beepErr();}}
+// ===== EXPORT =====
+function exportExcel(){
+    if(records.length===0){toast('Nessun record','warning');return;}
+    const data=records.map((r,i)=>({
+        '#':i+1,
+        'Timestamp':r.timestamp,
+        'Seriale':r.serial,
+        'Run':r.runNumber||'—',
+        'Confidenza %':r.confidence,
+        'Correzioni OCR':r.corrections&&r.corrections.length?r.corrections.join(', '):'—',
+        'Modificato':r.modified?'Sì':'No',
+        'Lotto/Posizione':r.pedana,
+        'Operatore':r.operator,
+        'Stato':r.status||'—',
+        'Note':r.note,
+        'Immagine ZIP': r.image ? `${r.serial}.jpg` : 'N/D'
+    }));
+    const ws=XLSX.utils.json_to_sheet(data);
+    ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:8},{wch:12},{wch:20},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25},{wch:20}];
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Scansioni');
+    XLSX.writeFile(wb,`Scansioni_${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast(`📊 Excel: ${records.length} record`,'success');vib('ok');
+}
+
+async function exportZip(){
+    if(records.length===0){toast('Nessun record','warning');return;}
+    toast('📦 ZIP...','success');
+    try{
+        const zip=new JSZip(),imgF=zip.folder('immagini');
+        let cnt=0;
+        for(const r of records){
+            if(r.image){
+                // Image named exactly as serial
+                const fileName = `${r.serial}.jpg`;
+                imgF.file(fileName, r.image.split(',')[1], {base64:true});
+                cnt++;
+            }
+        }
+        const csv='N,Timestamp,Seriale,Run,Conf%,Correzioni,Modificato,Lotto,Operatore,Stato,Note,Immagine\n'+records.map((r,i)=>`${i+1},${r.timestamp},${r.serial},${r.runNumber||''},${r.confidence},"${(r.corrections||[]).join(', ')}",${r.modified?'Sì':'No'},${r.pedana},${r.operator},${r.status||'—'},"${r.note}",${r.image?r.serial+'.jpg':'N/D'}`).join('\n');
+        zip.file('riepilogo.csv',csv);
+        const blob=await zip.generateAsync({type:'blob'});
+        saveAs(blob,`Archivio_${new Date().toISOString().slice(0,10)}.zip`);
+        toast(`📦 ZIP: ${cnt} img`,'success');vib('ok');
+    }catch(e){console.error(e);toast('Errore ZIP','error');beepErr();}
+}
 
 document.addEventListener('DOMContentLoaded',async()=>{await openImgDB();loadGSheetUrl();const loaded=await loadFromStorage();if(loaded&&records.length>0){renderRecords();toast(`📂 ${records.length} recuperati`,'success');const unsynced=records.filter(r=>!r._synced);if(unsynced.length>0){setSyncStatus('pending');if(gsheetUrl)setTimeout(()=>syncPendingToGSheet(),2000);}else{setSyncStatus('synced');}}else{renderRecords();setSyncStatus('idle');}setSyncStatus(syncStatus);});
 window.addEventListener('beforeunload',()=>{saveToStorage();});
