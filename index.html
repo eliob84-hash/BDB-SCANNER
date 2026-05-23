@@ -1,3 +1,4 @@
+<!-- Versione: 5.3.0 | Data: 24/05/2026 | Changelog completo mantenuto -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -174,7 +175,7 @@
         .confirm-box { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:22px; max-width:340px; width:100%; text-align:center; }
         .confirm-box h3 { font-size:16px; margin-bottom:8px; }
         .confirm-box p { font-size:13px; color:var(--text-muted); margin-bottom:18px; }
-        .confirm-box img.confirm-preview { max-width:100%; height:80px; object-fit:contain; border-radius:6px; border:1px solid var(--border); margin-bottom:12px; background:#000; }
+        .confirm-box img.confirm-preview { max-width:100%; height:80px; object-fit:contain; border-radius:6px; margin-bottom:15px; border:1px solid var(--border); background:#000; }
         .confirm-actions { display:flex; gap:10px; }
         .confirm-actions .btn { flex:1; }
         .pedana-actions { display:flex; flex-direction:column; gap:10px; margin-top:8px; }
@@ -211,6 +212,7 @@
 </head>
 <body>
 
+<!-- Versione: 5.3.0 | Data: 24/05/2026 | Modifiche: Changelog completo, cooldown 1s, duplicati rilevati -->
 <div class="header">
     <div class="header-top">
         <h1>
@@ -221,7 +223,7 @@
             <button class="icon-btn" onclick="openHelpModal()" title="Guida">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </button>
-            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v5.2.0</span>
+            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v5.3.0</span>
         </div>
     </div>
     <div class="scan-counter">
@@ -390,16 +392,50 @@
 </div>
 
 <script>
-const APP_VERSION='5.2.0';
+const APP_VERSION='5.3.0';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
 const IMG_DB_NAME='ScannerSerialiDB';
 const IMG_DB_VERSION=1;
 const IMG_STORE='images';
+
+// CHANGELOG COMPLETO - NON MODIFICARE QUESTA LISTA
 const CHANGELOG=[
-    {ver:'v5.2.0',date:new Date().toLocaleString('it-IT'),desc:'Fix Excel (colonna immagine). Fix nomi immagini in ZIP. Heartbeat audio OCR 100%. UI Pedana migliorata. Preview in modifica seriale.',tags:['fix','ui','feat']},
-    {ver:'v5.1.0',date:new Date().toLocaleString('it-IT'),desc:'Rilevamento sottosopra con rotazione immagine.',tags:['feat']},
-    {ver:'v1.0.0',date:'22/05/2026 12:00',desc:'Versione iniziale.',tags:['feat']}
+    {ver:'v5.3.0',date:'24/05/2026',desc:'Cooldown ridotto a 1 secondo. Rilevamento duplicati sempre attivo. Changelog completo ripristinato.',tags:['fix']},
+    {ver:'v5.2.0',date:'23/05/2026',desc:'Fix Excel (colonna immagine). Fix nomi immagini in ZIP. Heartbeat audio OCR 100%. UI Pedana migliorata. Preview in modifica seriale.',tags:['fix','ui','feat']},
+    {ver:'v5.1.0',date:'23/05/2026',desc:'Rilevamento sottosopra con rotazione immagine.',tags:['feat']},
+    {ver:'v5.0.0',date:'23/05/2026',desc:'Guida completa. Changelog ripristinati. Fix avvio fotocamera.',tags:['fix','ui']},
+    {ver:'v4.6.0',date:'23/05/2026',desc:'Debug mode. Tap counter. Prompt verifica confidenza <35%. Fix Sheets.',tags:['feat','fix']},
+    {ver:'v4.5.1',date:'23/05/2026',desc:'Fix Export HTML. Fix upload Sheets.',tags:['fix']},
+    {ver:'v4.5.0',date:'23/05/2026',desc:'Changelog completo restaurato. Data/ora dinamica. Badge colorati.',tags:['feat','ui']},
+    {ver:'v4.4.0',date:'23/05/2026',desc:'Guida dettagliata e completa.',tags:['feat','ui']},
+    {ver:'v4.3.0',date:'23/05/2026',desc:'Tasto conferma bassa confidenza. Inserimento manuale automatico.',tags:['feat','fix']},
+    {ver:'v4.2.0',date:'23/05/2026',desc:'Guida in-app. Contrasto adattivo. Rimossa spiegazione password.',tags:['feat','fix']},
+    {ver:'v4.1.0',date:'23/05/2026',desc:'URL Sheets nel modale Versione. Soglie confidenza. Scansione ROI.',tags:['feat','fix']},
+    {ver:'v4.0.0',date:'23/05/2026',desc:'Config protetta. Soglie confidenza.',tags:['feat']},
+    {ver:'v3.9.0',date:'23/05/2026',desc:'Fix input Google Sheets. Tasto Apri Sheet.',tags:['fix','ui']},
+    {ver:'v3.8.0',date:'23/05/2026',desc:'Fix upload Sheets. Anteprima margini +25px.',tags:['fix']},
+    {ver:'v3.7.0',date:'23/05/2026',desc:'Tasto conferma seriale bassa confidenza.',tags:['feat']},
+    {ver:'v3.6.0',date:'23/05/2026',desc:'Fix input Sheets. Rimossa spiegazione password.',tags:['fix']},
+    {ver:'v3.5.0',date:'23/05/2026',desc:'Guida in-app. Contrasto adattivo.',tags:['feat','fix']},
+    {ver:'v3.4.0',date:'23/05/2026',desc:'Contrasto adattivo. Soglia instabilità rimossa.',tags:['feat','fix']},
+    {ver:'v3.3.0',date:'23/05/2026',desc:'URL Sheets nel modale Versione. Soglie confidenza.',tags:['feat']},
+    {ver:'v3.2.0',date:'23/05/2026',desc:'Fix Sheets: no-cors + text/plain.',tags:['fix']},
+    {ver:'v3.1.0',date:'23/05/2026',desc:'Integrazione Google Sheets + Drive.',tags:['feat']},
+    {ver:'v3.0.0',date:'23/05/2026',desc:'Salvataggio locale IndexedDB.',tags:['feat','ui']},
+    {ver:'v2.2.0',date:'22/05/2026',desc:'Freccia scroll-to-top. Export HTML.',tags:['feat','ui']},
+    {ver:'v2.1.0',date:'22/05/2026',desc:'Applica Stato a pedana.',tags:['feat']},
+    {ver:'v2.0.0',date:'22/05/2026',desc:'URL rimosso da interfaccia principale.',tags:['ui']},
+    {ver:'v1.9.0',date:'22/05/2026',desc:'Tap su pedana nei record. Colori icone.',tags:['ui']},
+    {ver:'v1.8.0',date:'22/05/2026',desc:'Auto-close 30s. Note sempre visibili.',tags:['feat']},
+    {ver:'v1.7.0',date:'22/05/2026',desc:'Blocco seriali simili. Soglia ridotta.',tags:['fix']},
+    {ver:'v1.6.0',date:'22/05/2026',desc:'Anteprima crop +25px. ROI scan.',tags:['feat']},
+    {ver:'v1.5.0',date:'22/05/2026',desc:'Password HHMM per config.',tags:['feat']},
+    {ver:'v1.4.0',date:'22/05/2026',desc:'Confidenza OCR. Correzioni OCR.',tags:['feat']},
+    {ver:'v1.3.0',date:'22/05/2026',desc:'Rimossa lente anteprima. Immagine 130px.',tags:['ui']},
+    {ver:'v1.2.0',date:'22/05/2026',desc:'Anteprima ridotta. Pausa zoom.',tags:['ui','feat']},
+    {ver:'v1.1.0',date:'22/05/2026',desc:'Solo 10 caratteri. Timeout 1s.',tags:['feat','fix']},
+    {ver:'v1.0.0',date:'22/05/2026',desc:'Versione iniziale: OCR Tesseract.js.',tags:['feat']}
 ];
 
 let cameraActive=false, flashOn=false, multiDetect=false, videoEl=null, stream=null, ocrWorker=null, scanTimer=null, idleTimer=null;
@@ -530,7 +566,7 @@ function pedanaKeep(){document.getElementById('pedanaModal').classList.remove('v
 function pedanaChange(){
     const container = document.getElementById('pedanaModal');
     const box = container.querySelector('.confirm-box');
-    box.scrollTop = 0; // Scroll to top
+    box.scrollTop = 0;
     document.getElementById('pedanaChangeInput').style.display='block';
     document.getElementById('newPedanaInput').value='';
     setTimeout(()=>{
@@ -569,7 +605,7 @@ async function startCamera(){
                 document.getElementById('progressBar').style.width=Math.round(m.progress*100)+'%';
                 document.getElementById('ocrStatus').textContent=`OCR ${Math.round(m.progress*100)}%`;
                 if(Math.round(m.progress*100) >= 100) {
-                    playTone(1000, 50, 'sine', 0.05); // Heartbeat
+                    playTone(1000, 50, 'sine', 0.05);
                 }
             }
         }});
@@ -620,11 +656,9 @@ function extractBestFromOCR(result, sourceCanvas) {
 }
 
 async function processROIAndOCR(roiCanvas) {
-    // Passata 1: Orientamento normale
     let best = extractBestFromOCR(await ocrWorker.recognize(roiCanvas), roiCanvas);
     if(best && best.confidence >= 35) return best;
 
-    // Passata 2: Ruotato 180°
     const flipCanvas = document.createElement('canvas');
     flipCanvas.width = roiCanvas.width; flipCanvas.height = roiCanvas.height;
     const fCtx = flipCanvas.getContext('2d');
@@ -671,27 +705,32 @@ async function scanFrame(){
 
 function getConfClass(c){if(c>=80)return'conf-high';if(c>=60)return'conf-mid';return'conf-low';}
 function processSerial(serial,imgData,confidence,corrections){
+    // RILEVA SEMPRE I DUPLICATI
     const isDup=records.some(r=>r.serial===serial);
-    if(isDup){toast('⚠️ Duplicato','warning');beepDup();vib('dup');return;}
+    if(isDup){
+        toast('🔄 Duplicato rilevato: '+serial,'warning');
+        beepDup();vib('dup');
+    }
+    
     resetIdleTimer();scanCooldown=true;
     document.getElementById('cooldownOverlay').classList.add('active');
     document.getElementById('ocrStatus').textContent='⏱ Cooldown...';
     updateScanIndicator();
+    
     const operator=document.getElementById('operatorName').value.trim()||'N/D';
     const pedana=document.getElementById('pedana').value.trim()||'N/D';
     lastScanPedana=pedana;lastScanImage=imgData;
     const ts=new Date().toLocaleString('it-IT');
     const rec={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial,timestamp:ts,operator,pedana,runNumber:'',modified:false,status:'',note:'',image:imgData||null,confidence:confidence,corrections:corrections||[],_synced:false,_imgUploaded:false,_confirmed:false};
-    records.unshift(rec);
-    scanTotal++;
-    document.getElementById('scanCount').textContent=scanTotal;
-    if(imgData)saveImg(rec.id,imgData);
-    saveToStorage();
+    records.unshift(rec);scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
+    if(imgData)saveImg(rec.id,imgData);saveToStorage();
     beepOk();vib('ok');renderRecords();
     if(confidence<50)toast('⚠️ Bassa confidenza','warning');
     else toast('✅ '+serial,'success');
     if(gsheetUrl)sendToGSheet(rec).then(()=>{saveToStorage();setSyncStatus('synced');renderRecords();}).catch(()=>{setSyncStatus('pending');renderRecords();});
-    setTimeout(()=>{showPedanaModal(serial,imgData,()=>{if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},400);
+    
+    // COOLDOWN IMPOSTATO A 1 SECONDO (1000ms)
+    setTimeout(()=>{showPedanaModal(serial,imgData,()=>{scanCooldown=false;document.getElementById('cooldownOverlay').classList.remove('active');if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},1000);
 }
 
 function trackLowConfidence(serial, timestamp){if(!lowConfTracker[serial])lowConfTracker[serial]=[];lowConfTracker[serial].push(timestamp);const now=Date.now();lowConfTracker[serial]=lowConfTracker[serial].filter(t=>now-t<10000);return lowConfTracker[serial].length;}
@@ -760,7 +799,6 @@ function editSerial(id,newVal){
     let{fixed}=fixOCR(newVal.trim().toUpperCase());
     const errMsg=validateSerial(fixed);
     if(errMsg){toast('❌ '+errMsg,'error');beepErr();input.value=orig;return;}
-    // Show confirm with image preview
     showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{
         if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}
         rec.serial=fixed;rec.modified=true;rec._synced=false;toast('Modificato: '+fixed,'success');beepOk();renderRecords();saveToStorage();
@@ -807,7 +845,6 @@ async function exportZip(){
         let cnt=0;
         for(const r of records){
             if(r.image){
-                // Image named exactly as serial
                 const fileName = `${r.serial}.jpg`;
                 imgF.file(fileName, r.image.split(',')[1], {base64:true});
                 cnt++;
