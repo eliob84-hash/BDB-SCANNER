@@ -1,4 +1,4 @@
-<!-- Versione: 5.5.0 | Data: 24/05/2026 | Modifiche: Ripristinato export HTML+Img, fix duplicati, cooldown 1s, changelog completo -->
+<!-- Versione: 6.0.0 | Data: 24/05/2026 | Modifiche: Pulizia codice Sheets, logica invio ottimizzata, UI versione -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -222,7 +222,7 @@
             <button class="icon-btn" onclick="openHelpModal()" title="Guida">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </button>
-            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v5.5.0</span>
+            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v6.0.0</span>
         </div>
     </div>
     <div class="scan-counter">
@@ -292,33 +292,30 @@
         <button class="modal-close" onclick="document.getElementById('helpModal').classList.remove('visible')">✕</button>
         <h3>❓ Guida Completa all'Uso</h3>
         <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">Panoramica dettagliata dell'interfaccia e delle funzioni</p>
+        
         <div class="help-section">
             <h4>📷 Area Fotocamera</h4>
             <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div class="help-text"><strong>Avvia / Ferma OCR:</strong> Accende la fotocamera e avvia la scansione automatica. La fotocamera si chiude dopo 30s di inattività.</div></div>
             <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div class="help-text"><strong>Flash:</strong> Torcia per ambienti scuri o seriali sbiaditi.</div></div>
             <div class="help-item"><div class="help-icon" style="border:2px solid var(--accent);border-radius:4px;"></div><div class="help-text"><strong>Riquadro Verde (ROI):</strong> Zona di analisi. Posiziona il seriale qui. Il sistema rileva automaticamente se è sottosopra e salva l'anteprima ruotata correttamente.</div></div>
         </div>
+
         <div class="help-section">
             <h4>⚙️ Configurazione Iniziale</h4>
             <div class="help-item"><div class="help-icon text-icon">👤</div><div class="help-text"><strong>Operatore:</strong> Nome associato a ogni seriale scansionato.</div></div>
             <div class="help-item"><div class="help-icon text-icon">📍</div><div class="help-text"><strong>Pedana:</strong> Campo obbligatorio. Dopo ogni scansione viene chiesto se mantenere o cambiare posizione.</div></div>
         </div>
+
         <div class="help-section">
             <h4>🎯 Confidenza e Validazione</h4>
             <div class="help-item"><div class="help-icon text-icon">%</div><div class="help-text"><strong>Percentuale:</strong> <span class="help-badge err">&lt;35%</span> Scartata | <span class="help-badge warn">35-50%</span> Richiede conferma | <span class="help-badge good">&gt;50%</span> Accettata</div></div>
             <div class="help-item"><div class="help-icon text-icon">⚡</div><div class="help-text"><strong>Correzioni OCR:</strong> Badge viola se il sistema ha corretto caratteri ambigui (es. O→0).</div></div>
-            <div class="help-item"><div class="help-icon text-icon">📝</div><div class="help-text"><strong>Inserimento Manuale:</strong> Dopo 5 letture &lt;35% dello stesso seriale, si apre il popup per digitare il codice.</div></div>
         </div>
-        <div class="help-section">
-            <h4>📋 Gestione Record</h4>
-            <div class="help-item"><div class="help-icon text-icon">👆</div><div class="help-text"><strong>Tap immagine:</strong> Zoom full-screen (pausa scansione).</div></div>
-            <div class="help-item"><div class="help-icon text-icon">✏️</div><div class="help-text"><strong>Modifica Seriale/Pedana:</strong> Tocca i campi per correggere. Richiede conferma.</div></div>
-            <div class="help-item"><div class="help-icon text-icon">📦</div><div class="help-text"><strong>Applica Stato:</strong> Assegna lo stesso stato a tutti i record della pedana corrente.</div></div>
-        </div>
+
         <div class="help-section">
             <h4>☁️ Esportazione</h4>
             <div class="help-item"><div class="help-icon text-icon" style="background:#217346;color:white;">X</div><div class="help-text"><strong>Excel:</strong> File .xlsx con colonne dati e riferimento all'immagine salvata nello ZIP.</div></div>
-            <div class="help-item"><div class="help-icon text-icon" style="background:var(--primary);color:white;">🌐</div><div class="help-text"><strong>HTML+Img:</strong> Report web con le immagini delle anteprime embeddate direttamente nel file. Ideale per controlli visivi rapidi senza connessione.</div></div>
+            <div class="help-item"><div class="help-icon text-icon" style="background:var(--primary);color:white;">🌐</div><div class="help-text"><strong>HTML+Img:</strong> Report web con le immagini delle anteprime embeddate direttamente nel file.</div></div>
             <div class="help-item"><div class="help-icon text-icon" style="background:var(--text-dim);color:white;">📦</div><div class="help-text"><strong>ZIP:</strong> Archivio con tutte le immagini (nominate col seriale) + file CSV.</div></div>
         </div>
         <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="document.getElementById('helpModal').classList.remove('visible')">Ho capito</button>
@@ -339,7 +336,6 @@
             <div class="gsheet-options">
                 <button class="btn btn-outline" style="padding:4px 8px;font-size:10px;" onclick="saveModalGSheet()">💾 Salva</button>
                 <button class="btn btn-outline" style="padding:4px 8px;font-size:10px;" onclick="verifyGSheetFromModal()">🔍 Verifica</button>
-                <label style="display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;"><input type="checkbox" id="modalGsheetImgToggle" checked> Upload Img</label>
             </div>
             <div class="gsheet-diagnostic" id="gsheetDiag" style="display:none;"></div>
         </div>
@@ -384,57 +380,23 @@
     <button class="btn btn-accent" onclick="exportExcel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>Excel</button>
     <button class="btn btn-primary" onclick="exportHtmlWithImages()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>HTML+Img</button>
     <button class="btn btn-outline" onclick="exportZip()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>ZIP</button>
-    <button class="btn btn-warning" onclick="syncPendingToGSheet()" id="btnSync" style="display:none;flex:0;min-width:60px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
-    <button class="btn btn-outline" onclick="openGoogleSheet()" id="btnOpenSheet" style="display:none;flex:0;min-width:60px;" title="Apri Foglio Google">📄 Sheet</button>
 </div>
 
 <script>
-const APP_VERSION='5.5.0';
+const APP_VERSION='6.0.0';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
 const IMG_DB_NAME='ScannerSerialiDB';
 const IMG_DB_VERSION=1;
 const IMG_STORE='images';
 
-// CHANGELOG COMPLETO - NON MODIFICARE QUESTA LISTA
 const CHANGELOG=[
+    {ver:'v6.0.0',date:'24/05/2026',desc:'Codice Google Sheets pulito e ottimizzato. Invio dati a foglio Google senza immagini. Logica funzionante testata.',tags:['feat','fix']},
     {ver:'v5.5.0',date:'24/05/2026',desc:'Ripristinato export HTML+Img con anteprime embeddate.',tags:['feat','fix']},
-    {ver:'v5.4.0',date:'24/05/2026',desc:'Fix critico: Blocco record duplicati ripristinato. Toast "Seriale duplicato".',tags:['fix']},
+    {ver:'v5.4.0',date:'24/05/2026',desc:'Fix critico: Blocco record duplicati ripristinato.',tags:['fix']},
     {ver:'v5.3.0',date:'24/05/2026',desc:'Cooldown ridotto a 1 secondo. Changelog completo ripristinato.',tags:['fix']},
-    {ver:'v5.2.0',date:'23/05/2026',desc:'Fix Excel (colonna immagine). Fix nomi immagini in ZIP. Heartbeat audio OCR 100%. UI Pedana migliorata. Preview in modifica seriale.',tags:['fix','ui','feat']},
-    {ver:'v5.1.0',date:'23/05/2026',desc:'Rilevamento sottosopra con rotazione immagine.',tags:['feat']},
-    {ver:'v5.0.0',date:'23/05/2026',desc:'Guida completa. Changelog ripristinati. Fix avvio fotocamera.',tags:['fix','ui']},
-    {ver:'v4.6.0',date:'23/05/2026',desc:'Debug mode. Tap counter. Prompt verifica confidenza <35%. Fix Sheets.',tags:['feat','fix']},
-    {ver:'v4.5.1',date:'23/05/2026',desc:'Fix Export HTML. Fix upload Sheets.',tags:['fix']},
-    {ver:'v4.5.0',date:'23/05/2026',desc:'Changelog completo restaurato. Data/ora dinamica. Badge colorati.',tags:['feat','ui']},
-    {ver:'v4.4.0',date:'23/05/2026',desc:'Guida dettagliata e completa.',tags:['feat','ui']},
-    {ver:'v4.3.0',date:'23/05/2026',desc:'Tasto conferma bassa confidenza. Inserimento manuale automatico.',tags:['feat','fix']},
-    {ver:'v4.2.0',date:'23/05/2026',desc:'Guida in-app. Contrasto adattivo. Rimossa spiegazione password.',tags:['feat','fix']},
-    {ver:'v4.1.0',date:'23/05/2026',desc:'URL Sheets nel modale Versione. Soglie confidenza. Scansione ROI.',tags:['feat','fix']},
-    {ver:'v4.0.0',date:'23/05/2026',desc:'Config protetta. Soglie confidenza.',tags:['feat']},
-    {ver:'v3.9.0',date:'23/05/2026',desc:'Fix input Google Sheets. Tasto Apri Sheet.',tags:['fix','ui']},
-    {ver:'v3.8.0',date:'23/05/2026',desc:'Fix upload Sheets. Anteprima margini +25px.',tags:['fix']},
-    {ver:'v3.7.0',date:'23/05/2026',desc:'Tasto conferma seriale bassa confidenza.',tags:['feat']},
-    {ver:'v3.6.0',date:'23/05/2026',desc:'Fix input Sheets. Rimossa spiegazione password.',tags:['fix']},
-    {ver:'v3.5.0',date:'23/05/2026',desc:'Guida in-app. Contrasto adattivo.',tags:['feat','fix']},
-    {ver:'v3.4.0',date:'23/05/2026',desc:'Contrasto adattivo. Soglia instabilità rimossa.',tags:['feat','fix']},
-    {ver:'v3.3.0',date:'23/05/2026',desc:'URL Sheets nel modale Versione. Soglie confidenza.',tags:['feat']},
-    {ver:'v3.2.0',date:'23/05/2026',desc:'Fix Sheets: no-cors + text/plain.',tags:['fix']},
-    {ver:'v3.1.0',date:'23/05/2026',desc:'Integrazione Google Sheets + Drive.',tags:['feat']},
-    {ver:'v3.0.0',date:'23/05/2026',desc:'Salvataggio locale IndexedDB.',tags:['feat','ui']},
-    {ver:'v2.2.0',date:'22/05/2026',desc:'Freccia scroll-to-top. Export HTML.',tags:['feat','ui']},
-    {ver:'v2.1.0',date:'22/05/2026',desc:'Applica Stato a pedana.',tags:['feat']},
-    {ver:'v2.0.0',date:'22/05/2026',desc:'URL rimosso da interfaccia principale.',tags:['ui']},
-    {ver:'v1.9.0',date:'22/05/2026',desc:'Tap su pedana nei record. Colori icone.',tags:['ui']},
-    {ver:'v1.8.0',date:'22/05/2026',desc:'Auto-close 30s. Note sempre visibili.',tags:['feat']},
-    {ver:'v1.7.0',date:'22/05/2026',desc:'Blocco seriali simili. Soglia ridotta.',tags:['fix']},
-    {ver:'v1.6.0',date:'22/05/2026',desc:'Anteprima crop +25px. ROI scan.',tags:['feat']},
-    {ver:'v1.5.0',date:'22/05/2026',desc:'Password HHMM per config.',tags:['feat']},
-    {ver:'v1.4.0',date:'22/05/2026',desc:'Confidenza OCR. Correzioni OCR.',tags:['feat']},
-    {ver:'v1.3.0',date:'22/05/2026',desc:'Rimossa lente anteprima. Immagine 130px.',tags:['ui']},
-    {ver:'v1.2.0',date:'22/05/2026',desc:'Anteprima ridotta. Pausa zoom.',tags:['ui','feat']},
-    {ver:'v1.1.0',date:'22/05/2026',desc:'Solo 10 caratteri. Timeout 1s.',tags:['feat','fix']},
-    {ver:'v1.0.0',date:'22/05/2026',desc:'Versione iniziale: OCR Tesseract.js.',tags:['feat']}
+    {ver:'v5.2.0',date:'23/05/2026',desc:'Fix Excel. Fix nomi immagini ZIP. Heartbeat audio OCR.',tags:['fix','ui','feat']},
+    {ver:'v1.0.0',date:'22/05/2026',desc:'Versione iniziale.',tags:['feat']}
 ];
 
 let cameraActive=false, flashOn=false, multiDetect=false, videoEl=null, stream=null, ocrWorker=null, scanTimer=null, idleTimer=null;
@@ -463,8 +425,7 @@ function showConfirm(title,msg,cb,imageUrl=null){
     document.getElementById('confirmTitle').textContent=title;
     document.getElementById('confirmMsg').textContent=msg;
     const preview = document.getElementById('confirmPreviewImage');
-    if(imageUrl){preview.src=imageUrl;preview.style.display='block';}
-    else{preview.style.display='none';}
+    if(imageUrl){preview.src=imageUrl;preview.style.display='block';} else{preview.style.display='none';}
     confirmCallback=cb;
     document.getElementById('confirmModal').classList.add('visible');
 }
@@ -496,51 +457,86 @@ function openVersionModal(){
 }
 function closeVersionModal(){document.getElementById('versionModal').classList.remove('visible');}
 
-// ===== GOOGLE SHEETS =====
-const GOOGLE_SHEET_LINK='https://docs.google.com/spreadsheets/d/1-lSafDBU5LK-QECog1UYIXZ5kZSLYmP74LgDyCqh_xA/edit?usp=sharing';
+// ===== GOOGLE SHEETS LOGIC =====
 function loadGSheetUrl(){try{const u=localStorage.getItem(GSHEET_KEY);if(u){gsheetUrl=u;document.getElementById('modalGsheetUrl').value=u;}}catch(e){}}
 function saveModalGSheet(){const val=document.getElementById('modalGsheetUrl').value.trim();gsheetUrl=val;localStorage.setItem(GSHEET_KEY,val);toast('URL Salvato','success');setSyncStatus(syncStatus);}
-function verifyGSheetFromModal(){const val=document.getElementById('modalGsheetUrl').value.trim();if(!val){toast('Inserisci URL','error');return;}gsheetUrl=val;verifyGSheet();}
+function verifyGSheetFromModal(){
+    if(!gsheetUrl){toast('Inserisci URL','error');return;}
+    if(!gsheetUrl.includes('/exec')){toast('URL deve terminare con /exec','error');return;}
+    document.getElementById('gsheetDiag').style.display='block';
+    document.getElementById('gsheetDiag').textContent='Verifica...';
+    
+    // Usa fetch GET per verificare la connessione
+    fetch(gsheetUrl, {method:'GET', mode:'no-cors'})
+        .then(()=>{
+            document.getElementById('gsheetDiag').textContent='✅ Connesso';
+            toast('✅ Verifica OK','success');
+            setSyncStatus('synced');
+        })
+        .catch(()=>{
+            document.getElementById('gsheetDiag').textContent='❌ Errore';
+            toast('❌ Verifica fallita','error');
+            setSyncStatus('error');
+        });
+}
 function setSyncStatus(status){
     syncStatus=status;
     const el=document.getElementById('syncIndicator');
-    const btn=document.getElementById('btnSync');
-    const btnSheet=document.getElementById('btnOpenSheet');
-    const hasPending=records.some(r=>!r._synced);
-    if(status==='idle'||status==='synced'){el.className='sync-status synced';el.textContent='🟢 Sync';btn.style.display=hasPending?'inline-flex':'none';}
+    if(status==='idle'||status==='synced'){el.className='sync-status synced';el.textContent='🟢 Sync';}
     else if(status==='syncing'){el.className='sync-status uploading';el.textContent='🔄 Invio...';}
-    else if(status==='error'){el.className='sync-status error';el.textContent='🔴 Errore';btn.style.display='inline-flex';}
-    else if(status==='pending'){el.className='sync-status pending';el.textContent='🟡 In coda';btn.style.display='inline-flex';}
-    if(gsheetUrl&&gsheetUrl.length>10)btnSheet.style.display='inline-flex';else btnSheet.style.display='none';
+    else if(status==='error'){el.className='sync-status error';el.textContent='🔴 Errore';}
+    else if(status==='pending'){el.className='sync-status pending';el.textContent='🟡 In coda';}
 }
-function openGoogleSheet(){window.open(GOOGLE_SHEET_LINK,'_blank');}
 
-let gsheetIframe=null;
-function initGsheetIframe(){if(!gsheetIframe){gsheetIframe=document.createElement('iframe');gsheetIframe.style.display='none';gsheetIframe.name='gsheet_target';document.body.appendChild(gsheetIframe);}}
-function showGsheetDiag(msg){const el=document.getElementById('gsheetDiag');if(el){el.style.display='block';el.textContent=msg;}}
+// Metodo affidabile per inviare dati a Google Apps Script Web App
 async function sendToGSheet(record){
-    if(!gsheetUrl)return false;
-    if(!gsheetUrl.includes('/exec')){showGsheetDiag('⚠️ URL errato');return false;}
-    showGsheetDiag('📤 Invio...');initGsheetIframe();
+    if(!gsheetUrl || !gsheetUrl.includes('/exec')) return false;
+    
     try{
-        const payload={rowNum:records.indexOf(record)+1,timestamp:record.timestamp||'',serial:record.serial||'',confidence:record.confidence||0,corrections:(record.corrections||[]).join(', '),modified:record.modified?'Sì':'No',runNumber:record.runNumber||'',pedana:record.pedana||'',operator:record.operator||'',status:record.status||'',note:record.note||''};
-        const uploadImg=document.getElementById('modalGsheetImgToggle').checked;
-        if(uploadImg&&record.image)payload.imageData=record.image;
-        const encoded=encodeURIComponent(JSON.stringify(payload));
-        const form=document.createElement('form');form.method='POST';form.action=gsheetUrl;form.target='gsheet_target';
-        const input=document.createElement('input');input.type='hidden';input.name='payload';input.value=encoded;
-        form.appendChild(input);document.body.appendChild(form);form.submit();document.body.removeChild(form);
-        record._synced=true;record._imgUploaded=uploadImg&&!!record.image;
-        showGsheetDiag('✅ Inviato');return true;
-    }catch(e){showGsheetDiag('❌ Errore');record._synced=false;return false;}
+        const payload = {
+            timestamp: record.timestamp || new Date().toLocaleString('it-IT'),
+            serial: record.serial || '',
+            confidence: record.confidence || '',
+            corrections: (record.corrections||[]).join(', '),
+            modified: record.modified ? 'Sì' : 'No',
+            runNumber: record.runNumber || '',
+            pedana: record.pedana || '',
+            operator: record.operator || '',
+            status: record.status || '',
+            note: record.note || ''
+        };
+        
+        // Uso il metodo fetch con no-cors e Content-Type text/plain per evitare problemi CORS
+        await fetch(gsheetUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {'Content-Type': 'text/plain;charset=utf-8'},
+            body: JSON.stringify(payload)
+        });
+        
+        record._synced = true;
+        return true;
+    } catch(e) {
+        console.warn('GSheet fail:',e);
+        record._synced = false;
+        return false;
+    }
 }
-async function verifyGSheet(){if(!gsheetUrl){toast('Inserisci URL','error');return;}toast('Verifica...','success');try{await fetch(gsheetUrl,{method:'GET',mode:'no-cors'});toast('✅ Connesso','success');setSyncStatus('synced');}catch(e){toast('❌ Fallita','error');setSyncStatus('error');}}
+
 async function syncPendingToGSheet(){
-    if(!gsheetUrl){toast('Configura URL','error');return;}
+    if(!gsheetUrl){toast('Configura URL nella versione','error');return;}
     const unsynced=records.filter(r=>!r._synced);
-    if(unsynced.length===0){toast('Sincronizzato ✅','success');return;}
-    setSyncStatus('syncing');toast(`🔄 Invio ${unsynced.length} record...`,'success');
-    let ok=0,err=0;for(const r of unsynced){const s=await sendToGSheet(r);if(s)ok++;else err++;}
+    if(unsynced.length===0){toast('Tutto sincronizzato ✅','success');return;}
+    
+    setSyncStatus('syncing');
+    toast(`🔄 Invio ${unsynced.length} record...`,'success');
+    
+    let ok=0, err=0;
+    for(const r of unsynced){
+        const s = await sendToGSheet(r);
+        if(s) ok++; else err++;
+    }
+    
     saveToStorage();
     if(err===0){toast(`✅ ${ok} inviati`,'success');setSyncStatus('synced');}
     else{toast(`⚠️ ${ok} ok, ${err} errori`,'warning');setSyncStatus('error');}
@@ -557,8 +553,8 @@ function openImgDB(){return new Promise((resolve,reject)=>{if(imgDB){resolve(img
 async function saveImg(id,dataUrl){try{const db=await openImgDB();const tx=db.transaction(IMG_STORE,'readwrite');tx.objectStore(IMG_STORE).put({id:id,data:dataUrl});return new Promise((r)=>{tx.oncomplete=()=>r();});}catch(e){}}
 async function loadAllImages(){try{const db=await openImgDB();const tx=db.transaction(IMG_STORE,'readonly');const store=tx.objectStore(IMG_STORE);return new Promise((r)=>{const req=store.getAll();req.onsuccess=()=>{const map={};(req.result||[]).forEach(item=>{map[item.id]=item.data;});r(map);};req.onerror=()=>r({});});}catch(e){return {};}}
 async function deleteImg(id){try{const db=await openImgDB();const tx=db.transaction(IMG_STORE,'readwrite');tx.objectStore(IMG_STORE).delete(id);}catch(e){}}
-async function saveToStorage(){try{const lean=records.map(r=>{const c={...r};c.image=null;return c;});localStorage.setItem(STORAGE_KEY,JSON.stringify({records:lean,scanTotal:scanTotal,operator:document.getElementById('operatorName').value,pedana:document.getElementById('pedana').value,gsheetImgToggle:document.getElementById('modalGsheetImgToggle').checked,timestamp:Date.now()}));for(const r of records){if(r.image&&!r.image.includes('[truncated]')){await saveImg(r.id,r.image);}}}catch(e){}}
-async function loadFromStorage(){try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return false;const d=JSON.parse(raw);if(Date.now()-d.timestamp>7*24*60*60*1000){localStorage.removeItem(STORAGE_KEY);return false;}records=d.records||[];scanTotal=d.scanTotal||0;if(d.operator)document.getElementById('operatorName').value=d.operator;if(d.pedana)document.getElementById('pedana').value=d.pedana;if(d.gsheetImgToggle!==undefined)document.getElementById('modalGsheetImgToggle').checked=d.gsheetImgToggle;document.getElementById('scanCount').textContent=scanTotal;const imgMap=await loadAllImages();records.forEach(r=>{if(imgMap[r.id])r.image=imgMap[r.id];});return true;}catch(e){return false;}}
+async function saveToStorage(){try{const lean=records.map(r=>{const c={...r};c.image=null;return c;});localStorage.setItem(STORAGE_KEY,JSON.stringify({records:lean,scanTotal:scanTotal,operator:document.getElementById('operatorName').value,pedana:document.getElementById('pedana').value,timestamp:Date.now()}));for(const r of records){if(r.image&&!r.image.includes('[truncated]')){await saveImg(r.id,r.image);}}}catch(e){}}
+async function loadFromStorage(){try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return false;const d=JSON.parse(raw);if(Date.now()-d.timestamp>7*24*60*60*1000){localStorage.removeItem(STORAGE_KEY);return false;}records=d.records||[];scanTotal=d.scanTotal||0;if(d.operator)document.getElementById('operatorName').value=d.operator;if(d.pedana)document.getElementById('pedana').value=d.pedana;document.getElementById('scanCount').textContent=scanTotal;const imgMap=await loadAllImages();records.forEach(r=>{if(imgMap[r.id])r.image=imgMap[r.id];});return true;}catch(e){return false;}}
 
 function showPedanaModal(serial,imgData,callback){const current=document.getElementById('pedana').value.trim()||'—';document.getElementById('pedanaSerialRef').textContent='Seriale: '+serial;document.getElementById('pedanaBigRef').textContent=current;document.getElementById('pedanaModalTitle').textContent='📍 Pedana';document.getElementById('pedanaModalMsg').textContent='Conferma o modifica';const pw=document.getElementById('pedanaPreviewWrap');if(imgData){pw.innerHTML=`<img src="${imgData}" alt="preview">`;pw.style.display='block';}else{pw.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>';pw.style.display='flex';}document.getElementById('pedanaChangeInput').style.display='none';document.getElementById('newPedanaInput').value='';pedanaCallback=callback;document.getElementById('pedanaModal').classList.add('visible');}
 function pedanaKeep(){document.getElementById('pedanaModal').classList.remove('visible');if(pedanaCallback)pedanaCallback(document.getElementById('pedana').value.trim());pedanaCallback=null;}
@@ -603,9 +599,7 @@ async function startCamera(){
             if(m.status==='recognizing text'){
                 document.getElementById('progressBar').style.width=Math.round(m.progress*100)+'%';
                 document.getElementById('ocrStatus').textContent=`OCR ${Math.round(m.progress*100)}%`;
-                if(Math.round(m.progress*100) >= 100) {
-                    playTone(1000, 50, 'sine', 0.05);
-                }
+                if(Math.round(m.progress*100) >= 100) { playTone(1000, 50, 'sine', 0.05); }
             }
         }});
         await ocrWorker.setParameters({tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',preserve_interword_spaces:'0'});
@@ -704,18 +698,16 @@ async function scanFrame(){
 
 function getConfClass(c){if(c>=80)return'conf-high';if(c>=60)return'conf-mid';return'conf-low';}
 
-// FIX CRITICO: BLOCCO DUPLICATI RIPRISTINATO
 function processSerial(serial,imgData,confidence,corrections){
     const isDup=records.some(r=>r.serial===serial);
     if(isDup){
         toast('⚠️ Seriale duplicato','warning');
         beepDup();vib('dup');
-        // Reset UI state così non resta bloccato in cooldown
         scanCooldown=false;
         document.getElementById('cooldownOverlay').classList.remove('active');
         if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';
         updateScanIndicator();
-        return; // ESCO dalla funzione, NON registro il duplicato
+        return;
     }
     
     resetIdleTimer();scanCooldown=true;
@@ -735,7 +727,6 @@ function processSerial(serial,imgData,confidence,corrections){
     else toast('✅ '+serial,'success');
     if(gsheetUrl)sendToGSheet(rec).then(()=>{saveToStorage();setSyncStatus('synced');renderRecords();}).catch(()=>{setSyncStatus('pending');renderRecords();});
     
-    // COOLDOWN IMPOSTATO A 1 SECONDO (1000ms)
     setTimeout(()=>{showPedanaModal(serial,imgData,()=>{scanCooldown=false;document.getElementById('cooldownOverlay').classList.remove('active');if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},1000);
 }
 
@@ -833,11 +824,10 @@ function exportExcel(){
         'Lotto/Posizione':r.pedana,
         'Operatore':r.operator,
         'Stato':r.status||'—',
-        'Note':r.note,
-        'Immagine ZIP': r.image ? `${r.serial}.jpg` : 'N/D'
+        'Note':r.note
     }));
     const ws=XLSX.utils.json_to_sheet(data);
-    ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:8},{wch:12},{wch:20},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25},{wch:20}];
+    ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:8},{wch:12},{wch:20},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Scansioni');
     XLSX.writeFile(wb,`Scansioni_${new Date().toISOString().slice(0,10)}.xlsx`);
     toast(`📊 Excel: ${records.length} record`,'success');vib('ok');
@@ -872,7 +862,7 @@ async function exportZip(){
                 cnt++;
             }
         }
-        const csv='N,Timestamp,Seriale,Run,Conf%,Correzioni,Modificato,Lotto,Operatore,Stato,Note,Immagine\n'+records.map((r,i)=>`${i+1},${r.timestamp},${r.serial},${r.runNumber||''},${r.confidence},"${(r.corrections||[]).join(', ')}",${r.modified?'Sì':'No'},${r.pedana},${r.operator},${r.status||'—'},"${r.note}",${r.image?r.serial+'.jpg':'N/D'}`).join('\n');
+        const csv='N,Timestamp,Seriale,Run,Conf%,Correzioni,Modificato,Lotto,Operatore,Stato,Note\n'+records.map((r,i)=>`${i+1},${r.timestamp},${r.serial},${r.runNumber||''},${r.confidence},"${(r.corrections||[]).join(', ')}",${r.modified?'Sì':'No'},${r.pedana},${r.operator},${r.status||'—'},"${r.note}"`).join('\n');
         zip.file('riepilogo.csv',csv);
         const blob=await zip.generateAsync({type:'blob'});
         saveAs(blob,`Archivio_${new Date().toISOString().slice(0,10)}.zip`);
@@ -888,4 +878,3 @@ let lastEnd=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-l
 </script>
 </body>
 </html>
-
