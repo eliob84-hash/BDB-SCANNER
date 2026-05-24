@@ -1,4 +1,4 @@
-<!-- Version: 7.5.0 -->
+<!-- Version: 7.6.0 - OCR e Google Sheets ripristinati correttamente -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -230,12 +230,12 @@
             <button class="icon-btn" onclick="openHelpModal()" title="Guida">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </button>
-            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v7.5.0</span>
+            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v7.6.0</span>
         </div>
     </div>
     <div class="scan-counter">
         <span class="label">Seriali: <span class="count" id="scanCount">0</span></span>
-        <span id="scanIndicator"></span>
+        <span id="syncIndicator"></span>
     </div>
 </div>
 
@@ -399,7 +399,7 @@
 </div>
 
 <script>
-const APP_VERSION='7.5.0';
+const APP_VERSION='7.6.0';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
 const IMG_DB_NAME='ScannerSerialiDB';
@@ -407,6 +407,7 @@ const IMG_DB_VERSION=1;
 const IMG_STORE='images';
 
 const CHANGELOG=[
+    {ver:'v7.6.0',date:'24/05/2026',desc:'OCR ripristinato funzionante. Upload Google Sheets ripristinato. Status sync abilitato.',tags:['fix']},
     {ver:'v7.5.0',date:'24/05/2026',desc:'Ripristinato OCR completo con rotazione 180°. Ripristinato upload Google Sheets funzionante.',tags:['fix']},
     {ver:'v7.4.0',date:'24/05/2026',desc:'Ripristinato OCR funzionante. Fix pulsante Ferma. Ricerca seriale migliorata.',tags:['fix','ui']},
     {ver:'v7.3.0',date:'24/05/2026',desc:'Ripristinato upload Sheets e icona sync. Aggiunta ricerca seriale manuale e via OCR.',tags:['fix','feat']},
@@ -688,7 +689,6 @@ function searchRecord(){
     const term = document.getElementById('searchInput').value.trim().toUpperCase();
     if(!term || term.length < 1){toast('Inserisci almeno 1 carattere','warning');return;}
     
-    const searchStr = 'BDBCF00' + term;
     const idx = records.findIndex(r => r.serial.endsWith(term));
     
     if(idx !== -1){
@@ -787,6 +787,7 @@ async function startCamera(){
         scanTimer=setInterval(scanFrame,SCAN_INTERVAL);
         resetIdleTimer();
         checkScrollPosition();
+        updateSyncIndicator();
         toast('📷 Avviata','success');
         vib('ok');
     }catch(err){
@@ -794,7 +795,6 @@ async function startCamera(){
         toast('Errore: '+err.message,'error');
         beepErr();
         vib('err');
-        // Restore button state on error
         resetBtnCamera();
     }
 }
@@ -823,7 +823,6 @@ async function stopCamera(){
         checkScrollPosition();
         toast('📷 Spenta','warning');
     } finally {
-        // Always reset button state
         resetBtnCamera();
     }
 }
@@ -875,6 +874,36 @@ function applyAdaptiveThreshold(ctx,w,h){
     ctx.putImageData(imageData,0,0);
 }
 
+function extractBestFromOCR(result, sourceCanvas) {
+    let best = null;
+    for(const word of result.data.words||[]){
+        let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
+        if(cleaned.length<10)continue;
+        let{fixed,corrections}=fixOCR(cleaned);
+        const conf=Math.round(word.confidence);
+        if(fixed.length===10&&isValidSerial(fixed)){
+            const img=cropFromBbox(sourceCanvas,sourceCanvas.width,sourceCanvas.height,word.bbox,IMG_MARGIN);
+            best={serial:fixed,confidence:conf,corrections,image:img};
+        }
+    }
+    return best;
+}
+
+async function processROIAndOCR(roiCanvas) {
+    let best = extractBestFromOCR(await ocrWorker.recognize(roiCanvas), roiCanvas);
+    if(best && best.confidence >= 35) return best;
+
+    const flipCanvas = document.createElement('canvas');
+    flipCanvas.width = roiCanvas.width; flipCanvas.height = roiCanvas.height;
+    const fCtx = flipCanvas.getContext('2d');
+    fCtx.translate(flipCanvas.width, flipCanvas.height);
+    fCtx.rotate(Math.PI);
+    fCtx.drawImage(roiCanvas, 0, 0);
+
+    const flippedBest = extractBestFromOCR(await ocrWorker.recognize(flipCanvas), flipCanvas);
+    return flippedBest;
+}
+
 async function scanFrame(){
     if(!cameraActive||!videoEl||!ocrWorker)return;
     if(videoEl.readyState<2)return;
@@ -909,36 +938,6 @@ async function scanFrame(){
     document.getElementById('progressBar').style.width='0%';
 }
 
-function extractBestFromOCR(result, sourceCanvas) {
-    let best = null;
-    for(const word of result.data.words||[]){
-        let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
-        if(cleaned.length<10)continue;
-        let{fixed,corrections}=fixOCR(cleaned);
-        const conf=Math.round(word.confidence);
-        if(fixed.length===10&&isValidSerial(fixed)){
-            const img=cropFromBbox(sourceCanvas,sourceCanvas.width,sourceCanvas.height,word.bbox,IMG_MARGIN);
-            best={serial:fixed,confidence:conf,corrections,image:img};
-        }
-    }
-    return best;
-}
-
-async function processROIAndOCR(roiCanvas) {
-    let best = extractBestFromOCR(await ocrWorker.recognize(roiCanvas), roiCanvas);
-    if(best && best.confidence >= 35) return best;
-
-    const flipCanvas = document.createElement('canvas');
-    flipCanvas.width = roiCanvas.width; flipCanvas.height = roiCanvas.height;
-    const fCtx = flipCanvas.getContext('2d');
-    fCtx.translate(flipCanvas.width, flipCanvas.height);
-    fCtx.rotate(Math.PI);
-    fCtx.drawImage(roiCanvas, 0, 0);
-
-    const flippedBest = extractBestFromOCR(await ocrWorker.recognize(flipCanvas), flipCanvas);
-    return flippedBest;
-}
-
 function getConfClass(c){if(c>=80)return'conf-high';if(c>=60)return'conf-mid';return'conf-low';}
 
 function processSerial(serial,imgData,confidence,corrections){
@@ -957,7 +956,7 @@ function processSerial(serial,imgData,confidence,corrections){
     scanCooldown=true;
     document.getElementById('cooldownOverlay').classList.add('active');
     document.getElementById('ocrStatus').textContent='⏱ Cooldown...';
-    updateScanIndicator();
+    updateSyncIndicator();
     
     const operator=document.getElementById('operatorName').value.trim()||'N/D';
     const pedana=document.getElementById('pedana').value.trim()||'N/D';
@@ -989,7 +988,7 @@ function processSerial(serial,imgData,confidence,corrections){
             scanCooldown=false;
             document.getElementById('cooldownOverlay').classList.remove('active');
             if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';
-            updateScanIndicator();
+            updateSyncIndicator();
             resetIdleTimer();
         });
     },1000);
@@ -1015,7 +1014,7 @@ function confirmManualEntry(){
     records.unshift(rec);scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
     if(manualEntryImage)saveImg(rec.id,manualEntryImage);
     saveToStorage();updateSyncIndicator();beepOk();vib('ok');renderRecords();toast('✅ '+val,'success');
-    setTimeout(()=>{showPedanaModal(val,manualEntryImage,()=>{if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},400);
+    setTimeout(()=>{showPedanaModal(val,manualEntryImage,()=>{if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateSyncIndicator();resetIdleTimer();});},400);
 }
 function confirmLowConf(id){
     const rec=records.find(r=>r.id===id);
@@ -1121,7 +1120,7 @@ function setNote(id,n){const rec=records.find(r=>r.id===id);if(rec)rec.note=n;sa
 function deleteRecord(id){const rec=records.find(r=>r.id===id);if(!rec)return;showConfirm('Elimina record',`Eliminare "${rec.serial}"?`,()=>{records=records.filter(r=>r.id!==id);scanTotal=Math.max(0,scanTotal-1);document.getElementById('scanCount').textContent=scanTotal;deleteImg(id);vib('err');beepErr();renderRecords();saveToStorage();updateSyncIndicator();toast('Eliminato','warning');},rec.image||null);}
 
 function openModal(id){const rec=records.find(r=>r.id===id);if(!rec||!rec.image)return;scanPaused=true;updateSyncIndicator();document.getElementById('modalImage').src=rec.image;document.getElementById('imageModal').classList.add('visible');}
-function closeModal(){document.getElementById('imageModal').classList.remove('visible');scanPaused=false;updateScanIndicator();}
+function closeModal(){document.getElementById('imageModal').classList.remove('visible');scanPaused=false;updateSyncIndicator();}
 
 // ===== EXPORT =====
 function exportExcel(){
