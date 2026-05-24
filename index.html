@@ -1,4 +1,3 @@
-<!-- Versione: 6.0.0 | Data: 24/05/2026 | Modifiche: Pulizia codice Sheets, logica invio ottimizzata, UI versione -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -104,6 +103,7 @@
         .meta-tag.correction { background:rgba(139,92,246,0.12); color:#a78bfa; }
         .meta-tag.synced-tag { background:rgba(16,185,129,0.12); color:var(--accent); }
         .meta-tag.pending-tag { background:rgba(245,158,11,0.12); color:var(--warning); }
+        .meta-tag.needs-confirmation { background:rgba(239,68,68,0.15); color:var(--danger); animation:blink 1.5s infinite; }
         .run-cell { display:inline-flex; align-items:center; gap:3px; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.3); border-radius:4px; padding:1px 6px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--primary-light); cursor:pointer; transition:all 0.2s; min-width:36px; justify-content:center; }
         .run-cell:hover { background:rgba(59,130,246,0.15); }
         .run-cell.editing { background:var(--bg-input); border-color:var(--primary); padding:0; }
@@ -201,12 +201,6 @@
         .status-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
         .status-grid .btn { font-size:12px; padding:8px; }
         .manual-input { font-family:'JetBrains Mono',monospace; font-size:18px; letter-spacing:3px; text-align:center; width:100%; padding:10px; margin:10px 0; background:var(--bg-input); border:2px solid var(--primary); border-radius:8px; color:var(--text); }
-        .gsheet-config-area { margin-top:20px; padding-top:20px; border-top:1px solid var(--border); text-align:left; }
-        .gsheet-config-area label { font-size:11px; color:var(--text-dim); display:block; margin-bottom:5px; }
-        .gsheet-input-row { display:flex; gap:8px; margin-bottom:10px; }
-        .gsheet-input-row input { flex:1; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:8px; font-family:'JetBrains Mono',monospace; font-size:11px; }
-        .gsheet-options { display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--text-muted); flex-wrap:wrap; gap:8px; }
-        .gsheet-diagnostic { margin-top:8px; padding:6px; background:var(--bg); border-radius:4px; font-size:10px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
         @media (max-width:380px) { .btn { padding:8px 8px; font-size:11px; } .status-btn { font-size:9px; padding:3px 6px; } .record-image-wrap { width:120px; height:46px; } .serial-display { width:120px; } .record-meta { gap:3px; } }
     </style>
 </head>
@@ -222,7 +216,7 @@
             <button class="icon-btn" onclick="openHelpModal()" title="Guida">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </button>
-            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v6.0.0</span>
+            <span class="version-badge" id="versionBadge" onclick="openVersionModal()">v7.0.0</span>
         </div>
     </div>
     <div class="scan-counter">
@@ -287,58 +281,13 @@
 
 <div class="confirm-modal" id="passwordModal"><div class="confirm-box"><h3>🔒 Accesso Protetto</h3><p style="margin-top:12px;">Inserisci la password temporanea (HHMM)</p><input type="password" class="input-field" id="versionPassword" maxlength="4" style="text-align:center;font-family:'JetBrains Mono',monospace;letter-spacing:6px;font-size:20px;width:120px;margin:0 auto;" inputmode="numeric"><div class="confirm-actions" style="margin-top:16px;"><button class="btn btn-outline" onclick="closePasswordModal()">Annulla</button><button class="btn btn-primary" onclick="checkVersionPassword()">OK</button></div></div></div>
 
-<div class="modal-overlay" id="helpModal">
-    <div class="modal-box" onclick="event.stopPropagation()">
-        <button class="modal-close" onclick="document.getElementById('helpModal').classList.remove('visible')">✕</button>
-        <h3>❓ Guida Completa all'Uso</h3>
-        <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">Panoramica dettagliata dell'interfaccia e delle funzioni</p>
-        
-        <div class="help-section">
-            <h4>📷 Area Fotocamera</h4>
-            <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div class="help-text"><strong>Avvia / Ferma OCR:</strong> Accende la fotocamera e avvia la scansione automatica. La fotocamera si chiude dopo 30s di inattività.</div></div>
-            <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div class="help-text"><strong>Flash:</strong> Torcia per ambienti scuri o seriali sbiaditi.</div></div>
-            <div class="help-item"><div class="help-icon" style="border:2px solid var(--accent);border-radius:4px;"></div><div class="help-text"><strong>Riquadro Verde (ROI):</strong> Zona di analisi. Posiziona il seriale qui. Il sistema rileva automaticamente se è sottosopra e salva l'anteprima ruotata correttamente.</div></div>
-        </div>
-
-        <div class="help-section">
-            <h4>⚙️ Configurazione Iniziale</h4>
-            <div class="help-item"><div class="help-icon text-icon">👤</div><div class="help-text"><strong>Operatore:</strong> Nome associato a ogni seriale scansionato.</div></div>
-            <div class="help-item"><div class="help-icon text-icon">📍</div><div class="help-text"><strong>Pedana:</strong> Campo obbligatorio. Dopo ogni scansione viene chiesto se mantenere o cambiare posizione.</div></div>
-        </div>
-
-        <div class="help-section">
-            <h4>🎯 Confidenza e Validazione</h4>
-            <div class="help-item"><div class="help-icon text-icon">%</div><div class="help-text"><strong>Percentuale:</strong> <span class="help-badge err">&lt;35%</span> Scartata | <span class="help-badge warn">35-50%</span> Richiede conferma | <span class="help-badge good">&gt;50%</span> Accettata</div></div>
-            <div class="help-item"><div class="help-icon text-icon">⚡</div><div class="help-text"><strong>Correzioni OCR:</strong> Badge viola se il sistema ha corretto caratteri ambigui (es. O→0).</div></div>
-        </div>
-
-        <div class="help-section">
-            <h4>☁️ Esportazione</h4>
-            <div class="help-item"><div class="help-icon text-icon" style="background:#217346;color:white;">X</div><div class="help-text"><strong>Excel:</strong> File .xlsx con colonne dati e riferimento all'immagine salvata nello ZIP.</div></div>
-            <div class="help-item"><div class="help-icon text-icon" style="background:var(--primary);color:white;">🌐</div><div class="help-text"><strong>HTML+Img:</strong> Report web con le immagini delle anteprime embeddate direttamente nel file.</div></div>
-            <div class="help-item"><div class="help-icon text-icon" style="background:var(--text-dim);color:white;">📦</div><div class="help-text"><strong>ZIP:</strong> Archivio con tutte le immagini (nominate col seriale) + file CSV.</div></div>
-        </div>
-        <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="document.getElementById('helpModal').classList.remove('visible')">Ho capito</button>
-    </div>
-</div>
-
 <div class="modal-overlay" id="versionModal">
-    <div class="modal-box version-modal-box" onclick="event.stopPropagation()">
+    <div class="modal-box" onclick="event.stopPropagation()">
         <button class="modal-close" onclick="closeVersionModal()">✕</button>
-        <h3>⚙️ Configurazione</h3>
+        <h3>⚙️ Changelog & Info</h3>
         <div class="ver-date" id="versionBuildDate"></div>
-        <h4 style="font-size:14px;color:var(--primary-light);margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:6px;">📋 Changelog</h4>
-        <div id="changelogContent" style="max-height:250px;overflow-y:auto;margin-bottom:20px;"></div>
-        <div class="gsheet-config-area">
-            <h4 style="font-size:14px;color:var(--primary-light);margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:6px;">🔗 Google Sheets</h4>
-            <label>URL Script (/exec)</label>
-            <div class="gsheet-input-row"><input type="text" id="modalGsheetUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
-            <div class="gsheet-options">
-                <button class="btn btn-outline" style="padding:4px 8px;font-size:10px;" onclick="saveModalGSheet()">💾 Salva</button>
-                <button class="btn btn-outline" style="padding:4px 8px;font-size:10px;" onclick="verifyGSheetFromModal()">🔍 Verifica</button>
-            </div>
-            <div class="gsheet-diagnostic" id="gsheetDiag" style="display:none;"></div>
-        </div>
+        <div id="changelogContent" style="max-height:300px;overflow-y:auto;margin-bottom:20px;"></div>
+        <button class="btn btn-primary" style="width:100%" onclick="closeVersionModal()">Chiudi</button>
     </div>
 </div>
 
@@ -363,7 +312,7 @@
 
 <div class="confirm-modal" id="statusApplyModal"><div class="confirm-box"><h3>📍 Applica Stato</h3><p>Pedana: <b id="applyPedanaName" style="color:var(--warning)"></b></p><div class="status-grid"><button class="btn btn-accent" onclick="executeApplyStatus('Good')">✓ Good</button><button class="btn btn-danger" onclick="executeApplyStatus('Rotto')">✕ Rotto</button><button class="btn btn-warning" onclick="executeApplyStatus('Sporco')">◆ Sporco</button><button class="btn" style="background:#8b5cf6;color:white" onclick="executeApplyStatus('RF-ID')">📡 RF-ID</button><button class="btn" style="background:#06b6d4;color:white" onclick="executeApplyStatus('Barra Mancante')">▤ Barra Manc.</button><button class="btn" style="background:var(--text-dim);color:white" onclick="executeApplyStatus('Dubbio/Altro')">❓ Dubbio</button></div><button class="btn btn-outline" style="margin-top:12px;width:100%" onclick="document.getElementById('statusApplyModal').classList.remove('visible')">Annulla</button></div></div>
 
-<div class="confirm-modal" id="manualEntryModal"><div class="confirm-box"><h3 id="manualEntryTitle">✏️ Inserimento Manuale</h3><p id="manualEntryDesc">Rilevamenti ripetuti a bassa confidenza.</p><div class="pedana-preview" id="manualPreviewWrap" style="margin:10px auto;"></div><input type="text" class="manual-input" id="manualSerialInput" value="BDBCF00" maxlength="10"><div class="confirm-actions"><button class="btn btn-outline" onclick="closeManualEntry()">Annulla</button><button class="btn btn-primary" onclick="confirmManualEntry()">Conferma</button></div></div></div>
+<div class="confirm-modal" id="manualEntryModal"><div class="confirm-box"><h3 id="manualEntryTitle">✏️ Inserimento Manuale</h3><p id="manualEntryDesc">Bassa confidenza rilevata. Conferma o modifica il seriale.</p><div class="pedana-preview" id="manualPreviewWrap" style="margin:10px auto;"></div><input type="text" class="manual-input" id="manualSerialInput" value="BDBCF00" maxlength="10"><div class="confirm-actions"><button class="btn btn-outline" onclick="closeManualEntry()">Annulla</button><button class="btn btn-primary" onclick="confirmManualEntry()">Conferma</button></div></div></div>
 
 <div class="toast" id="toast"></div>
 
@@ -380,10 +329,12 @@
     <button class="btn btn-accent" onclick="exportExcel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>Excel</button>
     <button class="btn btn-primary" onclick="exportHtmlWithImages()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>HTML+Img</button>
     <button class="btn btn-outline" onclick="exportZip()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>ZIP</button>
+    <button class="btn btn-warning" onclick="syncPendingToGSheet()" id="btnSync" style="display:none;flex:0;min-width:60px;" title="Sincronizza record pronti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
+    <a class="btn btn-outline" href="https://docs.google.com/spreadsheets/d/18WJa9UjOLjqHLF8DCUvwhbt5pPHx0bdCBN6lOPsmdxA/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer" style="flex:0;min-width:60px;" title="Apri Foglio Google">📄 Sheet</a>
 </div>
 
 <script>
-const APP_VERSION='6.0.0';
+const APP_VERSION='7.0.0';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
 const IMG_DB_NAME='ScannerSerialiDB';
@@ -391,11 +342,8 @@ const IMG_DB_VERSION=1;
 const IMG_STORE='images';
 
 const CHANGELOG=[
-    {ver:'v6.0.0',date:'24/05/2026',desc:'Codice Google Sheets pulito e ottimizzato. Invio dati a foglio Google senza immagini. Logica funzionante testata.',tags:['feat','fix']},
-    {ver:'v5.5.0',date:'24/05/2026',desc:'Ripristinato export HTML+Img con anteprime embeddate.',tags:['feat','fix']},
-    {ver:'v5.4.0',date:'24/05/2026',desc:'Fix critico: Blocco record duplicati ripristinato.',tags:['fix']},
-    {ver:'v5.3.0',date:'24/05/2026',desc:'Cooldown ridotto a 1 secondo. Changelog completo ripristinato.',tags:['fix']},
-    {ver:'v5.2.0',date:'23/05/2026',desc:'Fix Excel. Fix nomi immagini ZIP. Heartbeat audio OCR.',tags:['fix','ui','feat']},
+    {ver:'v7.0.0',date:'24/05/2026',desc:'Sync su Google Sheets solo dopo conferma seriale (bassa conf) e impostazione Stato. Lettura foglio per evitare duplicati.',tags:['feat','logic']},
+    {ver:'v6.1.0',date:'24/05/2026',desc:'Tasto apertura Foglio Google in basso a destra. Sync record locali.',tags:['feat','fix']},
     {ver:'v1.0.0',date:'22/05/2026',desc:'Versione iniziale.',tags:['feat']}
 ];
 
@@ -406,6 +354,7 @@ let lastScanPedana='', lastScanImage=null;
 let pedanaCallback=null, pedanaEditRecordId=null;
 let lastScanTime=0;
 let gsheetUrl='', syncStatus='idle';
+let existingSheetSerials = new Set();
 const lowConfTracker = {};
 let manualEntrySerial='', manualEntryImage=null;
 const IDLE_TIMEOUT=30000;
@@ -446,7 +395,7 @@ window.addEventListener('scroll',checkScrollPosition,{passive:true});
 function openHelpModal(){document.getElementById('helpModal').classList.add('visible');}
 function requestVersionAccess(){const n=new Date();document.getElementById('versionPassword').value='';document.getElementById('passwordModal').classList.add('visible');document.getElementById('passwordModal').dataset.pwd=String(n.getHours()).padStart(2,'0')+String(n.getMinutes()).padStart(2,'0');setTimeout(()=>{const i=document.getElementById('versionPassword');if(i)i.focus();},200);}
 function closePasswordModal(){document.getElementById('passwordModal').classList.remove('visible');}
-function checkVersionPassword(){const input=document.getElementById('versionPassword').value.trim();if(input===document.getElementById('passwordModal').dataset.pwd){closePasswordModal();document.getElementById('modalGsheetUrl').value=gsheetUrl;openVersionModal();}else{toast('❌ Password errata','error');beepErr();vib('err');document.getElementById('versionPassword').value='';}}
+function checkVersionPassword(){const input=document.getElementById('versionPassword').value.trim();if(input===document.getElementById('passwordModal').dataset.pwd){closePasswordModal();openVersionModal();}else{toast('❌ Password errata','error');beepErr();vib('err');document.getElementById('versionPassword').value='';}}
 document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('passwordModal').classList.contains('visible'))checkVersionPassword();});
 
 function openVersionModal(){
@@ -458,40 +407,39 @@ function openVersionModal(){
 function closeVersionModal(){document.getElementById('versionModal').classList.remove('visible');}
 
 // ===== GOOGLE SHEETS LOGIC =====
-function loadGSheetUrl(){try{const u=localStorage.getItem(GSHEET_KEY);if(u){gsheetUrl=u;document.getElementById('modalGsheetUrl').value=u;}}catch(e){}}
-function saveModalGSheet(){const val=document.getElementById('modalGsheetUrl').value.trim();gsheetUrl=val;localStorage.setItem(GSHEET_KEY,val);toast('URL Salvato','success');setSyncStatus(syncStatus);}
-function verifyGSheetFromModal(){
-    if(!gsheetUrl){toast('Inserisci URL','error');return;}
-    if(!gsheetUrl.includes('/exec')){toast('URL deve terminare con /exec','error');return;}
-    document.getElementById('gsheetDiag').style.display='block';
-    document.getElementById('gsheetDiag').textContent='Verifica...';
-    
-    // Usa fetch GET per verificare la connessione
-    fetch(gsheetUrl, {method:'GET', mode:'no-cors'})
-        .then(()=>{
-            document.getElementById('gsheetDiag').textContent='✅ Connesso';
-            toast('✅ Verifica OK','success');
-            setSyncStatus('synced');
-        })
-        .catch(()=>{
-            document.getElementById('gsheetDiag').textContent='❌ Errore';
-            toast('❌ Verifica fallita','error');
-            setSyncStatus('error');
-        });
-}
-function setSyncStatus(status){
-    syncStatus=status;
+function loadGSheetUrl(){try{const u=localStorage.getItem(GSHEET_KEY);if(u){gsheetUrl=u;}}catch(e){}}
+function updateSyncIndicator(){
     const el=document.getElementById('syncIndicator');
-    if(status==='idle'||status==='synced'){el.className='sync-status synced';el.textContent='🟢 Sync';}
-    else if(status==='syncing'){el.className='sync-status uploading';el.textContent='🔄 Invio...';}
-    else if(status==='error'){el.className='sync-status error';el.textContent='🔴 Errore';}
-    else if(status==='pending'){el.className='sync-status pending';el.textContent='🟡 In coda';}
+    const btn=document.getElementById('btnSync');
+    if(syncStatus==='uploading'){el.className='sync-status uploading';el.textContent='🔄 Invio...';btn.style.display='none';}
+    else{
+        const pending = records.filter(r => !r._synced && r.status && !r._pendingConfirmation).length;
+        if(pending > 0){ el.className='sync-status pending'; el.textContent='🟡 In coda'; btn.style.display='inline-flex'; }
+        else { el.className='sync-status synced'; el.textContent='🟢 Sync'; btn.style.display='none'; }
+    }
 }
 
-// Metodo affidabile per inviare dati a Google Apps Script Web App
+async function fetchSheetSerials() {
+    try {
+        const sheetId = '18WJa9UjOLjqHLF8DCUvwhbt5pPHx0bdCBN6lOPsmdxA';
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
+        const res = await fetch(csvUrl);
+        if(res.ok) {
+            const csvText = await res.text();
+            const lines = csvText.split('\n').slice(1);
+            lines.forEach(line => {
+                if(!line.trim()) return;
+                // Extract 3rd column (Seriale) safely
+                const match = line.match(/^(\d+),(?:[^,]*|"[^"]*"),(?:[^,]*|"[^"]*"),((?:[^,]*|"[^"]*"))/);
+                if(match) existingSheetSerials.add(match[2].replace(/"/g,'').trim());
+            });
+        }
+    } catch(e) { console.warn('Sheet fetch err:', e); }
+}
+
 async function sendToGSheet(record){
-    if(!gsheetUrl || !gsheetUrl.includes('/exec')) return false;
-    
+    const url = gsheetUrl || localStorage.getItem(GSHEET_KEY);
+    if(!url || !url.includes('/exec')) return false;
     try{
         const payload = {
             timestamp: record.timestamp || new Date().toLocaleString('it-IT'),
@@ -505,47 +453,66 @@ async function sendToGSheet(record){
             status: record.status || '',
             note: record.note || ''
         };
-        
-        // Uso il metodo fetch con no-cors e Content-Type text/plain per evitare problemi CORS
-        await fetch(gsheetUrl, {
-            method: 'POST',
-            mode: 'no-cors',
+        await fetch(url, {
+            method: 'POST', mode: 'no-cors',
             headers: {'Content-Type': 'text/plain;charset=utf-8'},
             body: JSON.stringify(payload)
         });
-        
-        record._synced = true;
         return true;
-    } catch(e) {
-        console.warn('GSheet fail:',e);
-        record._synced = false;
-        return false;
+    } catch(e) { console.warn('GSheet fail:',e); return false; }
+}
+
+async function trySyncRecord(rec) {
+    if(rec._synced) return;
+    if(!rec.status) { toast('Imposta lo Stato per sincronizzare','warning'); return; }
+    if(rec._pendingConfirmation) { toast('Conferma o modifica il seriale prima','warning'); return; }
+    if(existingSheetSerials.has(rec.serial)) {
+        rec._synced = true; saveToStorage(); renderRecords(); updateSyncIndicator();
+        toast('Già presente sul foglio','success'); return;
+    }
+    updateSyncIndicator(); syncStatus='uploading'; updateSyncIndicator();
+    const success = await sendToGSheet(rec);
+    if(success) {
+        rec._synced = true; saveToStorage(); renderRecords(); updateSyncIndicator();
+        toast('Sincronizzato ✅','success');
+    } else {
+        updateSyncIndicator(); toast('Errore sync','error');
     }
 }
 
 async function syncPendingToGSheet(){
-    if(!gsheetUrl){toast('Configura URL nella versione','error');return;}
-    const unsynced=records.filter(r=>!r._synced);
-    if(unsynced.length===0){toast('Tutto sincronizzato ✅','success');return;}
-    
-    setSyncStatus('syncing');
-    toast(`🔄 Invio ${unsynced.length} record...`,'success');
-    
+    const url = gsheetUrl || localStorage.getItem(GSHEET_KEY);
+    if(!url){toast('Configura URL Script','error');return;}
+    const pending = records.filter(r => !r._synced && r.status && !r._pendingConfirmation && !existingSheetSerials.has(r.serial));
+    if(pending.length === 0){toast('Nessun record pronto','success');return;}
+    updateSyncIndicator();
+    toast(`🔄 Invio ${pending.length} record...`,'success');
     let ok=0, err=0;
-    for(const r of unsynced){
+    for(const r of pending){
         const s = await sendToGSheet(r);
-        if(s) ok++; else err++;
+        if(s) { r._synced=true; ok++; } else err++;
     }
-    
-    saveToStorage();
-    if(err===0){toast(`✅ ${ok} inviati`,'success');setSyncStatus('synced');}
-    else{toast(`⚠️ ${ok} ok, ${err} errori`,'warning');setSyncStatus('error');}
-    renderRecords();
+    saveToStorage(); renderRecords(); updateSyncIndicator();
+    if(err===0) toast(`✅ ${ok} inviati`,'success');
+    else toast(`⚠️ ${ok} ok, ${err} errori`,'warning');
 }
 
 // ===== APPLY STATUS =====
 function openApplyStatusModal(){const c=document.getElementById('pedana').value.trim();if(!c){toast('Imposta Pedana','warning');return;}document.getElementById('applyPedanaName').textContent=c;document.getElementById('statusApplyModal').classList.add('visible');}
-function executeApplyStatus(status){const c=document.getElementById('pedana').value.trim();if(!c)return;let count=0;records.forEach(r=>{if(r.pedana===c){r.status=status;r._synced=false;count++;}});document.getElementById('statusApplyModal').classList.remove('visible');if(count>0){saveToStorage();renderRecords();toast(`✅ "${status}" a ${count} record`,'success');if(gsheetUrl)syncPendingToGSheet();}else toast('Nessun record','warning');}
+function executeApplyStatus(status){
+    const c=document.getElementById('pedana').value.trim();if(!c)return;
+    let count=0;
+    records.forEach(r=>{
+        if(r.pedana===c){
+            r.status=status;
+            r._pendingConfirmation=false;
+            count++;
+        }
+    });
+    document.getElementById('statusApplyModal').classList.remove('visible');
+    if(count>0){ saveToStorage(); renderRecords(); updateSyncIndicator(); toast(`✅ "${status}" a ${count} record`,'success'); }
+    else toast('Nessun record','warning');
+}
 
 // ===== STORAGE & PEDANA =====
 let imgDB=null;
@@ -558,17 +525,7 @@ async function loadFromStorage(){try{const raw=localStorage.getItem(STORAGE_KEY)
 
 function showPedanaModal(serial,imgData,callback){const current=document.getElementById('pedana').value.trim()||'—';document.getElementById('pedanaSerialRef').textContent='Seriale: '+serial;document.getElementById('pedanaBigRef').textContent=current;document.getElementById('pedanaModalTitle').textContent='📍 Pedana';document.getElementById('pedanaModalMsg').textContent='Conferma o modifica';const pw=document.getElementById('pedanaPreviewWrap');if(imgData){pw.innerHTML=`<img src="${imgData}" alt="preview">`;pw.style.display='block';}else{pw.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>';pw.style.display='flex';}document.getElementById('pedanaChangeInput').style.display='none';document.getElementById('newPedanaInput').value='';pedanaCallback=callback;document.getElementById('pedanaModal').classList.add('visible');}
 function pedanaKeep(){document.getElementById('pedanaModal').classList.remove('visible');if(pedanaCallback)pedanaCallback(document.getElementById('pedana').value.trim());pedanaCallback=null;}
-function pedanaChange(){
-    const container = document.getElementById('pedanaModal');
-    const box = container.querySelector('.confirm-box');
-    box.scrollTop = 0;
-    document.getElementById('pedanaChangeInput').style.display='block';
-    document.getElementById('newPedanaInput').value='';
-    setTimeout(()=>{
-        document.getElementById('newPedanaInput').focus();
-        container.scrollTo({ top: 0, behavior: 'smooth' });
-    },100);
-}
+function pedanaChange(){const container = document.getElementById('pedanaModal'); const box = container.querySelector('.confirm-box'); box.scrollTop=0; document.getElementById('pedanaChangeInput').style.display='block'; document.getElementById('newPedanaInput').value=''; setTimeout(()=>{document.getElementById('newPedanaInput').focus(); container.scrollTo({top:0,behavior:'smooth'});},100);}
 function pedanaCancel(){document.getElementById('pedanaChangeInput').style.display='none';}
 function pedanaConfirm(){const nv=document.getElementById('newPedanaInput').value.trim();if(!nv){toast('Obbligatorio','error');return;}document.getElementById('pedana').value=nv;document.getElementById('pedanaModal').classList.remove('visible');document.getElementById('pedana').classList.remove('missing');lastScanPedana=nv;saveToStorage();if(pedanaCallback)pedanaCallback(nv);pedanaCallback=null;}
 document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('pedanaChangeInput').style.display==='block')pedanaConfirm();});
@@ -622,10 +579,9 @@ function stopCamera(){
     document.getElementById('btnFlash').classList.remove('btn-accent');document.getElementById('btnFlash').classList.add('btn-warning');
     document.getElementById('progressBar').style.width='0%';
     document.getElementById('cooldownOverlay').classList.remove('active');
-    updateScanIndicator();resetBtnCamera();checkScrollPosition();toast('📷 Spenta','warning');
+    updateSyncIndicator();resetBtnCamera();checkScrollPosition();toast('📷 Spenta','warning');
 }
 function resetBtnCamera(){const btn=document.getElementById('btnCamera');btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Avvia OCR</span>`;btn.classList.add('btn-primary');btn.classList.remove('btn-danger');}
-function updateScanIndicator(){const el=document.getElementById('scanIndicator');if(!cameraActive){el.innerHTML='';return;}if(scanPaused){el.innerHTML='<span class="paused-indicator"><span class="dot"></span> Pausa</span>';return;}if(scanCooldown){el.innerHTML='<span class="paused-indicator"><span class="dot"></span> Cooldown</span>';return;}el.innerHTML='<span class="scanning-indicator"><span class="dot"></span> Scansione</span>';}
 async function toggleFlash(){if(!stream)return;try{const track=stream.getVideoTracks()[0];if(!track)return;const caps=track.getCapabilities();if(!caps||!caps.torch){toast('Flash non supportato','error');return;}flashOn=!flashOn;await track.applyConstraints({advanced:[{torch:flashOn}]});const btn=document.getElementById('btnFlash');if(flashOn){btn.classList.remove('btn-warning');btn.classList.add('btn-accent');toast('🔦 ON','success');}else{btn.classList.remove('btn-accent');btn.classList.add('btn-warning');toast('🔦 OFF','warning');}}catch(e){toast('Errore flash','error');}}
 function toggleMultiDetect(){multiDetect=!multiDetect;document.getElementById('toggleMulti').classList.toggle('active',multiDetect);}
 function checkPedanaRequired(){const p=document.getElementById('pedana').value.trim();if(!p){document.getElementById('pedana').classList.add('missing');toast('⚠️ Pedana richiesta','error');beepErr();vib('err');return false;}document.getElementById('pedana').classList.remove('missing');return true;}
@@ -706,28 +662,35 @@ function processSerial(serial,imgData,confidence,corrections){
         scanCooldown=false;
         document.getElementById('cooldownOverlay').classList.remove('active');
         if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';
-        updateScanIndicator();
+        updateSyncIndicator();
         return;
     }
     
     resetIdleTimer();scanCooldown=true;
     document.getElementById('cooldownOverlay').classList.add('active');
     document.getElementById('ocrStatus').textContent='⏱ Cooldown...';
-    updateScanIndicator();
+    updateSyncIndicator();
     
     const operator=document.getElementById('operatorName').value.trim()||'N/D';
     const pedana=document.getElementById('pedana').value.trim()||'N/D';
     lastScanPedana=pedana;lastScanImage=imgData;
     const ts=new Date().toLocaleString('it-IT');
-    const rec={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial,timestamp:ts,operator,pedana,runNumber:'',modified:false,status:'',note:'',image:imgData||null,confidence:confidence,corrections:corrections||[],_synced:false,_imgUploaded:false,_confirmed:false};
+    const rec={
+        id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+        serial,timestamp:ts,operator,pedana,runNumber:'',modified:false,status:'',note:'',
+        image:imgData||null,confidence:confidence,corrections:corrections||[],
+        _synced:false, _pendingConfirmation: confidence < 35, _confirmed:false
+    };
     records.unshift(rec);scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
     if(imgData)saveImg(rec.id,imgData);saveToStorage();
+    updateSyncIndicator();
     beepOk();vib('ok');renderRecords();
     if(confidence<50)toast('⚠️ Bassa confidenza','warning');
     else toast('✅ '+serial,'success');
-    if(gsheetUrl)sendToGSheet(rec).then(()=>{saveToStorage();setSyncStatus('synced');renderRecords();}).catch(()=>{setSyncStatus('pending');renderRecords();});
     
-    setTimeout(()=>{showPedanaModal(serial,imgData,()=>{scanCooldown=false;document.getElementById('cooldownOverlay').classList.remove('active');if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},1000);
+    // DO NOT SYNC IMMEDIATELY
+    
+    setTimeout(()=>{showPedanaModal(serial,imgData,()=>{scanCooldown=false;document.getElementById('cooldownOverlay').classList.remove('active');if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateSyncIndicator();resetIdleTimer();});},1000);
 }
 
 function trackLowConfidence(serial, timestamp){if(!lowConfTracker[serial])lowConfTracker[serial]=[];lowConfTracker[serial].push(timestamp);const now=Date.now();lowConfTracker[serial]=lowConfTracker[serial].filter(t=>now-t<10000);return lowConfTracker[serial].length;}
@@ -739,8 +702,23 @@ function openManualEntryModal(serial,imgData){
     document.getElementById('manualEntryModal').classList.add('visible');setTimeout(()=>document.getElementById('manualSerialInput').focus(),300);
 }
 function closeManualEntry(){document.getElementById('manualEntryModal').classList.remove('visible');scanPaused=false;for(let k in lowConfTracker)delete lowConfTracker[k];}
-function confirmManualEntry(){const val=document.getElementById('manualSerialInput').value.trim().toUpperCase();if(validateSerial(val)){toast('❌ '+validateSerial(val),'error');return;}closeManualEntry();const operator=document.getElementById('operatorName').value.trim()||'N/D';const pedana=document.getElementById('pedana').value.trim()||'N/D';const ts=new Date().toLocaleString('it-IT');const rec={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial:val,timestamp:ts,operator,pedana,runNumber:'',modified:false,status:'',note:'',image:manualEntryImage||null,confidence:100,corrections:[],_synced:false,_imgUploaded:false,_confirmed:true};records.unshift(rec);scanTotal++;document.getElementById('scanCount').textContent=scanTotal;if(manualEntryImage)saveImg(rec.id,manualEntryImage);saveToStorage();beepOk();vib('ok');renderRecords();toast('✅ '+val,'success');if(gsheetUrl)sendToGSheet(rec).then(()=>{saveToStorage();setSyncStatus('synced');renderRecords();});setTimeout(()=>{showPedanaModal(val,manualEntryImage,()=>{if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},400);}
-function confirmLowConf(id){const rec=records.find(r=>r.id===id);if(rec){rec._confirmed=true;renderRecords();toast('Confermato','success');}}
+function confirmManualEntry(){
+    const val=document.getElementById('manualSerialInput').value.trim().toUpperCase();
+    if(validateSerial(val)){toast('❌ '+validateSerial(val),'error');return;}
+    closeManualEntry();
+    const operator=document.getElementById('operatorName').value.trim()||'N/D';
+    const pedana=document.getElementById('pedana').value.trim()||'N/D';
+    const ts=new Date().toLocaleString('it-IT');
+    const rec={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial:val,timestamp:ts,operator,pedana,runNumber:'',modified:false,status:'',note:'',image:manualEntryImage||null,confidence:100,corrections:[],_synced:false,_pendingConfirmation:false,_confirmed:true};
+    records.unshift(rec);scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
+    if(manualEntryImage)saveImg(rec.id,manualEntryImage);
+    saveToStorage();updateSyncIndicator();beepOk();vib('ok');renderRecords();toast('✅ '+val,'success');
+    setTimeout(()=>{showPedanaModal(val,manualEntryImage,()=>{if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateSyncIndicator();resetIdleTimer();});},400);
+}
+function confirmLowConf(id){
+    const rec=records.find(r=>r.id===id);
+    if(rec){rec._confirmed=true;rec._pendingConfirmation=false;renderRecords();toast('Confermato','success');trySyncRecord(rec);}
+}
 
 function renderRecords(){
     const el=document.getElementById('recordsList');
@@ -748,7 +726,10 @@ function renderRecords(){
     el.innerHTML=records.map(r=>{
         const cc=getConfClass(r.confidence);
         const ch=r.corrections&&r.corrections.length>0?`<span class="meta-tag correction">⚡ ${r.corrections.join(', ')}</span>`:'';
-        let syncTag='';if(r._synced&&r._imgUploaded)syncTag='<span class="meta-tag synced-tag">☁️🖼</span>';else if(r._synced)syncTag='<span class="meta-tag synced-tag">☁️</span>';else syncTag='<span class="meta-tag pending-tag">📤</span>';
+        let syncTag='';
+        if(r._synced) syncTag='<span class="meta-tag synced-tag">☁️</span>';
+        else if(r.status && !r._pendingConfirmation) syncTag='<span class="meta-tag pending-tag">📤</span>';
+        else if(r._pendingConfirmation) syncTag='<span class="meta-tag needs-confirmation">🔒 In attesa</span>';
         const runVal=r.runNumber||'';
         const lowConfClass=r.confidence<50&&!r._confirmed?'low-conf':'';
         const confirmBtn=r.confidence<50&&!r._confirmed?`<button class="confirm-low-btn" onclick="confirmLowConf('${r.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Conferma</button>`:'';
@@ -785,7 +766,7 @@ function renderRecords(){
 }
 
 function editRun(id){const rec=records.find(r=>r.id===id);if(!rec)return;const cell=document.getElementById('runCell-'+id);const cur=rec.runNumber||'';cell.innerHTML=`<input type="text" class="run-input" id="runInput-${id}" value="${cur}" placeholder="RUN" maxlength="10" onblur="saveRun('${id}')" onkeydown="if(event.key==='Enter')this.blur()">`;cell.classList.add('editing');const inp=document.getElementById('runInput-'+id);inp.focus();inp.select();}
-function saveRun(id){const rec=records.find(r=>r.id===id);if(!rec)return;const inp=document.getElementById('runInput-'+id);if(!inp)return;const nv=inp.value.trim();rec.runNumber=nv;rec._synced=false;saveToStorage();renderRecords();if(gsheetUrl&&nv)sendToGSheet(rec);}
+function saveRun(id){const rec=records.find(r=>r.id===id);if(!rec)return;const inp=document.getElementById('runInput-'+id);if(!inp)return;const nv=inp.value.trim();rec.runNumber=nv;rec._synced=false;saveToStorage();renderRecords();updateSyncIndicator();trySyncRecord(rec);}
 
 function editSerial(id,newVal){
     const rec=records.find(r=>r.id===id);
@@ -798,33 +779,30 @@ function editSerial(id,newVal){
     if(errMsg){toast('❌ '+errMsg,'error');beepErr();input.value=orig;return;}
     showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{
         if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}
-        rec.serial=fixed;rec.modified=true;rec._synced=false;toast('Modificato: '+fixed,'success');beepOk();renderRecords();saveToStorage();
+        rec.serial=fixed;rec.modified=true;rec._pendingConfirmation=false;toast('Modificato: '+fixed,'success');beepOk();renderRecords();saveToStorage();trySyncRecord(rec);
     }, rec.image || null);
     input.value=orig;
 }
 
-function setStatus(id,s){const rec=records.find(r=>r.id===id);if(!rec)return;rec.status=s;rec._synced=false;vib('ok');renderRecords();saveToStorage();}
+function setStatus(id,s){
+    const rec=records.find(r=>r.id===id);if(!rec)return;
+    rec.status=s; rec._pendingConfirmation=false;
+    vib('ok');renderRecords();saveToStorage();updateSyncIndicator();
+    trySyncRecord(rec);
+}
 function setNote(id,n){const rec=records.find(r=>r.id===id);if(rec)rec.note=n;saveToStorage();}
-function deleteRecord(id){const rec=records.find(r=>r.id===id);if(!rec)return;showConfirm('Elimina record',`Eliminare "${rec.serial}"?`,()=>{records=records.filter(r=>r.id!==id);scanTotal=Math.max(0,scanTotal-1);document.getElementById('scanCount').textContent=scanTotal;deleteImg(id);vib('err');beepErr();renderRecords();saveToStorage();toast('Eliminato','warning');},rec.image||null);}
+function deleteRecord(id){const rec=records.find(r=>r.id===id);if(!rec)return;showConfirm('Elimina record',`Eliminare "${rec.serial}"?`,()=>{records=records.filter(r=>r.id!==id);scanTotal=Math.max(0,scanTotal-1);document.getElementById('scanCount').textContent=scanTotal;deleteImg(id);vib('err');beepErr();renderRecords();saveToStorage();updateSyncIndicator();toast('Eliminato','warning');},rec.image||null);}
 
-function openModal(id){const rec=records.find(r=>r.id===id);if(!rec||!rec.image)return;scanPaused=true;updateScanIndicator();document.getElementById('modalImage').src=rec.image;document.getElementById('imageModal').classList.add('visible');}
-function closeModal(){document.getElementById('imageModal').classList.remove('visible');scanPaused=false;updateScanIndicator();}
+function openModal(id){const rec=records.find(r=>r.id===id);if(!rec||!rec.image)return;scanPaused=true;updateSyncIndicator();document.getElementById('modalImage').src=rec.image;document.getElementById('imageModal').classList.add('visible');}
+function closeModal(){document.getElementById('imageModal').classList.remove('visible');scanPaused=false;updateSyncIndicator();}
 
 // ===== EXPORT =====
 function exportExcel(){
     if(records.length===0){toast('Nessun record','warning');return;}
     const data=records.map((r,i)=>({
-        '#':i+1,
-        'Timestamp':r.timestamp,
-        'Seriale':r.serial,
-        'Run':r.runNumber||'—',
-        'Confidenza %':r.confidence,
-        'Correzioni OCR':r.corrections&&r.corrections.length?r.corrections.join(', '):'—',
-        'Modificato':r.modified?'Sì':'No',
-        'Lotto/Posizione':r.pedana,
-        'Operatore':r.operator,
-        'Stato':r.status||'—',
-        'Note':r.note
+        '#':i+1, 'Timestamp':r.timestamp, 'Seriale':r.serial, 'Run':r.runNumber||'—',
+        'Confidenza %':r.confidence, 'Correzioni OCR':r.corrections&&r.corrections.length?r.corrections.join(', '):'—',
+        'Modificato':r.modified?'Sì':'No', 'Lotto/Posizione':r.pedana, 'Operatore':r.operator, 'Stato':r.status||'—', 'Note':r.note
     }));
     const ws=XLSX.utils.json_to_sheet(data);
     ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:8},{wch:12},{wch:20},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];
@@ -855,13 +833,7 @@ async function exportZip(){
     try{
         const zip=new JSZip(),imgF=zip.folder('immagini');
         let cnt=0;
-        for(const r of records){
-            if(r.image){
-                const fileName = `${r.serial}.jpg`;
-                imgF.file(fileName, r.image.split(',')[1], {base64:true});
-                cnt++;
-            }
-        }
+        for(const r of records){if(r.image){imgF.file(`${r.serial}.jpg`,r.image.split(',')[1],{base64:true});cnt++;}}
         const csv='N,Timestamp,Seriale,Run,Conf%,Correzioni,Modificato,Lotto,Operatore,Stato,Note\n'+records.map((r,i)=>`${i+1},${r.timestamp},${r.serial},${r.runNumber||''},${r.confidence},"${(r.corrections||[]).join(', ')}",${r.modified?'Sì':'No'},${r.pedana},${r.operator},${r.status||'—'},"${r.note}"`).join('\n');
         zip.file('riepilogo.csv',csv);
         const blob=await zip.generateAsync({type:'blob'});
@@ -870,7 +842,15 @@ async function exportZip(){
     }catch(e){console.error(e);toast('Errore ZIP','error');beepErr();}
 }
 
-document.addEventListener('DOMContentLoaded',async()=>{await openImgDB();loadGSheetUrl();const loaded=await loadFromStorage();if(loaded&&records.length>0){renderRecords();toast(`📂 ${records.length} recuperati`,'success');const unsynced=records.filter(r=>!r._synced);if(unsynced.length>0){setSyncStatus('pending');if(gsheetUrl)setTimeout(()=>syncPendingToGSheet(),2000);}else{setSyncStatus('synced');}}else{renderRecords();setSyncStatus('idle');}setSyncStatus(syncStatus);});
+document.addEventListener('DOMContentLoaded',async()=>{
+    await openImgDB();
+    loadGSheetUrl();
+    await fetchSheetSerials(); // Fetch existing serials from sheet
+    const loaded=await loadFromStorage();
+    if(loaded&&records.length>0){renderRecords();toast(`📂 ${records.length} recuperati`,'success');}
+    else{renderRecords();}
+    updateSyncIndicator();
+});
 window.addEventListener('beforeunload',()=>{saveToStorage();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveToStorage();});
 document.addEventListener('touchstart',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
@@ -878,3 +858,4 @@ let lastEnd=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-l
 </script>
 </body>
 </html>
+
