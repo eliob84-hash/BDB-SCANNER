@@ -1,4 +1,4 @@
-<!-- Version: 7.1.0 -->
+<!-- Version: 7.2.0 -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -149,10 +149,17 @@
         .help-icon.text-icon { font-size:14px; font-weight:bold; }
         .help-text strong { color:var(--text); }
         .help-text p { margin-top:2px; }
+        
+        /* Example Record Styles */
+        .example-record-card { background:var(--bg-input); border:1px dashed var(--border); border-radius:var(--radius); padding:10px; margin-bottom:15px; }
+        .example-row { display:flex; align-items:center; gap:10px; margin-bottom:5px; }
+        .example-label { font-size:10px; color:var(--text-muted); width:70px; text-align:right; }
+        
         .help-badge { display:inline-block; padding:1px 5px; border-radius:3px; font-size:10px; font-weight:600; }
         .help-badge.good { background:rgba(16,185,129,0.2); color:var(--accent); }
         .help-badge.warn { background:rgba(245,158,11,0.2); color:var(--warning); }
         .help-badge.err { background:rgba(239,68,68,0.2); color:var(--danger); }
+        
         .version-modal-box .ver-date { font-size:12px; color:var(--text-dim); margin-bottom:16px; }
         .changelog-item { padding:10px 0; border-bottom:1px solid rgba(71,85,105,0.3); }
         .changelog-item:last-child { border-bottom:none; }
@@ -223,7 +230,7 @@
             <button class="icon-btn" onclick="openHelpModal()" title="Guida">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </button>
-            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v7.1.0</span>
+            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v7.2.0</span>
         </div>
     </div>
     <div class="scan-counter">
@@ -288,6 +295,46 @@
 
 <div class="confirm-modal" id="passwordModal"><div class="confirm-box"><h3>🔒 Accesso Protetto</h3><p style="margin-top:12px;">Inserisci la password temporanea (HHMM)</p><input type="password" class="input-field" id="versionPassword" maxlength="4" style="text-align:center;font-family:'JetBrains Mono',monospace;letter-spacing:6px;font-size:20px;width:120px;margin:0 auto;" inputmode="numeric"><div class="confirm-actions" style="margin-top:16px;"><button class="btn btn-outline" onclick="closePasswordModal()">Annulla</button><button class="btn btn-primary" onclick="checkVersionPassword()">OK</button></div></div></div>
 
+<!-- Help Modal -->
+<div class="modal-overlay" id="helpModal">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="document.getElementById('helpModal').classList.remove('visible')">✕</button>
+        <h3>📖 Guida all'Uso</h3>
+        
+        <div class="help-section">
+            <h4>📋 Esempio Record</h4>
+            <div class="example-record-card">
+                <div class="record-meta" style="margin-bottom:10px;">
+                    <span class="meta-tag conf-high">🎯 98%</span>
+                    <span class="sync-icon synced">☁️</span>
+                    <span>🕐 12:30</span>
+                    <span>📍 P01</span>
+                </div>
+                <div class="help-item"><div class="help-icon text-icon" style="font-size:12px;">🎯</div><div class="help-text"><strong>Confidenza:</strong> Alta (>80%). Se è <span class="help-badge err">bassa</span> o <span class="help-badge warn">media</span>, devi premere <strong>Conferma</strong> sul record prima della sincronizzazione.</div></div>
+                <div class="help-item"><div class="help-icon text-icon" style="font-size:12px;">☁️</div><div class="help-text"><strong>Stato Sync:</strong> Sincronizzato su Google Sheets. Se è <span class="sync-icon pending">📤</span>, clicca sull'icona per sapere il motivo dell'attesa (es. manca lo Stato).</div></div>
+                <div class="help-item"><div class="help-icon text-icon" style="font-size:12px;">✏️</div><div class="help-text"><strong>Pedana:</strong> Toccando la pedana puoi modificarla.</div></div>
+            </div>
+        </div>
+
+        <div class="help-section">
+            <h4>⚙️ Funzioni Principali</h4>
+            <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div class="help-text"><strong>Avvia/Ferma:</strong> Attiva la fotocamera e l'OCR. Ingrandisce l'anteprima se il seriale è lontano.</div></div>
+            <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/></svg></div><div class="help-text"><strong>Pedana:</strong> Campo obbligatorio. Inserisci il numero della pedana prima di scansionare.</div></div>
+            <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/></svg></div><div class="help-text"><strong>Sincronizza:</strong> In basso a destra. Carica su Google Sheets i record che hanno uno Stato assegnato.</div></div>
+        </div>
+
+        <div class="help-section">
+            <h4>✅ Stati del Seriale</h4>
+            <p style="font-size:11px; color:var(--text-dim); margin-bottom:5px;">Seleziona uno stato per permettere il caricamento sul foglio.</p>
+            <div class="help-item"><div class="help-icon" style="color:#22c55e;">✓</div><div class="help-text"><strong>Good:</strong> Seriale valido e integro.</div></div>
+            <div class="help-item"><div class="help-icon" style="color:#ef4444;">✕</div><div class="help-text"><strong>Rotto:</strong> Seriale danneggiato.</div></div>
+            <div class="help-item"><div class="help-icon" style="color:#a16207;">◆</div><div class="help-text"><strong>Sporco:</strong> Seriale illeggibile o sporco.</div></div>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%" onclick="document.getElementById('helpModal').classList.remove('visible')">Ho capito</button>
+    </div>
+</div>
+
 <div class="modal-overlay" id="versionModal">
     <div class="modal-box" onclick="event.stopPropagation()">
         <button class="modal-close" onclick="closeVersionModal()">✕</button>
@@ -349,7 +396,7 @@
 </div>
 
 <script>
-const APP_VERSION='7.1.0';
+const APP_VERSION='7.2.0';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
 const IMG_DB_NAME='ScannerSerialiDB';
@@ -357,7 +404,8 @@ const IMG_DB_VERSION=1;
 const IMG_STORE='images';
 
 const CHANGELOG=[
-    {ver:'v7.1.0',date:'24/05/2026',desc:'UI stato sincronizzazione con dettagli al tap. Changelog completo ripristinato. Password protezione versione ripristinata.',tags:['feat','ui','fix']},
+    {ver:'v7.2.0',date:'24/05/2026',desc:'Guida completa ripristinata con esempio record e legenda icone. Aggiornamento istruzioni future.',tags:['feat','ui']},
+    {ver:'v7.1.0',date:'24/05/2026',desc:'UI stato sincronizzazione con dettagli al tap. Changelog completo ripristinato.',tags:['feat','ui','fix']},
     {ver:'v7.0.0',date:'24/05/2026',desc:'Sync su Google Sheets solo dopo conferma seriale e impostazione Stato. Lettura foglio per evitare duplicati.',tags:['feat','logic']},
     {ver:'v6.1.0',date:'24/05/2026',desc:'Link apertura Foglio Google in basso a destra. Sincronizzazione record locali.',tags:['feat','fix']},
     {ver:'v6.0.0',date:'24/05/2026',desc:'Codice Google Sheets pulito e ottimizzato. Upload funzionante.',tags:['feat','fix']},
@@ -823,7 +871,7 @@ function processSerial(serial,imgData,confidence,corrections){
     if(confidence<50)toast('⚠️ Bassa confidenza','warning');
     else toast('✅ '+serial,'success');
     
-    setTimeout(()=>{showPedanaModal(serial,imgData,()=>{scanCooldown=false;document.getElementById('cooldownOverlay').classList.remove('active');if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateSyncIndicator();resetIdleTimer();});},1000);
+    setTimeout(()=>{showPedanaModal(serial,imgData,()=>{scanCooldown=false;document.getElementById('cooldownOverlay').classList.remove('active');if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},1000);
 }
 
 function trackLowConfidence(serial, timestamp){if(!lowConfTracker[serial])lowConfTracker[serial]=[];lowConfTracker[serial].push(timestamp);const now=Date.now();lowConfTracker[serial]=lowConfTracker[serial].filter(t=>now-t<10000);return lowConfTracker[serial].length;}
@@ -846,7 +894,7 @@ function confirmManualEntry(){
     records.unshift(rec);scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
     if(manualEntryImage)saveImg(rec.id,manualEntryImage);
     saveToStorage();updateSyncIndicator();beepOk();vib('ok');renderRecords();toast('✅ '+val,'success');
-    setTimeout(()=>{showPedanaModal(val,manualEntryImage,()=>{if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateSyncIndicator();resetIdleTimer();});},400);
+    setTimeout(()=>{showPedanaModal(val,manualEntryImage,()=>{if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},400);
 }
 function confirmLowConf(id){
     const rec=records.find(r=>r.id===id);
@@ -1016,4 +1064,4 @@ let lastEnd=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-l
 </script>
 </body>
 </html>
-```
+
