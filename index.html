@@ -1,4 +1,4 @@
-<!-- Version: 7.4.0 -->
+<!-- Version: 7.5.0 -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -230,7 +230,7 @@
             <button class="icon-btn" onclick="openHelpModal()" title="Guida">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </button>
-            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v7.4.0</span>
+            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v7.5.0</span>
         </div>
     </div>
     <div class="scan-counter">
@@ -399,7 +399,7 @@
 </div>
 
 <script>
-const APP_VERSION='7.4.0';
+const APP_VERSION='7.5.0';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
 const IMG_DB_NAME='ScannerSerialiDB';
@@ -407,6 +407,7 @@ const IMG_DB_VERSION=1;
 const IMG_STORE='images';
 
 const CHANGELOG=[
+    {ver:'v7.5.0',date:'24/05/2026',desc:'Ripristinato OCR completo con rotazione 180°. Ripristinato upload Google Sheets funzionante.',tags:['fix']},
     {ver:'v7.4.0',date:'24/05/2026',desc:'Ripristinato OCR funzionante. Fix pulsante Ferma. Ricerca seriale migliorata.',tags:['fix','ui']},
     {ver:'v7.3.0',date:'24/05/2026',desc:'Ripristinato upload Sheets e icona sync. Aggiunta ricerca seriale manuale e via OCR.',tags:['fix','feat']},
     {ver:'v7.2.0',date:'24/05/2026',desc:'Guida completa ripristinata con esempio record e legenda icone.',tags:['feat','ui']},
@@ -889,22 +890,53 @@ async function scanFrame(){
     applyAdaptiveThreshold(ctx,rw,rh);
 
     try {
-        const { data: { words } } = await ocrWorker.recognize(canvas);
-        for(const word of words){
-            let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
-            if(cleaned.length<10)continue;
-            let{fixed,corrections}=fixOCR(cleaned);
-            const conf=Math.round(word.confidence);
-            if(fixed.length===10&&isValidSerial(fixed)){
-                const img=cropFromBbox(canvas,rw,rh,word.bbox,IMG_MARGIN);
-                processSerial(fixed,img,conf,corrections);
-                return;
+        const roiX=rw*0.075,roiY=rh*0.35,roiW=rw*0.85,roiH=rh*0.30;
+        const roiCanvas=document.createElement('canvas');roiCanvas.width=roiW;roiCanvas.height=roiH;
+        const roiCtx=roiCanvas.getContext('2d');roiCtx.drawImage(canvas,roiX,roiY,roiW,roiH,0,0,roiW,roiH);
+
+        const best = await processROIAndOCR(roiCanvas);
+        if(best){
+            if(isValidSerial(best.serial)){
+                processSerial(best.serial,best.image,best.confidence,best.corrections);
+            } else if(best.confidence < 35) {
+                const trackText=(best.serial&&best.serial.length>=7)?best.serial.substring(0,7):'';
+                if(trackText){const c=trackLowConfidence(trackText,Date.now());if(c>=5){openManualEntryModal(trackText,best.image);scanPaused=true;}}
             }
         }
     } catch(e){ console.error('OCR error:',e); }
     
     document.getElementById('ocrStatus').textContent='✓ Pronto';
     document.getElementById('progressBar').style.width='0%';
+}
+
+function extractBestFromOCR(result, sourceCanvas) {
+    let best = null;
+    for(const word of result.data.words||[]){
+        let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
+        if(cleaned.length<10)continue;
+        let{fixed,corrections}=fixOCR(cleaned);
+        const conf=Math.round(word.confidence);
+        if(fixed.length===10&&isValidSerial(fixed)){
+            const img=cropFromBbox(sourceCanvas,sourceCanvas.width,sourceCanvas.height,word.bbox,IMG_MARGIN);
+            best={serial:fixed,confidence:conf,corrections,image:img};
+        }
+    }
+    return best;
+}
+
+async function processROIAndOCR(roiCanvas) {
+    let best = extractBestFromOCR(await ocrWorker.recognize(roiCanvas), roiCanvas);
+    if(best && best.confidence >= 35) return best;
+
+    const flipCanvas = document.createElement('canvas');
+    flipCanvas.width = roiCanvas.width; flipCanvas.height = roiCanvas.height;
+    const fCtx = flipCanvas.getContext('2d');
+    fCtx.translate(flipCanvas.width, flipCanvas.height);
+    fCtx.rotate(Math.PI);
+    fCtx.drawImage(roiCanvas, 0, 0);
+
+    const flippedBest = extractBestFromOCR(await ocrWorker.recognize(flipCanvas), flipCanvas);
+    return flippedBest;
 }
 
 function getConfClass(c){if(c>=80)return'conf-high';if(c>=60)return'conf-mid';return'conf-low';}
@@ -1089,7 +1121,7 @@ function setNote(id,n){const rec=records.find(r=>r.id===id);if(rec)rec.note=n;sa
 function deleteRecord(id){const rec=records.find(r=>r.id===id);if(!rec)return;showConfirm('Elimina record',`Eliminare "${rec.serial}"?`,()=>{records=records.filter(r=>r.id!==id);scanTotal=Math.max(0,scanTotal-1);document.getElementById('scanCount').textContent=scanTotal;deleteImg(id);vib('err');beepErr();renderRecords();saveToStorage();updateSyncIndicator();toast('Eliminato','warning');},rec.image||null);}
 
 function openModal(id){const rec=records.find(r=>r.id===id);if(!rec||!rec.image)return;scanPaused=true;updateSyncIndicator();document.getElementById('modalImage').src=rec.image;document.getElementById('imageModal').classList.add('visible');}
-function closeModal(){document.getElementById('imageModal').classList.remove('visible');scanPaused=false;updateSyncIndicator();}
+function closeModal(){document.getElementById('imageModal').classList.remove('visible');scanPaused=false;updateScanIndicator();}
 
 // ===== EXPORT =====
 function exportExcel(){
