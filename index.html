@@ -1,4 +1,4 @@
-<!-- Version: 7.3.0 -->
+<!-- Version: 7.4.0 -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -156,11 +156,9 @@
         .help-badge.warn { background:rgba(245,158,11,0.2); color:var(--warning); }
         .help-badge.err { background:rgba(239,68,68,0.2); color:var(--danger); }
         
-        .search-bar { display:flex; gap:8px; margin-bottom:10px; }
-        .search-bar input { flex:1; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px; color:var(--text); font-size:14px; font-family:'JetBrains Mono',monospace; outline:none; }
-        .search-bar input:focus { border-color:var(--primary); }
-        .search-bar button { background:var(--primary); color:white; border:none; border-radius:var(--radius); padding:0 16px; cursor:pointer; }
-        .search-bar button:hover { background:var(--primary-dark); }
+        .search-bar { display:flex; align-items:center; gap:4px; margin-bottom:10px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius); padding:8px; max-width:280px; }
+        .search-prefix { font-family:'JetBrains Mono',monospace; color:var(--text-muted); font-size:13px; user-select:none; white-space:nowrap; }
+        #searchInput { flex:1; background:transparent; border:none; color:var(--text); font-size:14px; font-family:'JetBrains Mono',monospace; outline:none; min-width:40px; }
 
         .version-modal-box .ver-date { font-size:12px; color:var(--text-dim); margin-bottom:16px; }
         .changelog-item { padding:10px 0; border-bottom:1px solid rgba(71,85,105,0.3); }
@@ -232,7 +230,7 @@
             <button class="icon-btn" onclick="openHelpModal()" title="Guida">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </button>
-            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v7.3.0</span>
+            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v7.4.0</span>
         </div>
     </div>
     <div class="scan-counter">
@@ -288,9 +286,9 @@
     </div>
     
     <div class="search-bar">
-        <input type="text" id="searchInput" placeholder="Cerca (ultime 3 cifre)" maxlength="3" inputmode="numeric">
-        <button onclick="searchRecord()">🔍</button>
-        <button onclick="searchViaOCR()">📷</button>
+        <span class="search-prefix">BDBCF00</span>
+        <input type="text" id="searchInput" placeholder="Cerca (ultimi 3 caratteri alfanumerici)" maxlength="3" inputmode="text">
+        <button class="btn btn-primary" style="flex:0;padding:6px 12px;" onclick="searchRecord()">🔍</button>
     </div>
 
     <div id="recordsList">
@@ -401,7 +399,7 @@
 </div>
 
 <script>
-const APP_VERSION='7.3.0';
+const APP_VERSION='7.4.0';
 const STORAGE_KEY='scannerSerialiOCR_data';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
 const IMG_DB_NAME='ScannerSerialiDB';
@@ -409,6 +407,7 @@ const IMG_DB_VERSION=1;
 const IMG_STORE='images';
 
 const CHANGELOG=[
+    {ver:'v7.4.0',date:'24/05/2026',desc:'Ripristinato OCR funzionante. Fix pulsante Ferma. Ricerca seriale migliorata.',tags:['fix','ui']},
     {ver:'v7.3.0',date:'24/05/2026',desc:'Ripristinato upload Sheets e icona sync. Aggiunta ricerca seriale manuale e via OCR.',tags:['fix','feat']},
     {ver:'v7.2.0',date:'24/05/2026',desc:'Guida completa ripristinata con esempio record e legenda icone.',tags:['feat','ui']},
     {ver:'v7.1.0',date:'24/05/2026',desc:'UI stato sincronizzazione con dettagli al tap. Changelog completo ripristinato.',tags:['feat','ui','fix']},
@@ -685,11 +684,11 @@ async function syncPendingToGSheet(){
 
 // ===== SEARCH FUNCTIONALITY =====
 function searchRecord(){
-    const term = document.getElementById('searchInput').value.trim();
-    if(!term || term.length < 3){toast('Inserisci le ultime 3 cifre','warning');return;}
+    const term = document.getElementById('searchInput').value.trim().toUpperCase();
+    if(!term || term.length < 1){toast('Inserisci almeno 1 carattere','warning');return;}
     
     const searchStr = 'BDBCF00' + term;
-    const idx = records.findIndex(r => r.serial === searchStr);
+    const idx = records.findIndex(r => r.serial.endsWith(term));
     
     if(idx !== -1){
         const el = document.getElementById('record-' + records[idx].id);
@@ -702,35 +701,6 @@ function searchRecord(){
     } else {
         toast('Seriale non trovato','warning');
     }
-}
-
-function searchViaOCR(){
-    if(scanPaused || cameraActive){toast('Chiudi fotocamera prima','warning');return;}
-    toggleCamera();
-    
-    // Monitor scans until we find a match or timeout
-    const checkInterval = setInterval(()=>{
-        const term = document.getElementById('searchInput').value.trim();
-        if(!term || scanPaused){
-            clearInterval(checkInterval);
-            return;
-        }
-        
-        const searchStr = 'BDBCF00' + term;
-        const idx = records.findIndex(r => r.serial === searchStr);
-        
-        if(idx !== -1){
-            clearInterval(checkInterval);
-            if(cameraActive) toggleCamera(); // Stop camera
-            const el = document.getElementById('record-' + records[idx].id);
-            if(el){
-                el.scrollIntoView({behavior:'smooth', block:'center'});
-                el.classList.add('highlight');
-                setTimeout(()=>el.classList.remove('highlight'), 2000);
-            }
-            toast('Record trovato via OCR','success');
-        }
-    }, 1000);
 }
 
 // ===== APPLY STATUS =====
@@ -773,20 +743,32 @@ document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElemen
 
 // ===== CAMERA & SCAN =====
 function resetIdleTimer(){if(idleTimer)clearTimeout(idleTimer);if(!cameraActive)return;lastScanTime=Date.now();idleTimer=setTimeout(()=>{if(cameraActive){toast('⚡ Chiusura: 30s inattività','warning');setTimeout(()=>stopCamera(),500);}},IDLE_TIMEOUT);}
-async function toggleCamera(){if(cameraActive){stopCamera();}else{await startCamera();}}
+
+async function toggleCamera(){
+    if(cameraActive){
+        await stopCamera();
+    }else{
+        await startCamera();
+    }
+}
+
 async function startCamera(){
     const btn=document.getElementById('btnCamera');
     btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="18" y1="6" x2="6" y2="18"/></svg><span>Ferma</span>`;
-    btn.classList.remove('btn-primary');btn.classList.add('btn-danger');
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-danger');
+    
     try{
         videoEl=document.getElementById('videoFeed');
         stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
         videoEl.srcObject=stream;
         await new Promise(r=>{videoEl.onloadedmetadata=()=>r();});
+        
         document.getElementById('cameraContainer').classList.add('active');
         document.getElementById('btnFlash').disabled=false;
         document.getElementById('scanIndicator').innerHTML='<span class="loading-indicator"><span class="spinner"></span> Caricamento...</span>';
         document.getElementById('ocrStatus').textContent='Inizializzazione OCR...';
+        
         cameraActive=true;
         ocrWorker=await Tesseract.createWorker('eng',1,{logger:(m)=>{
             if(m.status==='recognizing text'){
@@ -796,63 +778,100 @@ async function startCamera(){
             }
         }});
         await ocrWorker.setParameters({tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',preserve_interword_spaces:'0'});
+        
         document.getElementById('scanIndicator').innerHTML='<span class="scanning-indicator"><span class="dot"></span> Pronto</span>';
         document.getElementById('ocrStatus').textContent='✓ Scansione attiva';
         document.getElementById('progressBar').style.width='0%';
+        
         scanTimer=setInterval(scanFrame,SCAN_INTERVAL);
-        resetIdleTimer();checkScrollPosition();
-        toast('📷 Avviata','success');vib('ok');
-    }catch(err){console.error(err);toast('Errore: '+err.message,'error');beepErr();vib('err');resetBtnCamera();}
+        resetIdleTimer();
+        checkScrollPosition();
+        toast('📷 Avviata','success');
+        vib('ok');
+    }catch(err){
+        console.error(err);
+        toast('Errore: '+err.message,'error');
+        beepErr();
+        vib('err');
+        // Restore button state on error
+        resetBtnCamera();
+    }
 }
-function stopCamera(){
-    if(scanTimer){clearInterval(scanTimer);scanTimer=null;}
-    if(idleTimer){clearTimeout(idleTimer);idleTimer=null;}
-    if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
-    if(ocrWorker){ocrWorker.terminate();ocrWorker=null;}
-    cameraActive=false;flashOn=false;videoEl=null;scanCooldown=false;scanPaused=false;
-    document.getElementById('cameraContainer').classList.remove('active');
-    document.getElementById('btnFlash').disabled=true;
-    document.getElementById('btnFlash').classList.remove('btn-accent');document.getElementById('btnFlash').classList.add('btn-warning');
-    document.getElementById('progressBar').style.width='0%';
-    document.getElementById('cooldownOverlay').classList.remove('active');
-    updateSyncIndicator();resetBtnCamera();checkScrollPosition();toast('📷 Spenta','warning');
+
+async function stopCamera(){
+    try {
+        if(scanTimer){clearInterval(scanTimer);scanTimer=null;}
+        if(idleTimer){clearTimeout(idleTimer);idleTimer=null;}
+        if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+        if(ocrWorker){try{await ocrWorker.terminate();}catch(e){}}
+        
+        cameraActive=false;
+        flashOn=false;
+        videoEl=null;
+        scanCooldown=false;
+        scanPaused=false;
+        
+        document.getElementById('cameraContainer').classList.remove('active');
+        document.getElementById('btnFlash').disabled=true;
+        document.getElementById('btnFlash').classList.remove('btn-accent');
+        document.getElementById('btnFlash').classList.add('btn-warning');
+        document.getElementById('progressBar').style.width='0%';
+        document.getElementById('cooldownOverlay').classList.remove('active');
+        
+        updateScanIndicator();
+        checkScrollPosition();
+        toast('📷 Spenta','warning');
+    } finally {
+        // Always reset button state
+        resetBtnCamera();
+    }
 }
-function resetBtnCamera(){const btn=document.getElementById('btnCamera');btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Avvia OCR</span>`;btn.classList.add('btn-primary');btn.classList.remove('btn-danger');}
-async function toggleFlash(){if(!stream)return;try{const track=stream.getVideoTracks()[0];if(!track)return;const caps=track.getCapabilities();if(!caps||!caps.torch){toast('Flash non supportato','error');return;}flashOn=!flashOn;await track.applyConstraints({advanced:[{torch:flashOn}]});const btn=document.getElementById('btnFlash');if(flashOn){btn.classList.remove('btn-warning');btn.classList.add('btn-accent');toast('🔦 ON','success');}else{btn.classList.remove('btn-accent');btn.classList.add('btn-warning');toast('🔦 OFF','warning');}}catch(e){toast('Errore flash','error');}}
+
+function resetBtnCamera(){
+    const btn=document.getElementById('btnCamera');
+    btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Avvia OCR</span>`;
+    btn.classList.remove('btn-danger');
+    btn.classList.add('btn-primary');
+}
+
+async function toggleFlash(){
+    if(!stream)return;
+    try{
+        const track=stream.getVideoTracks()[0];if(!track)return;
+        const caps=track.getCapabilities();if(!caps||!caps.torch){toast('Flash non supportato','error');return;}
+        flashOn=!flashOn;
+        await track.applyConstraints({advanced:[{torch:flashOn}]});
+        const btn=document.getElementById('btnFlash');
+        if(flashOn){btn.classList.remove('btn-warning');btn.classList.add('btn-accent');toast('🔦 ON','success');}
+        else{btn.classList.remove('btn-accent');btn.classList.add('btn-warning');toast('🔦 OFF','warning');}
+    }catch(e){toast('Errore flash','error');}
+}
+
 function toggleMultiDetect(){multiDetect=!multiDetect;document.getElementById('toggleMulti').classList.toggle('active',multiDetect);}
-function checkPedanaRequired(){const p=document.getElementById('pedana').value.trim();if(!p){document.getElementById('pedana').classList.add('missing');toast('⚠️ Pedana richiesta','error');beepErr();vib('err');return false;}document.getElementById('pedana').classList.remove('missing');return true;}
+
+function checkPedanaRequired(){
+    const p=document.getElementById('pedana').value.trim();
+    if(!p){document.getElementById('pedana').classList.add('missing');toast('⚠️ Pedana richiesta','error');beepErr();vib('err');return false;}
+    document.getElementById('pedana').classList.remove('missing');return true;
+}
 
 // ===== OCR & UPSIDE DOWN DETECTION =====
-function applyAdaptiveThreshold(ctx,w,h){const imageData=ctx.getImageData(0,0,w,h);const data=imageData.data;const gray=new Uint8Array(w*h);for(let i=0;i<data.length;i+=4)gray[i/4]=0.299*data[i]+0.587*data[i+1]+0.114*data[i+2];let min=255,max=0;for(let i=0;i<gray.length;i++){if(gray[i]<min)min=gray[i];if(gray[i]>max)max=gray[i];}const range=max-min;if(range===0)return;const threshold=min+range*0.5;for(let i=0;i<data.length;i+=4){const val=gray[i/4];const binary=val<threshold?0:255;data[i]=binary;data[i+1]=binary;data[i+2]=binary;}ctx.putImageData(imageData,0,0);}
-
-function extractBestFromOCR(result, sourceCanvas) {
-    let best = null;
-    for(const word of result.data.words||[]){
-        let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
-        if(cleaned.length<10)continue;
-        let{fixed,corrections}=fixOCR(cleaned);
-        const conf=Math.round(word.confidence);
-        if(fixed.length===10&&isValidSerial(fixed)){
-            const img=cropFromBbox(sourceCanvas,sourceCanvas.width,sourceCanvas.height,word.bbox,IMG_MARGIN);
-            best={serial:fixed,confidence:conf,corrections,image:img};
-        }
+function applyAdaptiveThreshold(ctx,w,h){
+    const imageData=ctx.getImageData(0,0,w,h);
+    const data=imageData.data;
+    const gray=new Uint8Array(w*h);
+    for(let i=0;i<data.length;i+=4) gray[i/4]=0.299*data[i]+0.587*data[i+1]+0.114*data[i+2];
+    let min=255,max=0;
+    for(let i=0;i<gray.length;i++){if(gray[i]<min)min=gray[i];if(gray[i]>max)max=gray[i];}
+    const range=max-min;
+    if(range===0)return;
+    const threshold=min+range*0.5;
+    for(let i=0;i<data.length;i+=4){
+        const val=gray[i/4];
+        const binary=val<threshold?0:255;
+        data[i]=binary; data[i+1]=binary; data[i+2]=binary;
     }
-    return best;
-}
-
-async function processROIAndOCR(roiCanvas) {
-    let best = extractBestFromOCR(await ocrWorker.recognize(roiCanvas), roiCanvas);
-    if(best && best.confidence >= 35) return best;
-
-    const flipCanvas = document.createElement('canvas');
-    flipCanvas.width = roiCanvas.width; flipCanvas.height = roiCanvas.height;
-    const fCtx = flipCanvas.getContext('2d');
-    fCtx.translate(flipCanvas.width, flipCanvas.height);
-    fCtx.rotate(Math.PI);
-    fCtx.drawImage(roiCanvas, 0, 0);
-
-    const flippedBest = extractBestFromOCR(await ocrWorker.recognize(flipCanvas), flipCanvas);
-    return flippedBest;
+    ctx.putImageData(imageData,0,0);
 }
 
 async function scanFrame(){
@@ -869,21 +888,21 @@ async function scanFrame(){
     ctx.drawImage(videoEl,rx,ry,rw,rh,0,0,rw,rh);
     applyAdaptiveThreshold(ctx,rw,rh);
 
-    try{
-        const roiX=rw*0.075,roiY=rh*0.35,roiW=rw*0.85,roiH=rh*0.30;
-        const roiCanvas=document.createElement('canvas');roiCanvas.width=roiW;roiCanvas.height=roiH;
-        const roiCtx=roiCanvas.getContext('2d');roiCtx.drawImage(canvas,roiX,roiY,roiW,roiH,0,0,roiW,roiH);
-
-        const best = await processROIAndOCR(roiCanvas);
-        if(best){
-            if(isValidSerial(best.serial)){
-                processSerial(best.serial,best.image,best.confidence,best.corrections);
-            } else if(best.confidence < 35) {
-                const trackText=(best.serial&&best.serial.length>=7)?best.serial.substring(0,7):'';
-                if(trackText){const c=trackLowConfidence(trackText,Date.now());if(c>=5){openManualEntryModal(trackText,best.image);scanPaused=true;}}
+    try {
+        const { data: { words } } = await ocrWorker.recognize(canvas);
+        for(const word of words){
+            let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
+            if(cleaned.length<10)continue;
+            let{fixed,corrections}=fixOCR(cleaned);
+            const conf=Math.round(word.confidence);
+            if(fixed.length===10&&isValidSerial(fixed)){
+                const img=cropFromBbox(canvas,rw,rh,word.bbox,IMG_MARGIN);
+                processSerial(fixed,img,conf,corrections);
+                return;
             }
         }
-    }catch(e){console.error('OCR error:',e);}
+    } catch(e){ console.error('OCR error:',e); }
+    
     document.getElementById('ocrStatus').textContent='✓ Pronto';
     document.getElementById('progressBar').style.width='0%';
 }
@@ -902,15 +921,17 @@ function processSerial(serial,imgData,confidence,corrections){
         return;
     }
     
-    resetIdleTimer();scanCooldown=true;
+    resetIdleTimer();
+    scanCooldown=true;
     document.getElementById('cooldownOverlay').classList.add('active');
     document.getElementById('ocrStatus').textContent='⏱ Cooldown...';
-    updateSyncIndicator();
+    updateScanIndicator();
     
     const operator=document.getElementById('operatorName').value.trim()||'N/D';
     const pedana=document.getElementById('pedana').value.trim()||'N/D';
     lastScanPedana=pedana;lastScanImage=imgData;
     const ts=new Date().toLocaleString('it-IT');
+    
     const rec={
         id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),
         serial,timestamp:ts,operator,pedana,runNumber:'',modified:false,status:'',note:'',
@@ -918,14 +939,28 @@ function processSerial(serial,imgData,confidence,corrections){
         _synced:false, _syncTime: null, _pendingConfirmation: confidence < 35, _confirmed:false,
         _uploading: false, _syncError: null
     };
-    records.unshift(rec);scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
-    if(imgData)saveImg(rec.id,imgData);saveToStorage();
+    
+    records.unshift(rec);
+    scanTotal++;
+    document.getElementById('scanCount').textContent=scanTotal;
+    
+    if(imgData)saveImg(rec.id,imgData);
+    saveToStorage();
     updateSyncIndicator();
+    
     beepOk();vib('ok');renderRecords();
     if(confidence<50)toast('⚠️ Bassa confidenza','warning');
     else toast('✅ '+serial,'success');
     
-    setTimeout(()=>{showPedanaModal(serial,imgData,()=>{scanCooldown=false;document.getElementById('cooldownOverlay').classList.remove('active');if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},1000);
+    setTimeout(()=>{
+        showPedanaModal(serial,imgData,()=>{
+            scanCooldown=false;
+            document.getElementById('cooldownOverlay').classList.remove('active');
+            if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';
+            updateScanIndicator();
+            resetIdleTimer();
+        });
+    },1000);
 }
 
 function trackLowConfidence(serial, timestamp){if(!lowConfTracker[serial])lowConfTracker[serial]=[];lowConfTracker[serial].push(timestamp);const now=Date.now();lowConfTracker[serial]=lowConfTracker[serial].filter(t=>now-t<10000);return lowConfTracker[serial].length;}
