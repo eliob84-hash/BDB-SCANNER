@@ -1,5 +1,4 @@
-
-<!-- Versione: 6.0.0 | Data: 24/05/2026 | Modifiche: Pulizia codice Sheets, logica invio ottimizzata, UI versione -->
+<!-- Versione: 7.4.0 | Data: 26/05/2026 | Modifiche: file locali, ripristino switch -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -19,9 +18,15 @@
             --text: #f1f5f9; --text-muted: #94a3b8; --text-dim: #64748b;
             --border: #475569; --radius: 12px; --shadow: 0 4px 24px rgba(0,0,0,0.3);
         }
+        [data-theme="light"] {
+            --bg: #f8fafc; --bg-card: #ffffff; --bg-input: #f1f5f9;
+            --text: #0f172a; --text-muted: #475569; --text-dim: #64748b;
+            --border: #cbd5e1; --shadow: 0 4px 24px rgba(0,0,0,0.1);
+        }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; padding-bottom:120px; scroll-behavior:smooth; }
         .header { background:linear-gradient(135deg,var(--bg-card),#1a2332); padding:16px 20px; position:sticky; top:0; z-index:100; border-bottom:1px solid var(--border); backdrop-filter:blur(20px); }
+        [data-theme="light"] .header { background:linear-gradient(135deg,#ffffff,#f1f5f9); }
         .header-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
         .header-actions { display:flex; gap:8px; }
         .header h1 { font-size:18px; font-weight:700; background:linear-gradient(135deg,var(--primary-light),var(--accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; display:flex; align-items:center; gap:8px; }
@@ -64,13 +69,6 @@
         .btn-danger { background:var(--danger); color:white; }
         .btn-outline { background:var(--bg-input); color:var(--text); border:1px solid var(--border); }
         .btn svg { width:16px; height:16px; flex-shrink:0; }
-        .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:6px 18px 12px; }
-        .toggle-label { font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:6px; }
-        .toggle-label svg { width:15px; height:15px; }
-        .toggle-switch { position:relative; width:42px; height:23px; background:var(--bg-input); border-radius:12px; cursor:pointer; transition:background 0.3s; border:1px solid var(--border); }
-        .toggle-switch.active { background:var(--primary); border-color:var(--primary); }
-        .toggle-switch::after { content:''; position:absolute; top:2px; left:2px; width:17px; height:17px; background:white; border-radius:50%; transition:transform 0.3s; }
-        .toggle-switch.active::after { transform:translateX(19px); }
         .scanner-section { padding:0 18px; position:relative; }
         .camera-container { position:relative; border-radius:var(--radius); overflow:hidden; background:#000; display:none; aspect-ratio:4/3; }
         .camera-container.active { display:block; }
@@ -89,7 +87,9 @@
         .btn-apply-status { flex:0 0 auto; padding:6px 12px; font-size:11px; white-space:nowrap; }
         .record-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:12px; margin-bottom:10px; animation:slideIn 0.3s ease-out; transition:background 0.3s; }
         .record-card.low-conf { background:rgba(245,158,11,0.15); border-color:var(--warning); }
+        .record-card.highlight { border-color:var(--primary-light); background:rgba(37,99,235,0.1); box-shadow:0 0 20px rgba(37,99,235,0.2); }
         @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes highlightPulse { 0%{box-shadow:0 0 0 0 rgba(37,99,235,0.4)} 70%{box-shadow:0 0 0 10px rgba(37,99,235,0)} 100%{box-shadow:0 0 0 0 rgba(37,99,235,0)} }
         .record-top { display:flex; align-items:center; gap:10px; flex-wrap:nowrap; }
         .record-image-wrap { width:130px; height:50px; border-radius:6px; overflow:hidden; background:#000; flex-shrink:0; cursor:pointer; position:relative; border:1px solid var(--border); }
         .record-image-wrap img { width:100%; height:100%; object-fit:contain; image-rendering:auto; }
@@ -176,7 +176,6 @@
         .confirm-box { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:22px; max-width:340px; width:100%; text-align:center; }
         .confirm-box h3 { font-size:16px; margin-bottom:8px; }
         .confirm-box p { font-size:13px; color:var(--text-muted); margin-bottom:18px; }
-        .confirm-box img.confirm-preview { max-width:100%; height:80px; object-fit:contain; border-radius:6px; margin-bottom:15px; border:1px solid var(--border); background:#000; }
         .confirm-actions { display:flex; gap:10px; }
         .confirm-actions .btn { flex:1; }
         .pedana-actions { display:flex; flex-direction:column; gap:10px; margin-top:8px; }
@@ -189,8 +188,12 @@
         .empty-state { text-align:center; padding:36px 20px; color:var(--text-dim); }
         .empty-state svg { width:44px; height:44px; margin-bottom:10px; opacity:0.4; }
         .empty-state p { font-size:13px; }
-        .bottom-bar { position:fixed; bottom:0; left:0; right:0; background:var(--bg-card); border-top:1px solid var(--border); padding:10px 18px; display:flex; gap:8px; z-index:100; backdrop-filter:blur(20px); flex-wrap:wrap; }
-        .bottom-bar .btn { font-size:12px; padding:10px 10px; }
+        .bottom-bar { position:fixed; bottom:0; left:0; right:0; background:var(--bg-card); border-top:1px solid var(--border); padding:10px 18px; display:flex; gap:6px; z-index:100; backdrop-filter:blur(20px); flex-wrap:wrap; }
+        .bottom-bar .btn { font-size:10px; padding:8px 4px; white-space:normal; line-height:1.3; min-height:52px; flex-direction:column; gap:3px; }
+        .bottom-bar .btn svg { width:16px; height:16px; flex-shrink:0; }
+        .btn-label { display:flex; flex-direction:column; align-items:center; line-height:1.2; }
+        .btn-label .l1 { font-size:10px; font-weight:600; }
+        .btn-label .l2 { font-size:9px; font-weight:400; opacity:0.85; }
         .progress-bar { position:absolute; bottom:0; left:0; height:3px; background:var(--accent); transition:width 0.3s; z-index:5; }
         .cooldown-overlay { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(16,185,129,0.08); pointer-events:none; z-index:4; display:none; }
         .cooldown-overlay.active { display:block; }
@@ -208,7 +211,72 @@
         .gsheet-input-row input { flex:1; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:8px; font-family:'JetBrains Mono',monospace; font-size:11px; }
         .gsheet-options { display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--text-muted); flex-wrap:wrap; gap:8px; }
         .gsheet-diagnostic { margin-top:8px; padding:6px; background:var(--bg); border-radius:4px; font-size:10px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
-        @media (max-width:380px) { .btn { padding:8px 8px; font-size:11px; } .status-btn { font-size:9px; padding:3px 6px; } .record-image-wrap { width:120px; height:46px; } .serial-display { width:120px; } .record-meta { gap:3px; } }
+        .settings-group { margin-bottom:16px; }
+        .settings-group h4 { font-size:13px; color:var(--text-dim); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+        .settings-row { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid rgba(71,85,105,0.2); min-height:48px; }
+        .settings-row:last-child { border-bottom:none; }
+        .settings-label { font-size:12px; color:var(--text-muted); flex:1; margin-right:12px; }
+        .settings-input { width:100px; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:6px 8px; font-family:'JetBrains Mono',monospace; font-size:12px; outline:none; }
+        .settings-input:focus { border-color:var(--primary); }
+        
+        /* Toggle Switch - Fixed Visibility */
+        .toggle-switch { 
+            position:relative; 
+            width:48px; 
+            height:26px; 
+            background:#475569; 
+            border-radius:13px; 
+            cursor:pointer; 
+            transition:background 0.3s; 
+            border:2px solid #64748b;
+            flex-shrink:0;
+            display:block;
+        }
+        .toggle-switch.active { 
+            background:var(--primary); 
+            border-color:var(--primary-light); 
+        }
+        .toggle-switch::after { 
+            content:''; 
+            position:absolute; 
+            top:2px; 
+            left:2px; 
+            width:18px; 
+            height:18px; 
+            background:white; 
+            border-radius:50%; 
+            transition:transform 0.3s;
+            box-shadow:0 1px 3px rgba(0,0,0,0.3);
+        }
+        .toggle-switch.active::after { 
+            transform:translateX(22px); 
+        }
+        
+        /* Search Modal Styles */
+        .search-prefix { font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:700; color:var(--primary-light); letter-spacing:3px; padding:12px 8px; background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.2); border-radius:8px 0 0 8px; border-right:none; text-align:center; }
+        .search-suffix { font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:700; color:var(--text); letter-spacing:3px; padding:12px 8px; background:var(--bg-input); border:1px solid var(--border); border-radius:0 8px 8px 0; border-left:none; outline:none; width:80px; text-align:center; }
+        .search-suffix:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.2); }
+        .search-row { display:flex; align-items:center; margin:16px 0; }
+        .search-result { margin-top:16px; padding:12px; border-radius:8px; text-align:center; }
+        .search-result.found { background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); }
+        .search-result.not-found { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); }
+        .search-result .found-serial { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:var(--accent); letter-spacing:2px; }
+        .search-result .not-found-text { color:var(--danger); font-weight:600; }
+        .search-result .found-meta { font-size:11px; color:var(--text-muted); margin-top:6px; }
+        
+        /* Backup Section Styles */
+        .backup-section { margin-top:16px; padding-top:16px; border-top:1px solid var(--border); }
+        .backup-section h4 { font-size:13px; color:var(--accent); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+        .backup-info { font-size:11px; color:var(--text-muted); margin-bottom:10px; line-height:1.4; }
+        .backup-actions { display:flex; gap:8px; flex-wrap:wrap; }
+        .backup-actions .btn { flex:1; min-width:0; font-size:11px; padding:8px; }
+        .backup-status { font-size:10px; color:var(--text-dim); margin-top:8px; font-family:'JetBrains Mono',monospace; padding:6px; background:var(--bg); border-radius:4px; display:none; }
+        .backup-status.visible { display:block; }
+        .backup-status.ok { color:var(--accent); }
+        .backup-status.err { color:var(--danger); }
+        #restoreFileInput { display:none; }
+        
+        @media (max-width:380px) { .status-btn { font-size:9px; padding:3px 6px; } .record-image-wrap { width:120px; height:46px; } .serial-display { width:120px; } .record-meta { gap:3px; } }
     </style>
 </head>
 <body>
@@ -220,10 +288,16 @@
             Scanner Seriali OCR
         </h1>
         <div class="header-actions">
+            <button class="icon-btn" onclick="openSearchModal()" title="Cerca seriale">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
             <button class="icon-btn" onclick="openHelpModal()" title="Guida">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </button>
-            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v6.0.0</span>
+            <button class="icon-btn" onclick="openSettingsModal()" title="Impostazioni">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33 2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82 2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33 2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+            <span class="version-badge" id="versionBadge" onclick="requestVersionAccess()">v7.4.0</span>
         </div>
     </div>
     <div class="scan-counter">
@@ -248,14 +322,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         <span>Flash</span>
     </button>
-</div>
-
-<div class="toggle-row">
-    <span class="toggle-label">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 7h3v3H7z"/><path d="M14 7h3v3h-3z"/><path d="M7 14h3v3H7z"/></svg>
-        Rilevamento multiplo (Sperimentale)
-    </span>
-    <div class="toggle-switch" id="toggleMulti" onclick="toggleMultiDetect()"></div>
+    <button class="btn btn-outline" onclick="openManualEntry()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <span>Manuale</span>
+    </button>
 </div>
 
 <div class="scanner-section" id="scannerSection">
@@ -288,33 +358,46 @@
 
 <div class="confirm-modal" id="passwordModal"><div class="confirm-box"><h3>🔒 Accesso Protetto</h3><p style="margin-top:12px;">Inserisci la password temporanea (HHMM)</p><input type="password" class="input-field" id="versionPassword" maxlength="4" style="text-align:center;font-family:'JetBrains Mono',monospace;letter-spacing:6px;font-size:20px;width:120px;margin:0 auto;" inputmode="numeric"><div class="confirm-actions" style="margin-top:16px;"><button class="btn btn-outline" onclick="closePasswordModal()">Annulla</button><button class="btn btn-primary" onclick="checkVersionPassword()">OK</button></div></div></div>
 
+<!-- Search Modal -->
+<div class="modal-overlay" id="searchModal">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeSearchModal()">✕</button>
+        <h3>🔍 Cerca Seriale</h3>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Inserisci le ultime 3 cifre del seriale</p>
+        <div class="search-row">
+            <div class="search-prefix">BDBCF00</div>
+            <input type="text" class="search-suffix" id="searchSuffix" maxlength="3" placeholder="XXX" inputmode="text" autocomplete="off">
+        </div>
+        <div class="btn-row" style="display:flex;gap:10px;">
+            <button class="btn btn-outline" onclick="closeSearchModal()" style="flex:1;">Annulla</button>
+            <button class="btn btn-primary" onclick="executeSearch()" style="flex:2;">Cerca</button>
+        </div>
+        <div id="searchResult" class="search-result" style="display:none;"></div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="helpModal">
     <div class="modal-box" onclick="event.stopPropagation()">
         <button class="modal-close" onclick="document.getElementById('helpModal').classList.remove('visible')">✕</button>
         <h3>❓ Guida Completa all'Uso</h3>
         <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">Panoramica dettagliata dell'interfaccia e delle funzioni</p>
-        
-        <div class="help-section">
-            <h4>📷 Area Fotocamera</h4>
+        <div class="help-section"><h4>📷 Area Fotocamera</h4>
             <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div class="help-text"><strong>Avvia / Ferma OCR:</strong> Accende la fotocamera e avvia la scansione automatica. La fotocamera si chiude dopo 30s di inattività.</div></div>
             <div class="help-item"><div class="help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div class="help-text"><strong>Flash:</strong> Torcia per ambienti scuri o seriali sbiaditi.</div></div>
             <div class="help-item"><div class="help-icon" style="border:2px solid var(--accent);border-radius:4px;"></div><div class="help-text"><strong>Riquadro Verde (ROI):</strong> Zona di analisi. Posiziona il seriale qui. Il sistema rileva automaticamente se è sottosopra e salva l'anteprima ruotata correttamente.</div></div>
         </div>
-
-        <div class="help-section">
-            <h4>⚙️ Configurazione Iniziale</h4>
+        <div class="help-section"><h4>⚙️ Configurazione Iniziale</h4>
             <div class="help-item"><div class="help-icon text-icon">👤</div><div class="help-text"><strong>Operatore:</strong> Nome associato a ogni seriale scansionato.</div></div>
             <div class="help-item"><div class="help-icon text-icon">📍</div><div class="help-text"><strong>Pedana:</strong> Campo obbligatorio. Dopo ogni scansione viene chiesto se mantenere o cambiare posizione.</div></div>
         </div>
-
-        <div class="help-section">
-            <h4>🎯 Confidenza e Validazione</h4>
+        <div class="help-section"><h4>🎯 Confidenza e Validazione</h4>
             <div class="help-item"><div class="help-icon text-icon">%</div><div class="help-text"><strong>Percentuale:</strong> <span class="help-badge err">&lt;35%</span> Scartata | <span class="help-badge warn">35-50%</span> Richiede conferma | <span class="help-badge good">&gt;50%</span> Accettata</div></div>
             <div class="help-item"><div class="help-icon text-icon">⚡</div><div class="help-text"><strong>Correzioni OCR:</strong> Badge viola se il sistema ha corretto caratteri ambigui (es. O→0).</div></div>
         </div>
-
-        <div class="help-section">
-            <h4>☁️ Esportazione</h4>
+        <div class="help-section"><h4>⚙️ Impostazioni</h4>
+            <div class="help-item"><div class="help-icon">⚙️</div><div class="help-text"><strong>Impostazioni:</strong> Clicca l'icona ⚙️ per modificare: tempo di cooldown, tema Chiaro/Scuro, contrasto, inversione colori, edge detection, e pattern seriale.</div></div>
+        </div>
+        <div class="help-section"><h4>☁️ Esportazione</h4>
             <div class="help-item"><div class="help-icon text-icon" style="background:#217346;color:white;">X</div><div class="help-text"><strong>Excel:</strong> File .xlsx con colonne dati e riferimento all'immagine salvata nello ZIP.</div></div>
             <div class="help-item"><div class="help-icon text-icon" style="background:var(--primary);color:white;">🌐</div><div class="help-text"><strong>HTML+Img:</strong> Report web con le immagini delle anteprime embeddate direttamente nel file.</div></div>
             <div class="help-item"><div class="help-icon text-icon" style="background:var(--text-dim);color:white;">📦</div><div class="help-text"><strong>ZIP:</strong> Archivio con tutte le immagini (nominate col seriale) + file CSV.</div></div>
@@ -323,6 +406,74 @@
     </div>
 </div>
 
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeSettingsModal()">✕</button>
+        <h3>⚙️ Impostazioni</h3>
+        <div class="settings-group">
+            <h4>⏱️ Tempo di Cooldown</h4>
+            <div class="settings-row">
+                <span class="settings-label">Tempo tra scansioni (ms)</span>
+                <input type="number" class="settings-input" id="cooldownInput" min="200" max="3000" step="100" value="600">
+            </div>
+        </div>
+        <div class="settings-group">
+            <h4>🎨 Tema</h4>
+            <div class="settings-row">
+                <span class="settings-label">Tema Scuro/Chiaro</span>
+                <div class="toggle-switch" id="themeToggle" onclick="toggleTheme()"></div>
+            </div>
+        </div>
+        <div class="settings-group">
+            <h4>🔍 Miglioramento Scansione</h4>
+            <div class="settings-row">
+                <span class="settings-label">Contrasto Adattivo (Otsu)</span>
+                <div class="toggle-switch active" id="contrastToggle" onclick="toggleSetting('contrast')"></div>
+            </div>
+            <div class="settings-row">
+                <span class="settings-label">Migliora Sbiaditi</span>
+                <div class="toggle-switch" id="fadedToggle" onclick="toggleSetting('faded')"></div>
+            </div>
+            <div class="settings-row">
+                <span class="settings-label">Inversione Colori</span>
+                <div class="toggle-switch" id="invertToggle" onclick="toggleSetting('invert')"></div>
+            </div>
+            <div class="settings-row">
+                <span class="settings-label">Edge Detection</span>
+                <div class="toggle-switch" id="edgeToggle" onclick="toggleSetting('edge')"></div>
+            </div>
+        </div>
+        <div class="settings-group">
+            <h4>🔢 Pattern Seriale</h4>
+            <div class="settings-row">
+                <span class="settings-label">Pattern BDBCF00XXX</span>
+                <div class="toggle-switch active" id="patternToggle" onclick="toggleSetting('pattern')"></div>
+            </div>
+            <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
+                <span class="settings-label">Lunghezza minima caratteri</span>
+                <input type="number" class="settings-input" id="minCharsInput" min="3" max="20" value="10" style="width:80px;">
+            </div>
+        </div>
+        
+        <!-- Backup File Section -->
+        <div class="backup-section">
+            <h4>💾 Backup File Locale</h4>
+            <p class="backup-info">Salva i record su un file JSON sul dispositivo per condividerli tra dispositivi e non perderli con la cache del browser.</p>
+            <div class="backup-actions">
+                <button class="btn btn-accent" onclick="setupBackupFile()">📁 Scegli Percorso</button>
+                <button class="btn btn-outline" onclick="downloadBackupJSON()">⬇️ Scarica JSON</button>
+                <button class="btn btn-outline" onclick="triggerRestoreFile()">⬆️ Ripristina</button>
+            </div>
+            <div class="backup-status" id="backupStatus"></div>
+        </div>
+        <input type="file" id="restoreFileInput" accept=".json" onchange="handleRestoreFile(event)">
+        
+        <button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="saveSettings()">Salva Impostazioni</button>
+    </div>
+</div>
+
+<!-- Version Modal (with Changelog + Google Sheets) -->
 <div class="modal-overlay" id="versionModal">
     <div class="modal-box version-modal-box" onclick="event.stopPropagation()">
         <button class="modal-close" onclick="closeVersionModal()">✕</button>
@@ -364,7 +515,7 @@
 
 <div class="confirm-modal" id="statusApplyModal"><div class="confirm-box"><h3>📍 Applica Stato</h3><p>Pedana: <b id="applyPedanaName" style="color:var(--warning)"></b></p><div class="status-grid"><button class="btn btn-accent" onclick="executeApplyStatus('Good')">✓ Good</button><button class="btn btn-danger" onclick="executeApplyStatus('Rotto')">✕ Rotto</button><button class="btn btn-warning" onclick="executeApplyStatus('Sporco')">◆ Sporco</button><button class="btn" style="background:#8b5cf6;color:white" onclick="executeApplyStatus('RF-ID')">📡 RF-ID</button><button class="btn" style="background:#06b6d4;color:white" onclick="executeApplyStatus('Barra Mancante')">▤ Barra Manc.</button><button class="btn" style="background:var(--text-dim);color:white" onclick="executeApplyStatus('Dubbio/Altro')">❓ Dubbio</button></div><button class="btn btn-outline" style="margin-top:12px;width:100%" onclick="document.getElementById('statusApplyModal').classList.remove('visible')">Annulla</button></div></div>
 
-<div class="confirm-modal" id="manualEntryModal"><div class="confirm-box"><h3 id="manualEntryTitle">✏️ Inserimento Manuale</h3><p id="manualEntryDesc">Rilevamenti ripetuti a bassa confidenza.</p><div class="pedana-preview" id="manualPreviewWrap" style="margin:10px auto;"></div><input type="text" class="manual-input" id="manualSerialInput" value="BDBCF00" maxlength="10"><div class="confirm-actions"><button class="btn btn-outline" onclick="closeManualEntry()">Annulla</button><button class="btn btn-primary" onclick="confirmManualEntry()">Conferma</button></div></div></div>
+<div class="confirm-modal" id="manualEntryModal"><div class="confirm-box"><h3 id="manualEntryTitle">✏️ Inserimento Manuale</h3><p id="manualEntryDesc">Inserisci le ultime 3 cifre del seriale.</p><div class="pedana-preview" id="manualPreviewWrap" style="margin:10px auto;display:none;"></div><input type="text" class="manual-input" id="manualSerialInput" value="BDBCF00" maxlength="10"><div class="confirm-actions" style="margin-top:14px;"><button class="btn btn-outline" onclick="closeManualEntry()">Annulla</button><button class="btn btn-primary" onclick="confirmManualEntry()">Conferma</button></div></div></div>
 
 <div class="toast" id="toast"></div>
 
@@ -373,34 +524,61 @@
         <h3 id="confirmTitle">Conferma</h3>
         <img id="confirmPreviewImage" src="" style="display:none; width:100%; max-height:100px; object-fit:contain; border-radius:6px; margin-bottom:15px; border:1px solid var(--border); background:#000;">
         <p id="confirmMsg">Sei sicuro?</p>
-        <div class="confirm-actions"><button class="btn btn-outline" onclick="closeConfirm()">Annulla</button><button class="btn btn-danger" id="confirmBtn" onclick="executeConfirm()">Conferma</button></div>
+        <div class="confirm-actions"><button class="btn btn-outline" onclick="closeConfirm()">Annulla</button><button class="btn btn-primary" id="confirmBtn" onclick="executeConfirm()">Conferma</button></div>
     </div>
 </div>
 
+<!-- Google Sheets Export Confirm Modal -->
+<div class="confirm-modal" id="gsheetExportModal"><div class="confirm-box"><h3>☁️ Esporta su GSheet</h3><p id="gsheetExportMsg"></p><div class="confirm-actions" style="margin-top:14px;"><button class="btn btn-outline" onclick="document.getElementById('gsheetExportModal').classList.remove('visible')">Annulla</button><button class="btn btn-primary" id="gsheetExportBtn">Esporta</button></div></div></div>
+
 <div class="bottom-bar">
-    <button class="btn btn-accent" onclick="exportExcel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>Excel</button>
-    <button class="btn btn-primary" onclick="exportHtmlWithImages()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>HTML+Img</button>
-    <button class="btn btn-outline" onclick="exportZip()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>ZIP</button>
+    <button class="btn btn-accent" onclick="exportExcel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+        <span class="btn-label"><span class="l1">Esporta</span><span class="l2">Excel</span></span>
+    </button>
+    <button class="btn btn-primary" onclick="exportHtmlWithImages()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <span class="btn-label"><span class="l1">Esporta</span><span class="l2">HTML+Img</span></span>
+    </button>
+    <button class="btn btn-outline" onclick="exportZip()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+        <span class="btn-label"><span class="l1">Esporta</span><span class="l2">ZIP</span></span>
+    </button>
+    <button class="btn btn-outline" onclick="openGSheetLink()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        <span class="btn-label"><span class="l1">Apri</span><span class="l2">GSheet</span></span>
+    </button>
+    <button class="btn btn-accent" onclick="requestGSheetExport()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <span class="btn-label"><span class="l1">Esporta</span><span class="l2">GSheet</span></span>
+    </button>
 </div>
 
 <script>
-const APP_VERSION='6.0.0';
+const APP_VERSION='7.4.0';
 const STORAGE_KEY='scannerSerialiOCR_data';
+const BACKUP_KEY='scannerSerialiOCR_backupHandle';
+const SETTINGS_KEY='scannerSettings';
 const GSHEET_KEY='scannerSerialiOCR_gsheet';
+const GSHEET_URL='https://docs.google.com/spreadsheets/d/18WJa9UjOLjqHLF8DCUvwhbt5pPHx0bdCBN6lOPsmdxA/edit?gid=0#gid=0';
 const IMG_DB_NAME='ScannerSerialiDB';
 const IMG_DB_VERSION=1;
 const IMG_STORE='images';
 
 const CHANGELOG=[
-    {ver:'v6.0.0',date:'24/05/2026',desc:'Codice Google Sheets pulito e ottimizzato. Invio dati a foglio Google senza immagini. Logica funzionante testata.',tags:['feat','fix']},
-    {ver:'v5.5.0',date:'24/05/2026',desc:'Ripristinato export HTML+Img con anteprime embeddate.',tags:['feat','fix']},
-    {ver:'v5.4.0',date:'24/05/2026',desc:'Fix critico: Blocco record duplicati ripristinato.',tags:['fix']},
-    {ver:'v5.3.0',date:'24/05/2026',desc:'Cooldown ridotto a 1 secondo. Changelog completo ripristinato.',tags:['fix']},
-    {ver:'v5.2.0',date:'23/05/2026',desc:'Fix Excel. Fix nomi immagini ZIP. Heartbeat audio OCR.',tags:['fix','ui','feat']},
+    {ver:'v7.4.0',date:'26/05/2026',desc:'Fix visibilità switch impostazioni. Backup file JSON locale con scelta percorso e ripristino.',tags:['fix','feat']},
+    {ver:'v7.3.2',date:'26/05/2026',desc:'Tastiera completa per ricerca. UI conferma modifica migliorata (colore tasti e seriali). Rimossa riga rilevamento multiplo. Suggerimento manuale su fallimenti OCR ripetuti.',tags:['fix','ui','feat']},
+    {ver:'v7.3.1',date:'26/05/2026',desc:'Inserimento manuale: pausa fotocamera, cursore automatico, immagine "INSERIMENTO MANUALE".',tags:['feat','ui']},
+    {ver:'v7.3.0',date:'26/05/2026',desc:'Ricerca seriale con prefisso fisso. OCR ottimizzato per velocità e affidabilità.',tags:['feat']},
+    {ver:'v7.2.1',date:'26/05/2026',desc:'Bottom bar: testi su due righe per adattarsi allo schermo.',tags:['ui']},
+    {ver:'v7.2.0',date:'26/05/2026',desc:'Esporta GSheet su richiesta + tasto Apri GSheet nella bottom bar. Pattern disabilitabile. Miglioramento seriali sbiaditi.',tags:['feat']},
+    {ver:'v7.1.0',date:'26/05/2026',desc:'Contrasto adattivo migliorato con Otsu + stretch locale.',tags:['feat','fix']},
+    {ver:'v7.0.0',date:'26/05/2026',desc:'Merge completo: OCR funzionante con flip detection, impostazioni avanzate, sync GSheet.',tags:['feat','fix']},
+    {ver:'v6.0.0',date:'24/05/2026',desc:'Codice Google Sheets pulito e ottimizzato.',tags:['feat','fix']},
     {ver:'v1.0.0',date:'22/05/2026',desc:'Versione iniziale.',tags:['feat']}
 ];
 
-let cameraActive=false, flashOn=false, multiDetect=false, videoEl=null, stream=null, ocrWorker=null, scanTimer=null, idleTimer=null;
+let cameraActive=false, flashOn=false, videoEl=null, stream=null, ocrWorker=null, scanTimer=null, idleTimer=null;
 let records=[], scanTotal=0, confirmCallback=null, audioCtx=null;
 let scanCooldown=false, scanPaused=false;
 let lastScanPedana='', lastScanImage=null;
@@ -410,11 +588,216 @@ let gsheetUrl='', syncStatus='idle';
 const lowConfTracker = {};
 let manualEntrySerial='', manualEntryImage=null;
 const IDLE_TIMEOUT=30000;
-const SCAN_INTERVAL=800;
 const SERIAL_PATTERN=/^BDBCF00[A-F0-9]{3}$/;
 const IMG_MARGIN=25;
 
-// ===== AUDIO =====
+// File System Access Handle for backup
+let backupFileHandle = null;
+
+// Settings
+let settings = {
+    cooldown: 600,
+    theme: 'dark',
+    contrast: true,
+    faded: false,
+    invert: false,
+    edge: false,
+    pattern: true,
+    minChars: 10
+};
+
+// ===== MANUAL ENTRY IMAGE GENERATOR =====
+function createManualEntryImage() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 300; canvas.height = 60;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(0, 0, 300, 60);
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 18px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('INSERIMENTO MANUALE', 150, 30);
+    return canvas.toDataURL('image/png');
+}
+const MANUAL_ENTRY_IMG = createManualEntryImage();
+
+// ===== BACKUP FILE SYSTEM =====
+function showBackupStatus(msg, isError=false) {
+    const el = document.getElementById('backupStatus');
+    el.textContent = msg;
+    el.className = 'backup-status visible ' + (isError ? 'err' : 'ok');
+    setTimeout(() => { el.className = 'backup-status'; }, 4000);
+}
+
+async function setupBackupFile() {
+    if (!window.showSaveFilePicker) {
+        showBackupStatus('❌ Funzione non supportata. Usa "Scarica JSON".', true);
+        return;
+    }
+    try {
+        const handle = await window.showSaveFilePicker({
+            suggestedName: `scanner_backup_${new Date().toISOString().slice(0,10)}.json`,
+            types: [{
+                description: 'JSON Backup',
+                accept: { 'application/json': ['.json'] }
+            }]
+        });
+        backupFileHandle = handle;
+        try { localStorage.setItem(BACKUP_KEY, JSON.stringify({name: handle.name})); } catch(e) {}
+        await autoBackupToFile();
+        showBackupStatus('✅ Percorso salvato: ' + handle.name);
+    } catch(e) {
+        if (e.name !== 'AbortError') {
+            showBackupStatus('❌ Errore: ' + e.message, true);
+        }
+    }
+}
+
+async function autoBackupToFile() {
+    if (!backupFileHandle) return;
+    try {
+        const data = {
+            version: APP_VERSION,
+            date: new Date().toISOString(),
+            records: records,
+            scanTotal: scanTotal,
+            settings: settings
+        };
+        const writable = await backupFileHandle.createWritable();
+        await writable.write(JSON.stringify(data, null, 2));
+        await writable.close();
+    } catch(e) {
+        console.warn('Auto-backup fail:', e);
+        backupFileHandle = null;
+    }
+}
+
+function downloadBackupJSON() {
+    const data = {
+        version: APP_VERSION,
+        date: new Date().toISOString(),
+        records: records,
+        scanTotal: scanTotal,
+        settings: settings
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `scanner_backup_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('💾 Backup scaricato','success');
+}
+
+function triggerRestoreFile() {
+    document.getElementById('restoreFileInput').click();
+}
+
+function handleRestoreFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!data.records || !Array.isArray(data.records)) {
+                toast('❌ File non valido','error');
+                return;
+            }
+            const count = data.records.length;
+            showConfirm('Ripristina Backup',`Ripristinare ${count} record dal file? I dati attuali verranno sovrascritti.`,()=>{
+                records = data.records;
+                scanTotal = data.scanTotal || records.length;
+                document.getElementById('scanCount').textContent = scanTotal;
+                if (data.settings) {
+                    settings = {...settings, ...data.settings};
+                    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+                    applySettings();
+                }
+                saveToStorage();
+                renderRecords();
+                toast(`✅ ${count} record ripristinati`,'success');
+                vib('ok');
+            });
+        } catch(err) {
+            toast('❌ File JSON non valido','error');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+// ===== SETTINGS =====
+function loadSettings(){
+    try{const s=localStorage.getItem(SETTINGS_KEY);if(s){const parsed=JSON.parse(s);settings={...settings,...parsed};}}catch(e){}
+    applySettings();
+}
+function applySettings(){
+    document.documentElement.setAttribute('data-theme',settings.theme);
+    if(document.getElementById('themeToggle'))document.getElementById('themeToggle').classList.toggle('active',settings.theme==='light');
+    if(document.getElementById('contrastToggle'))document.getElementById('contrastToggle').classList.toggle('active',settings.contrast);
+    if(document.getElementById('fadedToggle'))document.getElementById('fadedToggle').classList.toggle('active',settings.faded);
+    if(document.getElementById('invertToggle'))document.getElementById('invertToggle').classList.toggle('active',settings.invert);
+    if(document.getElementById('edgeToggle'))document.getElementById('edgeToggle').classList.toggle('active',settings.edge);
+    if(document.getElementById('patternToggle'))document.getElementById('patternToggle').classList.toggle('active',settings.pattern);
+    if(document.getElementById('cooldownInput'))document.getElementById('cooldownInput').value=settings.cooldown;
+    if(document.getElementById('minCharsInput'))document.getElementById('minCharsInput').value=settings.minChars;
+}
+function openSettingsModal(){applySettings();document.getElementById('settingsModal').classList.add('visible');}
+function closeSettingsModal(){document.getElementById('settingsModal').classList.remove('visible');}
+function toggleTheme(){settings.theme=settings.theme==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',settings.theme);document.getElementById('themeToggle').classList.toggle('active',settings.theme==='light');}
+function toggleSetting(key){settings[key]=!settings[key];const el=document.getElementById(key+'Toggle');if(el)el.classList.toggle('active',settings[key]);}
+function saveSettings(){
+    settings.cooldown=Math.max(200,Math.min(3000,parseInt(document.getElementById('cooldownInput').value)||600));
+    settings.minChars=Math.max(3,Math.min(20,parseInt(document.getElementById('minCharsInput').value)||10));
+    localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));applySettings();closeSettingsModal();toast('Impostazioni salvate','success');
+}
+
+// ===== SEARCH =====
+function openSearchModal(){
+    document.getElementById('searchSuffix').value='';
+    document.getElementById('searchResult').style.display='none';
+    document.getElementById('searchModal').classList.add('visible');
+    setTimeout(()=>document.getElementById('searchSuffix').focus(),200);
+}
+function closeSearchModal(){document.getElementById('searchModal').classList.remove('visible');}
+function executeSearch(){
+    const suffix=document.getElementById('searchSuffix').value.trim().toUpperCase();
+    const searchFor='BDBCF00'+suffix;
+    const found=records.find(r=>r.serial===searchFor);
+    const resultDiv=document.getElementById('searchResult');
+    resultDiv.style.display='block';
+    
+    if(found){
+        resultDiv.className='search-result found';
+        resultDiv.innerHTML=`<div class="found-serial">${found.serial}</div><div class="found-meta">Pedana: ${found.pedana} | ${found.timestamp}</div>`;
+        closeSearchModal();
+        setTimeout(()=>{
+            const card=document.getElementById('record-'+found.id);
+            if(card){
+                card.scrollIntoView({behavior:'smooth',block:'center'});
+                card.classList.add('highlight');
+                card.style.animation='highlightPulse 1.5s ease-out';
+                setTimeout(()=>{card.classList.remove('highlight');card.style.animation='';},2500);
+            }
+        },300);
+    }else{
+        resultDiv.className='search-result not-found';
+        resultDiv.innerHTML=`<div class="not-found-text">❌ Seriale non trovato</div>`;
+    }
+}
+document.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter'&&document.getElementById('searchModal').classList.contains('visible'))executeSearch();
+});
+
+// ===== GOOGLE SHEET LINK =====
+function openGSheetLink(){window.open(GSHEET_URL,'_blank','noopener,noreferrer');}
+
+// ===== AUDIO & UI =====
 function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx;}
 function playTone(f,d,t='square',v=0.12){try{const c=getAudioCtx(),o=c.createOscillator(),g=c.createGain();o.type=t;o.frequency.value=f;g.gain.value=v;g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d/1000);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d/1000);}catch(e){}}
 function beepOk(){playTone(1200,50,'sine');setTimeout(()=>playTone(1600,50,'sine'),70);}
@@ -424,24 +807,190 @@ function vib(p='ok'){if(navigator.vibrate){if(p==='ok')navigator.vibrate([40,25,
 function toast(m,t='success'){const e=document.getElementById('toast');e.textContent=m;e.className='toast '+t;setTimeout(()=>e.classList.add('visible'),10);setTimeout(()=>e.classList.remove('visible'),2800);}
 function showConfirm(title,msg,cb,imageUrl=null){
     document.getElementById('confirmTitle').textContent=title;
-    document.getElementById('confirmMsg').textContent=msg;
-    const preview = document.getElementById('confirmPreviewImage');
-    if(imageUrl){preview.src=imageUrl;preview.style.display='block';} else{preview.style.display='none';}
-    confirmCallback=cb;
-    document.getElementById('confirmModal').classList.add('visible');
+    document.getElementById('confirmMsg').innerHTML=msg;
+    const preview=document.getElementById('confirmPreviewImage');
+    if(imageUrl){preview.src=imageUrl;preview.style.display='block';}else{preview.style.display='none';}
+    confirmCallback=cb;document.getElementById('confirmModal').classList.add('visible');
 }
 function closeConfirm(){document.getElementById('confirmModal').classList.remove('visible');confirmCallback=null;}
 function executeConfirm(){if(confirmCallback)confirmCallback();closeConfirm();}
 
+// ===== OCR HELPERS =====
 const OCR_CORRECTION_MAP={'O':'0','o':'0','Q':'0','I':'1','l':'1','i':'1','S':'5','s':'5','Z':'2','z':'2'};
 function fixOCR(raw){let c=[],f='';for(let i=0;i<raw.length;i++){if(OCR_CORRECTION_MAP.hasOwnProperty(raw[i])){f+=OCR_CORRECTION_MAP[raw[i]];c.push(`${raw[i]}→${OCR_CORRECTION_MAP[raw[i]]}`);}else{f+=raw[i];}}return{fixed:f.toUpperCase(),corrections:c};}
-function detectCorrections(raw,serial){const c=[],ru=raw.toUpperCase(),mn=Math.min(ru.length,serial.length);for(let i=0;i<mn;i++){if(ru[i]!==serial[i])c.push(`${ru[i]}→${serial[i]}`);}return c;}
-function isValidSerial(s){return SERIAL_PATTERN.test(s);}
 function validateSerial(s){if(s.length!==10)return'10 caratteri richiesti';if(!s.startsWith('BDBCF00'))return'Inizia con BDBCF00';if(!SERIAL_PATTERN.test(s))return'Caratteri non validi';return null;}
-function cropFromBbox(canvas,rw,rh,bbox,margin){const{x0,y0,x1,y1}=bbox;const cX=Math.max(0,x0-margin),cY=Math.max(0,y0-margin);const cW=Math.min(rw-cX,(x1-x0)+margin*2),cH=Math.min(rh-cY,(y1-y0)+margin*2);if(cW<=0||cH<=0)return null;const cc=document.createElement('canvas');cc.width=cW;cc.height=cH;const cctx=cc.getContext('2d');cctx.drawImage(canvas,cX,cY,cW,cH,0,0,cW,cH);return cc.toDataURL('image/jpeg',0.8);}
+function isValidSerial(s){return SERIAL_PATTERN.test(s);}
+function cropFromBbox(canvas,rw,rh,bbox,margin){
+    const{x0,y0,x1,y1}=bbox;const cX=Math.max(0,x0-margin),cY=Math.max(0,y0-margin);
+    const cW=Math.min(rw-cX,(x1-x0)+margin*2),cH=Math.min(rh-cY,(y1-y0)+margin*2);
+    if(cW<=0||cH<=0)return null;const cc=document.createElement('canvas');cc.width=cW;cc.height=cH;
+    const cctx=cc.getContext('2d');cctx.drawImage(canvas,cX,cY,cW,cH,0,0,cW,cH);return cc.toDataURL('image/jpeg',0.8);
+}
 
+function extractBestFromOCR(result, sourceCanvas) {
+    let best = null;
+    for(const word of result.data.words||[]){
+        let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
+        if(cleaned.length<settings.minChars)continue;
+        let{fixed,corrections}=fixOCR(cleaned);
+        const conf=Math.round(word.confidence);
+        
+        if(settings.pattern){
+            if(fixed.length===10&&isValidSerial(fixed)){
+                const img=cropFromBbox(sourceCanvas,sourceCanvas.width,sourceCanvas.height,word.bbox,IMG_MARGIN);
+                if(!best||conf>best.confidence)best={serial:fixed,confidence:conf,corrections,image:img};
+            }
+        }else{
+            const img=cropFromBbox(sourceCanvas,sourceCanvas.width,sourceCanvas.height,word.bbox,IMG_MARGIN);
+            if(!best||conf>best.confidence)best={serial:fixed,confidence:conf,corrections,image:img};
+        }
+    }
+    return best;
+}
+
+async function processROIAndOCR(roiCanvas) {
+    let best = extractBestFromOCR(await ocrWorker.recognize(roiCanvas), roiCanvas);
+    if(best && best.confidence >= 35) return best;
+    
+    const flipCanvas = document.createElement('canvas');
+    flipCanvas.width = roiCanvas.width; flipCanvas.height = roiCanvas.height;
+    const fCtx = flipCanvas.getContext('2d');
+    fCtx.translate(flipCanvas.width, flipCanvas.height);
+    fCtx.rotate(Math.PI);
+    fCtx.drawImage(roiCanvas, 0, 0);
+    
+    const flippedBest = extractBestFromOCR(await ocrWorker.recognize(flipCanvas), flipCanvas);
+    if(flippedBest && flippedBest.confidence >= 35) return flippedBest;
+    
+    return flippedBest || best;
+}
+
+// ===== IMPROVED ADAPTIVE CONTRAST (Otsu + Local Stretch) =====
+function computeHistogram(gray, len) {
+    const hist = new Uint32Array(256);
+    for (let i = 0; i < len; i++) hist[gray[i]]++;
+    return hist;
+}
+
+function otsuThreshold(hist, totalPixels) {
+    let sum = 0;
+    for (let t = 0; t < 256; t++) sum += t * hist[t];
+    let sumB = 0, wB = 0, maxVar = 0, threshold = 128;
+    for (let t = 0; t < 256; t++) {
+        wB += hist[t];
+        if (wB === 0) continue;
+        const wF = totalPixels - wB;
+        if (wF === 0) break;
+        sumB += t * hist[t];
+        const mB = sumB / wB, mF = (sum - sumB) / wF;
+        const variance = wB * wF * (mB - mF) * (mB - mF);
+        if (variance > maxVar) { maxVar = variance; threshold = t; }
+    }
+    return threshold;
+}
+
+function applyFadedTextEnhancement(gray, w, h) {
+    const out = new Uint8Array(gray.length);
+    const winSize = Math.max(15, Math.min(w, h) / 8) | 0;
+    const halfWin = winSize >> 1;
+    
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            let sum = 0, count = 0, minV = 255, maxV = 0;
+            const y0 = Math.max(0, y - halfWin), y1 = Math.min(h - 1, y + halfWin);
+            const x0 = Math.max(0, x - halfWin), x1 = Math.min(w - 1, x + halfWin);
+            
+            for (let dy = y0; dy <= y1; dy++) {
+                const row = dy * w;
+                for (let dx = x0; dx <= x1; dx++) {
+                    const v = gray[row + dx];
+                    sum += v; count++;
+                    if (v < minV) minV = v;
+                    if (v > maxV) maxV = v;
+                }
+            }
+            
+            const localMean = sum / count;
+            const localRange = maxV - minV;
+            const center = gray[y * w + x];
+            
+            let val = center - localMean + 128;
+            if (localRange > 0) {
+                val = ((val - 128) * (255 / Math.max(localRange, 10))) + 128;
+            }
+            
+            out[y * w + x] = Math.max(0, Math.min(255, val));
+        }
+    }
+    return out;
+}
+
+function applyAdaptiveThreshold(ctx, w, h) {
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const data = imageData.data;
+    const totalPixels = w * h;
+    
+    let gray = new Uint8Array(totalPixels);
+    for (let i = 0; i < totalPixels; i++) {
+        gray[i] = (0.299 * data[i*4] + 0.587 * data[i*4+1] + 0.114 * data[i*4+2]) | 0;
+    }
+    
+    if (settings.faded) {
+        gray = applyFadedTextEnhancement(gray, w, h);
+    }
+    
+    if (settings.contrast) {
+        const hist = computeHistogram(gray, totalPixels);
+        const otsuThresh = otsuThreshold(hist, totalPixels);
+        
+        const sorted = Uint8Array.from(gray).sort();
+        const pLow = sorted[Math.floor(totalPixels * 0.02)];
+        const pHigh = sorted[Math.floor(totalPixels * 0.98)];
+        const dynamicRange = pHigh - pLow;
+        const stretchFactor = dynamicRange > 0 ? 255 / dynamicRange : 1;
+        
+        for (let i = 0; i < totalPixels; i++) {
+            let val = gray[i];
+            if (val < pLow) val = 0;
+            else if (val > pHigh) val = 255;
+            else val = ((val - pLow) * stretchFactor) | 0;
+            gray[i] = val > otsuThresh ? 255 : 0;
+        }
+    }
+    
+    if (settings.invert) {
+        for (let i = 0; i < totalPixels; i++) gray[i] = 255 - gray[i];
+    }
+    
+    if (settings.edge) {
+        const edges = new Uint8Array(totalPixels);
+        for (let y = 1; y < h - 1; y++) {
+            for (let x = 1; x < w - 1; x++) {
+                const idx = (r, c) => gray[y * w + x + r * w + c];
+                const gx = -idx(-1,-1) + idx(-1,1) - 2*idx(0,-1) + 2*idx(0,1) - idx(1,-1) + idx(1,1);
+                const gy = -idx(-1,-1) - 2*idx(-1,0) - idx(-1,1) + idx(1,-1) + 2*idx(1,0) + idx(1,1);
+                edges[y * w + x] = Math.sqrt(gx*gx + gy*gy) > 128 ? 255 : 0;
+            }
+        }
+        for (let i = 0; i < totalPixels; i++) {
+            const v = edges[i];
+            data[i*4] = data[i*4+1] = data[i*4+2] = v;
+            data[i*4+3] = 255;
+        }
+    } else {
+        for (let i = 0; i < totalPixels; i++) {
+            const v = gray[i];
+            data[i*4] = data[i*4+1] = data[i*4+2] = v;
+            data[i*4+3] = 255;
+        }
+    }
+    
+    ctx.putImageData(imageData, 0, 0);
+}
+
+// ===== SCROLL & NAV =====
 function scrollToTop(){window.scrollTo({top:0,behavior:'smooth'});}
-function checkScrollPosition(){const btn=document.getElementById('scrollTopBtn');const scrolledDown=window.scrollY>200;if(scrolledDown)btn.classList.add('visible');else btn.classList.remove('visible');}
+function checkScrollPosition(){const btn=document.getElementById('scrollTopBtn');if(window.scrollY>200)btn.classList.add('visible');else btn.classList.remove('visible');}
 window.addEventListener('scroll',checkScrollPosition,{passive:true});
 
 function openHelpModal(){document.getElementById('helpModal').classList.add('visible');}
@@ -458,97 +1007,70 @@ function openVersionModal(){
 }
 function closeVersionModal(){document.getElementById('versionModal').classList.remove('visible');}
 
-// ===== GOOGLE SHEETS LOGIC =====
+// ===== GOOGLE SHEETS =====
 function loadGSheetUrl(){try{const u=localStorage.getItem(GSHEET_KEY);if(u){gsheetUrl=u;document.getElementById('modalGsheetUrl').value=u;}}catch(e){}}
 function saveModalGSheet(){const val=document.getElementById('modalGsheetUrl').value.trim();gsheetUrl=val;localStorage.setItem(GSHEET_KEY,val);toast('URL Salvato','success');setSyncStatus(syncStatus);}
 function verifyGSheetFromModal(){
     if(!gsheetUrl){toast('Inserisci URL','error');return;}
     if(!gsheetUrl.includes('/exec')){toast('URL deve terminare con /exec','error');return;}
-    document.getElementById('gsheetDiag').style.display='block';
-    document.getElementById('gsheetDiag').textContent='Verifica...';
-    
-    // Usa fetch GET per verificare la connessione
-    fetch(gsheetUrl, {method:'GET', mode:'no-cors'})
-        .then(()=>{
-            document.getElementById('gsheetDiag').textContent='✅ Connesso';
-            toast('✅ Verifica OK','success');
-            setSyncStatus('synced');
-        })
-        .catch(()=>{
-            document.getElementById('gsheetDiag').textContent='❌ Errore';
-            toast('❌ Verifica fallita','error');
-            setSyncStatus('error');
-        });
+    document.getElementById('gsheetDiag').style.display='block';document.getElementById('gsheetDiag').textContent='Verifica...';
+    fetch(gsheetUrl, {method:'GET', mode:'no-cors'}).then(()=>{
+        document.getElementById('gsheetDiag').textContent='✅ Connesso';toast('✅ Verifica OK','success');setSyncStatus('synced');
+    }).catch(()=>{document.getElementById('gsheetDiag').textContent='❌ Errore';toast('❌ Verifica fallita','error');setSyncStatus('error');});
 }
 function setSyncStatus(status){
-    syncStatus=status;
-    const el=document.getElementById('syncIndicator');
+    syncStatus=status;const el=document.getElementById('syncIndicator');
     if(status==='idle'||status==='synced'){el.className='sync-status synced';el.textContent='🟢 Sync';}
     else if(status==='syncing'){el.className='sync-status uploading';el.textContent='🔄 Invio...';}
     else if(status==='error'){el.className='sync-status error';el.textContent='🔴 Errore';}
     else if(status==='pending'){el.className='sync-status pending';el.textContent='🟡 In coda';}
 }
 
-// Metodo affidabile per inviare dati a Google Apps Script Web App
 async function sendToGSheet(record){
-    if(!gsheetUrl || !gsheetUrl.includes('/exec')) return false;
-    
+    if(!gsheetUrl||!gsheetUrl.includes('/exec'))return false;
     try{
-        const payload = {
-            timestamp: record.timestamp || new Date().toLocaleString('it-IT'),
-            serial: record.serial || '',
-            confidence: record.confidence || '',
-            corrections: (record.corrections||[]).join(', '),
-            modified: record.modified ? 'Sì' : 'No',
-            runNumber: record.runNumber || '',
-            pedana: record.pedana || '',
-            operator: record.operator || '',
-            status: record.status || '',
-            note: record.note || ''
-        };
-        
-        // Uso il metodo fetch con no-cors e Content-Type text/plain per evitare problemi CORS
-        await fetch(gsheetUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: {'Content-Type': 'text/plain;charset=utf-8'},
-            body: JSON.stringify(payload)
-        });
-        
-        record._synced = true;
-        return true;
-    } catch(e) {
-        console.warn('GSheet fail:',e);
-        record._synced = false;
-        return false;
-    }
+        const payload={timestamp:record.timestamp||new Date().toLocaleString('it-IT'),serial:record.serial||'',confidence:record.confidence||'',corrections:(record.corrections||[]).join(', '),modified:record.modified?'Sì':'No',runNumber:record.runNumber||'',pedana:record.pedana||'',operator:record.operator||'',status:record.status||'',note:record.note||''};
+        await fetch(gsheetUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+        record._synced=true;return true;
+    }catch(e){console.warn('GSheet fail:',e);record._synced=false;return false;}
 }
 
-async function syncPendingToGSheet(){
-    if(!gsheetUrl){toast('Configura URL nella versione','error');return;}
+function requestGSheetExport(){
+    if(!gsheetUrl){toast('Configura URL GSheet nella versione','error');return;}
     const unsynced=records.filter(r=>!r._synced);
-    if(unsynced.length===0){toast('Tutto sincronizzato ✅','success');return;}
+    const total=records.length;
+    const msg=unsynced.length>0?`Esportare ${unsynced.length} record non sincronizzati (totale: ${total})?`:`Esportare ${total} record su Google Sheets?`;
+    document.getElementById('gsheetExportMsg').textContent=msg;
+    document.getElementById('gsheetExportBtn').onclick=executeGSheetExport;
+    document.getElementById('gsheetExportModal').classList.add('visible');
+}
+
+async function executeGSheetExport(){
+    document.getElementById('gsheetExportModal').classList.remove('visible');
+    if(!gsheetUrl){toast('Configura URL GSheet','error');return;}
+    const unsynced=records.filter(r=>!r._synced);
+    const toExport=unsynced.length>0?unsynced:records;
     
     setSyncStatus('syncing');
-    toast(`🔄 Invio ${unsynced.length} record...`,'success');
+    toast(`🔄 Invio ${toExport.length} record...`,'success');
     
-    let ok=0, err=0;
-    for(const r of unsynced){
-        const s = await sendToGSheet(r);
-        if(s) ok++; else err++;
+    let ok=0,err=0;
+    for(const r of toExport){
+        const s=await sendToGSheet(r);
+        if(s)ok++;else err++;
     }
     
     saveToStorage();
-    if(err===0){toast(`✅ ${ok} inviati`,'success');setSyncStatus('synced');}
+    if(err===0){toast(`✅ ${ok} record inviati`,'success');setSyncStatus('synced');}
     else{toast(`⚠️ ${ok} ok, ${err} errori`,'warning');setSyncStatus('error');}
     renderRecords();
 }
 
 // ===== APPLY STATUS =====
 function openApplyStatusModal(){const c=document.getElementById('pedana').value.trim();if(!c){toast('Imposta Pedana','warning');return;}document.getElementById('applyPedanaName').textContent=c;document.getElementById('statusApplyModal').classList.add('visible');}
-function executeApplyStatus(status){const c=document.getElementById('pedana').value.trim();if(!c)return;let count=0;records.forEach(r=>{if(r.pedana===c){r.status=status;r._synced=false;count++;}});document.getElementById('statusApplyModal').classList.remove('visible');if(count>0){saveToStorage();renderRecords();toast(`✅ "${status}" a ${count} record`,'success');if(gsheetUrl)syncPendingToGSheet();}else toast('Nessun record','warning');}
+function executeApplyStatus(status){const c=document.getElementById('pedana').value.trim();if(!c)return;let count=0;records.forEach(r=>{if(r.pedana===c){r.status=status;r._synced=false;count++;}});document.getElementById('statusApplyModal').classList.remove('visible');if(count>0){saveToStorage();renderRecords();toast(`✅ "${status}" a ${count} record`,'success');}else toast('Nessun record','warning');}
 
-// ===== STORAGE & PEDANA =====
+// ===== STORAGE =====
 let imgDB=null;
 function openImgDB(){return new Promise((resolve,reject)=>{if(imgDB){resolve(imgDB);return;}const req=indexedDB.open(IMG_DB_NAME,IMG_DB_VERSION);req.onupgradeneeded=(e)=>{const db=e.target.result;if(!db.objectStoreNames.contains(IMG_STORE))db.createObjectStore(IMG_STORE,{keyPath:'id'});};req.onsuccess=(e)=>{imgDB=e.target.result;resolve(imgDB);};req.onerror=(e)=>reject(e);});}
 async function saveImg(id,dataUrl){try{const db=await openImgDB();const tx=db.transaction(IMG_STORE,'readwrite');tx.objectStore(IMG_STORE).put({id:id,data:dataUrl});return new Promise((r)=>{tx.oncomplete=()=>r();});}catch(e){}}
@@ -557,19 +1079,19 @@ async function deleteImg(id){try{const db=await openImgDB();const tx=db.transact
 async function saveToStorage(){try{const lean=records.map(r=>{const c={...r};c.image=null;return c;});localStorage.setItem(STORAGE_KEY,JSON.stringify({records:lean,scanTotal:scanTotal,operator:document.getElementById('operatorName').value,pedana:document.getElementById('pedana').value,timestamp:Date.now()}));for(const r of records){if(r.image&&!r.image.includes('[truncated]')){await saveImg(r.id,r.image);}}}catch(e){}}
 async function loadFromStorage(){try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return false;const d=JSON.parse(raw);if(Date.now()-d.timestamp>7*24*60*60*1000){localStorage.removeItem(STORAGE_KEY);return false;}records=d.records||[];scanTotal=d.scanTotal||0;if(d.operator)document.getElementById('operatorName').value=d.operator;if(d.pedana)document.getElementById('pedana').value=d.pedana;document.getElementById('scanCount').textContent=scanTotal;const imgMap=await loadAllImages();records.forEach(r=>{if(imgMap[r.id])r.image=imgMap[r.id];});return true;}catch(e){return false;}}
 
-function showPedanaModal(serial,imgData,callback){const current=document.getElementById('pedana').value.trim()||'—';document.getElementById('pedanaSerialRef').textContent='Seriale: '+serial;document.getElementById('pedanaBigRef').textContent=current;document.getElementById('pedanaModalTitle').textContent='📍 Pedana';document.getElementById('pedanaModalMsg').textContent='Conferma o modifica';const pw=document.getElementById('pedanaPreviewWrap');if(imgData){pw.innerHTML=`<img src="${imgData}" alt="preview">`;pw.style.display='block';}else{pw.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>';pw.style.display='flex';}document.getElementById('pedanaChangeInput').style.display='none';document.getElementById('newPedanaInput').value='';pedanaCallback=callback;document.getElementById('pedanaModal').classList.add('visible');}
-function pedanaKeep(){document.getElementById('pedanaModal').classList.remove('visible');if(pedanaCallback)pedanaCallback(document.getElementById('pedana').value.trim());pedanaCallback=null;}
-function pedanaChange(){
-    const container = document.getElementById('pedanaModal');
-    const box = container.querySelector('.confirm-box');
-    box.scrollTop = 0;
-    document.getElementById('pedanaChangeInput').style.display='block';
-    document.getElementById('newPedanaInput').value='';
-    setTimeout(()=>{
-        document.getElementById('newPedanaInput').focus();
-        container.scrollTo({ top: 0, behavior: 'smooth' });
-    },100);
+// ===== PEDANA MODAL =====
+function showPedanaModal(serial,imgData,callback){
+    const current=document.getElementById('pedana').value.trim()||'—';
+    document.getElementById('pedanaSerialRef').textContent='Seriale: '+serial;
+    document.getElementById('pedanaBigRef').textContent=current;
+    document.getElementById('pedanaModalTitle').textContent='📍 Pedana';
+    document.getElementById('pedanaModalMsg').textContent='Conferma o modifica';
+    const pw=document.getElementById('pedanaPreviewWrap');
+    if(imgData){pw.innerHTML=`<img src="${imgData}" alt="preview">`;pw.style.display='block';}else{pw.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:9px;">No img</div>';pw.style.display='flex';}
+    document.getElementById('pedanaChangeInput').style.display='none';document.getElementById('newPedanaInput').value='';pedanaCallback=callback;document.getElementById('pedanaModal').classList.add('visible');
 }
+function pedanaKeep(){document.getElementById('pedanaModal').classList.remove('visible');if(pedanaCallback)pedanaCallback(document.getElementById('pedana').value.trim());pedanaCallback=null;}
+function pedanaChange(){document.getElementById('pedanaChangeInput').style.display='block';document.getElementById('newPedanaInput').value='';setTimeout(()=>document.getElementById('newPedanaInput').focus(),100);}
 function pedanaCancel(){document.getElementById('pedanaChangeInput').style.display='none';}
 function pedanaConfirm(){const nv=document.getElementById('newPedanaInput').value.trim();if(!nv){toast('Obbligatorio','error');return;}document.getElementById('pedana').value=nv;document.getElementById('pedanaModal').classList.remove('visible');document.getElementById('pedana').classList.remove('missing');lastScanPedana=nv;saveToStorage();if(pedanaCallback)pedanaCallback(nv);pedanaCallback=null;}
 document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElementById('pedanaChangeInput').style.display==='block')pedanaConfirm();});
@@ -581,6 +1103,7 @@ document.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&document.getElemen
 
 // ===== CAMERA & SCAN =====
 function resetIdleTimer(){if(idleTimer)clearTimeout(idleTimer);if(!cameraActive)return;lastScanTime=Date.now();idleTimer=setTimeout(()=>{if(cameraActive){toast('⚡ Chiusura: 30s inattività','warning');setTimeout(()=>stopCamera(),500);}},IDLE_TIMEOUT);}
+
 async function toggleCamera(){if(cameraActive){stopCamera();}else{await startCamera();}}
 async function startCamera(){
     const btn=document.getElementById('btnCamera');
@@ -596,20 +1119,29 @@ async function startCamera(){
         document.getElementById('scanIndicator').innerHTML='<span class="loading-indicator"><span class="spinner"></span> Caricamento...</span>';
         document.getElementById('ocrStatus').textContent='Inizializzazione OCR...';
         cameraActive=true;
-        ocrWorker=await Tesseract.createWorker('eng',1,{logger:(m)=>{
-            if(m.status==='recognizing text'){
-                document.getElementById('progressBar').style.width=Math.round(m.progress*100)+'%';
-                document.getElementById('ocrStatus').textContent=`OCR ${Math.round(m.progress*100)}%`;
-                if(Math.round(m.progress*100) >= 100) { playTone(1000, 50, 'sine', 0.05); }
+        
+        ocrWorker=await Tesseract.createWorker('eng',1,{
+            logger:(m)=>{
+                if(m.status==='recognizing text'){
+                    document.getElementById('progressBar').style.width=Math.round(m.progress*100)+'%';
+                    document.getElementById('ocrStatus').textContent=`OCR ${Math.round(m.progress*100)}%`;
+                    if(Math.round(m.progress*100)>=100)playTone(1000,50,'sine',0.05);
+                }
             }
-        }});
-        await ocrWorker.setParameters({tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',preserve_interword_spaces:'0'});
+        });
+        
+        await ocrWorker.setParameters({
+            tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+            preserve_interword_spaces:'0',
+            tessedit_pageseg_mode:'7',
+            classify_bln_numeric_mode:'1'
+        });
+        
         document.getElementById('scanIndicator').innerHTML='<span class="scanning-indicator"><span class="dot"></span> Pronto</span>';
         document.getElementById('ocrStatus').textContent='✓ Scansione attiva';
         document.getElementById('progressBar').style.width='0%';
-        scanTimer=setInterval(scanFrame,SCAN_INTERVAL);
-        resetIdleTimer();checkScrollPosition();
-        toast('📷 Avviata','success');vib('ok');
+        scanTimer=setInterval(scanFrame,settings.cooldown||600);
+        resetIdleTimer();checkScrollPosition();toast('📷 Avviata','success');vib('ok');
     }catch(err){console.error(err);toast('Errore: '+err.message,'error');beepErr();vib('err');resetBtnCamera();}
 }
 function stopCamera(){
@@ -618,58 +1150,23 @@ function stopCamera(){
     if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
     if(ocrWorker){ocrWorker.terminate();ocrWorker=null;}
     cameraActive=false;flashOn=false;videoEl=null;scanCooldown=false;scanPaused=false;
-    document.getElementById('cameraContainer').classList.remove('active');
-    document.getElementById('btnFlash').disabled=true;
+    document.getElementById('cameraContainer').classList.remove('active');document.getElementById('btnFlash').disabled=true;
     document.getElementById('btnFlash').classList.remove('btn-accent');document.getElementById('btnFlash').classList.add('btn-warning');
-    document.getElementById('progressBar').style.width='0%';
-    document.getElementById('cooldownOverlay').classList.remove('active');
+    document.getElementById('progressBar').style.width='0%';document.getElementById('cooldownOverlay').classList.remove('active');
     updateScanIndicator();resetBtnCamera();checkScrollPosition();toast('📷 Spenta','warning');
 }
 function resetBtnCamera(){const btn=document.getElementById('btnCamera');btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Avvia OCR</span>`;btn.classList.add('btn-primary');btn.classList.remove('btn-danger');}
 function updateScanIndicator(){const el=document.getElementById('scanIndicator');if(!cameraActive){el.innerHTML='';return;}if(scanPaused){el.innerHTML='<span class="paused-indicator"><span class="dot"></span> Pausa</span>';return;}if(scanCooldown){el.innerHTML='<span class="paused-indicator"><span class="dot"></span> Cooldown</span>';return;}el.innerHTML='<span class="scanning-indicator"><span class="dot"></span> Scansione</span>';}
 async function toggleFlash(){if(!stream)return;try{const track=stream.getVideoTracks()[0];if(!track)return;const caps=track.getCapabilities();if(!caps||!caps.torch){toast('Flash non supportato','error');return;}flashOn=!flashOn;await track.applyConstraints({advanced:[{torch:flashOn}]});const btn=document.getElementById('btnFlash');if(flashOn){btn.classList.remove('btn-warning');btn.classList.add('btn-accent');toast('🔦 ON','success');}else{btn.classList.remove('btn-accent');btn.classList.add('btn-warning');toast('🔦 OFF','warning');}}catch(e){toast('Errore flash','error');}}
-function toggleMultiDetect(){multiDetect=!multiDetect;document.getElementById('toggleMulti').classList.toggle('active',multiDetect);}
 function checkPedanaRequired(){const p=document.getElementById('pedana').value.trim();if(!p){document.getElementById('pedana').classList.add('missing');toast('⚠️ Pedana richiesta','error');beepErr();vib('err');return false;}document.getElementById('pedana').classList.remove('missing');return true;}
 
-// ===== OCR & UPSIDE DOWN DETECTION =====
-function applyAdaptiveThreshold(ctx,w,h){const imageData=ctx.getImageData(0,0,w,h);const data=imageData.data;const gray=new Uint8Array(w*h);for(let i=0;i<data.length;i+=4)gray[i/4]=0.299*data[i]+0.587*data[i+1]+0.114*data[i+2];let min=255,max=0;for(let i=0;i<gray.length;i++){if(gray[i]<min)min=gray[i];if(gray[i]>max)max=gray[i];}const range=max-min;if(range===0)return;const threshold=min+range*0.5;for(let i=0;i<data.length;i+=4){const val=gray[i/4];const binary=val<threshold?0:255;data[i]=binary;data[i+1]=binary;data[i+2]=binary;}ctx.putImageData(imageData,0,0);}
-
-function extractBestFromOCR(result, sourceCanvas) {
-    let best = null;
-    for(const word of result.data.words||[]){
-        let cleaned=word.text.replace(/[^A-Za-z0-9]/g,'');
-        if(cleaned.length<10)continue;
-        let{fixed,corrections}=fixOCR(cleaned);
-        const conf=Math.round(word.confidence);
-        if(fixed.length===10&&isValidSerial(fixed)){
-            const img=cropFromBbox(sourceCanvas,sourceCanvas.width,sourceCanvas.height,word.bbox,IMG_MARGIN);
-            best={serial:fixed,confidence:conf,corrections,image:img};
-        }
-    }
-    return best;
-}
-
-async function processROIAndOCR(roiCanvas) {
-    let best = extractBestFromOCR(await ocrWorker.recognize(roiCanvas), roiCanvas);
-    if(best && best.confidence >= 35) return best;
-
-    const flipCanvas = document.createElement('canvas');
-    flipCanvas.width = roiCanvas.width; flipCanvas.height = roiCanvas.height;
-    const fCtx = flipCanvas.getContext('2d');
-    fCtx.translate(flipCanvas.width, flipCanvas.height);
-    fCtx.rotate(Math.PI);
-    fCtx.drawImage(roiCanvas, 0, 0);
-
-    const flippedBest = extractBestFromOCR(await ocrWorker.recognize(flipCanvas), flipCanvas);
-    return flippedBest;
-}
-
+// ===== OCR LOOP =====
 async function scanFrame(){
     if(!cameraActive||!videoEl||!ocrWorker)return;
     if(videoEl.readyState<2)return;
     if(scanCooldown||scanPaused)return;
     if(!checkPedanaRequired())return;
-
+    
     const canvas=document.getElementById('captureCanvas'),ctx=canvas.getContext('2d');
     const vw=videoEl.videoWidth,vh=videoEl.videoHeight;
     const rw=Math.floor(vw*0.85),rh=Math.floor(vh*0.3);
@@ -677,22 +1174,34 @@ async function scanFrame(){
     canvas.width=rw;canvas.height=rh;
     ctx.drawImage(videoEl,rx,ry,rw,rh,0,0,rw,rh);
     applyAdaptiveThreshold(ctx,rw,rh);
-
+    
     try{
         const roiX=rw*0.075,roiY=rh*0.35,roiW=rw*0.85,roiH=rh*0.30;
         const roiCanvas=document.createElement('canvas');roiCanvas.width=roiW;roiCanvas.height=roiH;
         const roiCtx=roiCanvas.getContext('2d');roiCtx.drawImage(canvas,roiX,roiY,roiW,roiH,0,0,roiW,roiH);
-
+        
         const best = await processROIAndOCR(roiCanvas);
         if(best){
-            if(isValidSerial(best.serial)){
-                processSerial(best.serial,best.image,best.confidence,best.corrections);
-            } else if(best.confidence < 35) {
-                const trackText=(best.serial&&best.serial.length>=7)?best.serial.substring(0,7):'';
-                if(trackText){const c=trackLowConfidence(trackText,Date.now());if(c>=5){openManualEntryModal(trackText,best.image);scanPaused=true;}}
+            if(settings.pattern){
+                if(isValidSerial(best.serial)){
+                    processSerial(best.serial, best.image, best.confidence, best.corrections);
+                } else if(best.confidence < 35) {
+                    const trackText=(best.serial&&best.serial.length>=7)?best.serial.substring(0,7):'';
+                    if(trackText){
+                        const c=trackLowConfidence(trackText,Date.now());
+                        if(c>=5){
+                            toast('📝 Inserimento manuale suggerito','warning');
+                            openManualEntryModalFromOCR(trackText,best.image);
+                            scanPaused=true;
+                        }
+                    }
+                }
+            }else{
+                processSerial(best.serial, best.image, best.confidence, best.corrections);
             }
         }
     }catch(e){console.error('OCR error:',e);}
+    
     document.getElementById('ocrStatus').textContent='✓ Pronto';
     document.getElementById('progressBar').style.width='0%';
 }
@@ -702,19 +1211,15 @@ function getConfClass(c){if(c>=80)return'conf-high';if(c>=60)return'conf-mid';re
 function processSerial(serial,imgData,confidence,corrections){
     const isDup=records.some(r=>r.serial===serial);
     if(isDup){
-        toast('⚠️ Seriale duplicato','warning');
-        beepDup();vib('dup');
-        scanCooldown=false;
-        document.getElementById('cooldownOverlay').classList.remove('active');
+        toast('⚠️ Seriale duplicato','warning');beepDup();vib('dup');
+        scanCooldown=false;document.getElementById('cooldownOverlay').classList.remove('active');
         if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';
-        updateScanIndicator();
-        return;
+        updateScanIndicator();return;
     }
     
     resetIdleTimer();scanCooldown=true;
     document.getElementById('cooldownOverlay').classList.add('active');
-    document.getElementById('ocrStatus').textContent='⏱ Cooldown...';
-    updateScanIndicator();
+    document.getElementById('ocrStatus').textContent='⏱ Cooldown...';updateScanIndicator();
     
     const operator=document.getElementById('operatorName').value.trim()||'N/D';
     const pedana=document.getElementById('pedana').value.trim()||'N/D';
@@ -724,25 +1229,68 @@ function processSerial(serial,imgData,confidence,corrections){
     records.unshift(rec);scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
     if(imgData)saveImg(rec.id,imgData);saveToStorage();
     beepOk();vib('ok');renderRecords();
-    if(confidence<50)toast('⚠️ Bassa confidenza','warning');
-    else toast('✅ '+serial,'success');
-    if(gsheetUrl)sendToGSheet(rec).then(()=>{saveToStorage();setSyncStatus('synced');renderRecords();}).catch(()=>{setSyncStatus('pending');renderRecords();});
+    if(confidence<50)toast('⚠️ Bassa confidenza','warning');else toast('✅ '+serial,'success');
+    
+    // Auto-backup to file after each scan
+    autoBackupToFile();
     
     setTimeout(()=>{showPedanaModal(serial,imgData,()=>{scanCooldown=false;document.getElementById('cooldownOverlay').classList.remove('active');if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},1000);
 }
 
+// ===== MANUAL ENTRY =====
 function trackLowConfidence(serial, timestamp){if(!lowConfTracker[serial])lowConfTracker[serial]=[];lowConfTracker[serial].push(timestamp);const now=Date.now();lowConfTracker[serial]=lowConfTracker[serial].filter(t=>now-t<10000);return lowConfTracker[serial].length;}
-function openManualEntryModal(serial,imgData){
+
+function openManualEntry(){
+    manualEntrySerial='';manualEntryImage=MANUAL_ENTRY_IMG;
+    document.getElementById('manualSerialInput').value='BDBCF00';
+    document.getElementById('manualPreviewWrap').style.display='none';
+    document.getElementById('manualEntryTitle').textContent='✏️ Inserimento Manuale';
+    document.getElementById('manualEntryDesc').textContent='Inserisci le ultime 3 cifre del seriale.';
+    scanPaused=true;
+    document.getElementById('manualEntryModal').classList.add('visible');
+    setTimeout(()=>{
+        const inp=document.getElementById('manualSerialInput');
+        inp.focus();
+        inp.setSelectionRange(7, 10);
+    },300);
+}
+
+function openManualEntryModalFromOCR(serial,imgData){
     manualEntrySerial=serial;manualEntryImage=imgData;
     document.getElementById('manualSerialInput').value='BDBCF00';
+    document.getElementById('manualEntryTitle').textContent='🔁 Conferma Manuale';
+    document.getElementById('manualEntryDesc').textContent='Rilevamenti ripetuti a bassa confidenza.';
     const wrap=document.getElementById('manualPreviewWrap');
     if(imgData){wrap.innerHTML=`<img src="${imgData}" alt="preview">`;wrap.style.display='block';}else{wrap.innerHTML='';wrap.style.display='none';}
-    document.getElementById('manualEntryModal').classList.add('visible');setTimeout(()=>document.getElementById('manualSerialInput').focus(),300);
+    scanPaused=true;
+    document.getElementById('manualEntryModal').classList.add('visible');
+    setTimeout(()=>{
+        const inp=document.getElementById('manualSerialInput');
+        inp.focus();
+        inp.setSelectionRange(7, 10);
+    },300);
 }
-function closeManualEntry(){document.getElementById('manualEntryModal').classList.remove('visible');scanPaused=false;for(let k in lowConfTracker)delete lowConfTracker[k];}
-function confirmManualEntry(){const val=document.getElementById('manualSerialInput').value.trim().toUpperCase();if(validateSerial(val)){toast('❌ '+validateSerial(val),'error');return;}closeManualEntry();const operator=document.getElementById('operatorName').value.trim()||'N/D';const pedana=document.getElementById('pedana').value.trim()||'N/D';const ts=new Date().toLocaleString('it-IT');const rec={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial:val,timestamp:ts,operator,pedana,runNumber:'',modified:false,status:'',note:'',image:manualEntryImage||null,confidence:100,corrections:[],_synced:false,_imgUploaded:false,_confirmed:true};records.unshift(rec);scanTotal++;document.getElementById('scanCount').textContent=scanTotal;if(manualEntryImage)saveImg(rec.id,manualEntryImage);saveToStorage();beepOk();vib('ok');renderRecords();toast('✅ '+val,'success');if(gsheetUrl)sendToGSheet(rec).then(()=>{saveToStorage();setSyncStatus('synced');renderRecords();});setTimeout(()=>{showPedanaModal(val,manualEntryImage,()=>{if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},400);}
+
+function closeManualEntry(){document.getElementById('manualEntryModal').classList.remove('visible');scanPaused=false;for(let k in lowConfTracker)delete lowConfTracker[k];updateScanIndicator();}
+function confirmManualEntry(){
+    const val=document.getElementById('manualSerialInput').value.trim().toUpperCase();
+    if(settings.pattern){
+        const errMsg=validateSerial(val);if(errMsg){toast('❌ '+errMsg,'error');return;}
+        const isDup=records.some(r=>r.serial===val);if(isDup){toast('⚠️ Seriale già esistente!','warning');beepDup();return;}
+    }
+    closeManualEntry();
+    const operator=document.getElementById('operatorName').value.trim()||'N/D';
+    const pedana=document.getElementById('pedana').value.trim()||'N/D';
+    const ts=new Date().toLocaleString('it-IT');
+    const rec={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),serial:val,timestamp:ts,operator,pedana,runNumber:'',modified:false,status:'',note:'',image:manualEntryImage||MANUAL_ENTRY_IMG,confidence:100,corrections:[],_synced:false,_imgUploaded:false,_confirmed:true,_manual:true};
+    records.unshift(rec);scanTotal++;document.getElementById('scanCount').textContent=scanTotal;
+    saveImg(rec.id,rec.image);saveToStorage();beepOk();vib('ok');renderRecords();toast('✅ '+val,'success');
+    autoBackupToFile();
+    setTimeout(()=>{showPedanaModal(val,rec.image,()=>{if(cameraActive&&!scanPaused)document.getElementById('ocrStatus').textContent='✓ Pronto';updateScanIndicator();resetIdleTimer();});},400);
+}
 function confirmLowConf(id){const rec=records.find(r=>r.id===id);if(rec){rec._confirmed=true;renderRecords();toast('Confermato','success');}}
 
+// ===== RENDER RECORDS =====
 function renderRecords(){
     const el=document.getElementById('recordsList');
     if(records.length===0){el.innerHTML=`<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h.01M12 7h.01M17 7h.01M7 12h10M7 17h6"/></svg><p>Nessun seriale.<br>Avvia la fotocamera.</p></div>`;return;}
@@ -786,22 +1334,24 @@ function renderRecords(){
 }
 
 function editRun(id){const rec=records.find(r=>r.id===id);if(!rec)return;const cell=document.getElementById('runCell-'+id);const cur=rec.runNumber||'';cell.innerHTML=`<input type="text" class="run-input" id="runInput-${id}" value="${cur}" placeholder="RUN" maxlength="10" onblur="saveRun('${id}')" onkeydown="if(event.key==='Enter')this.blur()">`;cell.classList.add('editing');const inp=document.getElementById('runInput-'+id);inp.focus();inp.select();}
-function saveRun(id){const rec=records.find(r=>r.id===id);if(!rec)return;const inp=document.getElementById('runInput-'+id);if(!inp)return;const nv=inp.value.trim();rec.runNumber=nv;rec._synced=false;saveToStorage();renderRecords();if(gsheetUrl&&nv)sendToGSheet(rec);}
+function saveRun(id){const rec=records.find(r=>r.id===id);if(!rec)return;const inp=document.getElementById('runInput-'+id);if(!inp)return;const nv=inp.value.trim();rec.runNumber=nv;rec._synced=false;saveToStorage();renderRecords();}
 
 function editSerial(id,newVal){
-    const rec=records.find(r=>r.id===id);
-    if(!rec)return;
+    const rec=records.find(r=>r.id===id);if(!rec)return;
     const input=document.querySelector(`#record-${id} .serial-display`);
-    const orig=input?.dataset?.orig||rec.serial;
-    if(newVal===orig)return;
+    const orig=input?.dataset?.orig||rec.serial;if(newVal===orig)return;
     let{fixed}=fixOCR(newVal.trim().toUpperCase());
-    const errMsg=validateSerial(fixed);
-    if(errMsg){toast('❌ '+errMsg,'error');beepErr();input.value=orig;return;}
-    showConfirm('Conferma modifica',`Modificare "${rec.serial}" in "${fixed}"?`,()=>{
-        if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Già esistente!','warning');beepDup();vib('dup');input.value=orig;return;}
+    if(settings.pattern){
+        const errMsg=validateSerial(fixed);
+        if(errMsg){toast('❌ '+errMsg,'error');beepErr();if(input)input.value=orig;return;}
+    }
+    showConfirm('Conferma modifica',
+        `Modificare <span style="color:var(--danger);font-family:'JetBrains Mono',monospace;font-weight:700;">${rec.serial}</span> in <span style="color:var(--accent);font-family:'JetBrains Mono',monospace;font-weight:700;">${fixed}</span>?`,
+        ()=>{
+        if(records.some(r=>r.serial===fixed&&r.id!==rec.id)){toast('⚠️ Già esistente!','warning');beepDup();vib('dup');if(input)input.value=orig;return;}
         rec.serial=fixed;rec.modified=true;rec._synced=false;toast('Modificato: '+fixed,'success');beepOk();renderRecords();saveToStorage();
-    }, rec.image || null);
-    input.value=orig;
+    },rec.image||null);
+    if(input)input.value=orig;
 }
 
 function setStatus(id,s){const rec=records.find(r=>r.id===id);if(!rec)return;rec.status=s;rec._synced=false;vib('ok');renderRecords();saveToStorage();}
@@ -814,23 +1364,9 @@ function closeModal(){document.getElementById('imageModal').classList.remove('vi
 // ===== EXPORT =====
 function exportExcel(){
     if(records.length===0){toast('Nessun record','warning');return;}
-    const data=records.map((r,i)=>({
-        '#':i+1,
-        'Timestamp':r.timestamp,
-        'Seriale':r.serial,
-        'Run':r.runNumber||'—',
-        'Confidenza %':r.confidence,
-        'Correzioni OCR':r.corrections&&r.corrections.length?r.corrections.join(', '):'—',
-        'Modificato':r.modified?'Sì':'No',
-        'Lotto/Posizione':r.pedana,
-        'Operatore':r.operator,
-        'Stato':r.status||'—',
-        'Note':r.note
-    }));
-    const ws=XLSX.utils.json_to_sheet(data);
-    ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:8},{wch:12},{wch:20},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];
-    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Scansioni');
-    XLSX.writeFile(wb,`Scansioni_${new Date().toISOString().slice(0,10)}.xlsx`);
+    const data=records.map((r,i)=>({'#':i+1,'Timestamp':r.timestamp,'Seriale':r.serial,'Run':r.runNumber||'—','Confidenza %':r.confidence,'Correzioni OCR':r.corrections&&r.corrections.length?r.corrections.join(', '):'—','Modificato':r.modified?'Sì':'No','Lotto/Posizione':r.pedana,'Operatore':r.operator,'Stato':r.status||'—','Note':r.note}));
+    const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=[{wch:5},{wch:20},{wch:15},{wch:8},{wch:12},{wch:20},{wch:10},{wch:15},{wch:15},{wch:14},{wch:25}];
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Scansioni');XLSX.writeFile(wb,`Scansioni_${new Date().toISOString().slice(0,10)}.xlsx`);
     toast(`📊 Excel: ${records.length} record`,'success');vib('ok');
 }
 
@@ -845,33 +1381,25 @@ function exportHtmlWithImages(){
         html+=`<tr><td>${i+1}</td><td>${r.timestamp}</td><td class="serial">${r.serial}${r.modified?' <small style="color:#f59e0b;">(mod)</small>':''}</td><td>${r.runNumber||'—'}</td>${imgHtml}<td class="${cc}">${r.confidence}%</td><td>${(r.corrections||[]).join(', ')||'—'}</td><td>${r.pedana}</td><td>${r.operator}</td><td class="${stClass}">${stText}</td><td>${r.note||''}</td></tr>`;
     });
     html+=`</tbody></table></body></html>`;
-    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
-    saveAs(blob,`Report_Scansioni_${new Date().toISOString().slice(0,10)}.html`);
-    toast(`📄 HTML: ${records.length} record`,'success');vib('ok');
+    const blob=new Blob([html],{type:'text/html;charset=utf-8'});saveAs(blob,`Report_Scansioni_${new Date().toISOString().slice(0,10)}.html`);toast(`📄 HTML: ${records.length} record`,'success');vib('ok');
 }
 
 async function exportZip(){
-    if(records.length===0){toast('Nessun record','warning');return;}
-    toast('📦 ZIP...','success');
+    if(records.length===0){toast('Nessun record','warning');return;}toast('📦 ZIP...','success');
     try{
-        const zip=new JSZip(),imgF=zip.folder('immagini');
-        let cnt=0;
-        for(const r of records){
-            if(r.image){
-                const fileName = `${r.serial}.jpg`;
-                imgF.file(fileName, r.image.split(',')[1], {base64:true});
-                cnt++;
-            }
-        }
+        const zip=new JSZip(),imgF=zip.folder('immagini');let cnt=0;
+        for(const r of records){if(r.image){imgF.file(`${r.serial}.jpg`,r.image.split(',')[1],{base64:true});cnt++;}}
         const csv='N,Timestamp,Seriale,Run,Conf%,Correzioni,Modificato,Lotto,Operatore,Stato,Note\n'+records.map((r,i)=>`${i+1},${r.timestamp},${r.serial},${r.runNumber||''},${r.confidence},"${(r.corrections||[]).join(', ')}",${r.modified?'Sì':'No'},${r.pedana},${r.operator},${r.status||'—'},"${r.note}"`).join('\n');
-        zip.file('riepilogo.csv',csv);
-        const blob=await zip.generateAsync({type:'blob'});
-        saveAs(blob,`Archivio_${new Date().toISOString().slice(0,10)}.zip`);
-        toast(`📦 ZIP: ${cnt} img`,'success');vib('ok');
+        zip.file('riepilogo.csv',csv);const blob=await zip.generateAsync({type:'blob'});saveAs(blob,`Archivio_${new Date().toISOString().slice(0,10)}.zip`);toast(`📦 ZIP: ${cnt} img`,'success');vib('ok');
     }catch(e){console.error(e);toast('Errore ZIP','error');beepErr();}
 }
 
-document.addEventListener('DOMContentLoaded',async()=>{await openImgDB();loadGSheetUrl();const loaded=await loadFromStorage();if(loaded&&records.length>0){renderRecords();toast(`📂 ${records.length} recuperati`,'success');const unsynced=records.filter(r=>!r._synced);if(unsynced.length>0){setSyncStatus('pending');if(gsheetUrl)setTimeout(()=>syncPendingToGSheet(),2000);}else{setSyncStatus('synced');}}else{renderRecords();setSyncStatus('idle');}setSyncStatus(syncStatus);});
+document.addEventListener('DOMContentLoaded',async()=>{
+    await openImgDB();loadSettings();loadGSheetUrl();
+    const loaded=await loadFromStorage();
+    if(loaded&&records.length>0){renderRecords();toast(`📂 ${records.length} recuperati`,'success');const unsynced=records.filter(r=>!r._synced);if(unsynced.length>0){setSyncStatus('pending');}else{setSyncStatus('synced');}}else{renderRecords();setSyncStatus('idle');}
+    setSyncStatus(syncStatus);
+});
 window.addEventListener('beforeunload',()=>{saveToStorage();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveToStorage();});
 document.addEventListener('touchstart',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
@@ -879,3 +1407,5 @@ let lastEnd=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-l
 </script>
 </body>
 </html>
+
+
